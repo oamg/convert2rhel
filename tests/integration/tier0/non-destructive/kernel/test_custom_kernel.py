@@ -4,7 +4,9 @@ import re
 import pexpect.exceptions
 import pytest
 
-from conftest import SYSTEM_RELEASE_ENV, SystemInformationRelease, get_full_kernel_title, workaround_grub_setup
+from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
+from test_helpers.vars import SYSTEM_RELEASE_ENV
+from test_helpers.workarounds import workaround_grub_setup, workaround_hybrid_rocky_image
 
 
 def _cross_vendor_kernel():
@@ -51,7 +53,7 @@ def _cross_vendor_kernel():
 
 
 @pytest.fixture(scope="function")
-def custom_kernel(shell, hybrid_rocky_image, backup_directory):
+def custom_kernel(shell, workaround_hybrid_rocky_image, backup_directory):
     """
     Fixture for test_custom_kernel.
     Install CentOS kernel on Oracle Linux and vice versa to mimic the custom

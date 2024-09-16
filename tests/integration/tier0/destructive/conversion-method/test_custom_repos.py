@@ -1,4 +1,4 @@
-from conftest import SystemInformationRelease, get_custom_repos_names
+from test_helpers.common_functions import SystemInformationRelease, get_custom_repos_names
 
 
 def test_system_conversion_using_custom_repositories(shell, convert2rhel):

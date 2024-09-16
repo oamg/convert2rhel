@@ -1,6 +1,7 @@
 import pytest
 
-from conftest import SystemInformationRelease, get_custom_repos_names
+from conftest import SystemInformationRelease
+from test_helpers.common_functions import get_custom_repos_names
 
 
 @pytest.fixture(scope="function")

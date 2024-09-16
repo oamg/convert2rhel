@@ -1,7 +1,8 @@
 from conftest import SYSTEM_RELEASE_ENV
+from test_helpers.workarounds import workaround_hybrid_rocky_image
 
 
-def test_install_non_latest_kernel(shell, hybrid_rocky_image):
+def test_install_non_latest_kernel(shell, workaround_hybrid_rocky_image):
     """
     Install specific kernel version and configure
     the system to boot to it. The kernel version is not the
