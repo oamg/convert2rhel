@@ -27,8 +27,9 @@ from collections import namedtuple
 from six.moves import configparser
 
 from convert2rhel import logger, utils
-from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME, tool_opts
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess
+from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
 
 
 # Number of times to retry checking the status of dbus

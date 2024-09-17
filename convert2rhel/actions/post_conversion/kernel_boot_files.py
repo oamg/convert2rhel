@@ -54,8 +54,10 @@ class KernelBootFiles(actions.Action):
         # from `uname -r`, as it requires a reboot in order to take place, we are
         # detecting the latest kernel by using `rpm` and figuring out which was the
         # latest kernel installed.
+
         latest_installed_kernel = output.split("\n")[0].split(" ")[0]
         latest_installed_kernel = latest_installed_kernel[len(kernel_name + "-") :]
+
         grub2_config_file = grub.get_grub_config_file()
         initramfs_file = INITRAMFS_FILEPATH % latest_installed_kernel
         vmlinuz_file = VMLINUZ_FILEPATH % latest_installed_kernel

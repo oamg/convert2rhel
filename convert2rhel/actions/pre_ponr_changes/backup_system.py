@@ -26,7 +26,7 @@ from convert2rhel.pkghandler import VERSIONLOCK_FILE_PATH
 from convert2rhel.redhatrelease import os_release_file, system_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
+from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
 
 
 # Regex explanation:

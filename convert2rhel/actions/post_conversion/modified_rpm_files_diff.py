@@ -21,7 +21,6 @@ import os
 from convert2rhel import actions, utils
 from convert2rhel.logger import LOG_DIR, root_logger
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import POST_RPM_VA_LOG_FILENAME, PRE_RPM_VA_LOG_FILENAME
 
 
 logger = root_logger.getChild(__name__)
@@ -39,9 +38,9 @@ class ModifiedRPMFilesDiff(actions.Action):
 
         logger.task("Final: Show RPM files modified by the conversion")
 
-        system_info.generate_rpm_va(log_filename=POST_RPM_VA_LOG_FILENAME)
+        system_info.generate_rpm_va(log_filename=utils.rpm.POST_RPM_VA_LOG_FILENAME)
 
-        pre_rpm_va_log_path = os.path.join(LOG_DIR, PRE_RPM_VA_LOG_FILENAME)
+        pre_rpm_va_log_path = os.path.join(LOG_DIR, utils.rpm.PRE_RPM_VA_LOG_FILENAME)
         if not os.path.exists(pre_rpm_va_log_path):
             logger.info("Skipping comparison of the 'rpm -Va' output from before and after the conversion.")
             self.add_message(
@@ -55,7 +54,7 @@ class ModifiedRPMFilesDiff(actions.Action):
             return
 
         pre_rpm_va = utils.get_file_content(pre_rpm_va_log_path, True)
-        post_rpm_va_log_path = os.path.join(LOG_DIR, POST_RPM_VA_LOG_FILENAME)
+        post_rpm_va_log_path = os.path.join(LOG_DIR, utils.rpm.POST_RPM_VA_LOG_FILENAME)
         post_rpm_va = utils.get_file_content(post_rpm_va_log_path, True)
         modified_rpm_files_diff = "\n".join(
             difflib.unified_diff(

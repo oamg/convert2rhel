@@ -24,9 +24,10 @@ import sys
 
 from datetime import datetime
 
-from convert2rhel import pkghandler, toolopts, utils
+from convert2rhel import pkghandler, utils
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import files
 
 
@@ -104,7 +105,7 @@ class Breadcrumbs:
 
     def _set_activity(self):
         """Set the activity that convert2rhel is going to perform"""
-        self.activity = toolopts.tool_opts.activity
+        self.activity = tool_opts.activity
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
