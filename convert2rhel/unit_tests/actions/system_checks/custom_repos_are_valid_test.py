@@ -28,6 +28,11 @@ def custom_repos_are_valid_action():
     return custom_repos_are_valid.CustomReposAreValid()
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(custom_repos_are_valid, "tool_opts", global_tool_opts)
+
+
 def test_custom_repos_are_valid(custom_repos_are_valid_action, monkeypatch, caplog):
     monkeypatch.setattr(
         custom_repos_are_valid,

@@ -48,10 +48,11 @@ class TestRestorableSystemSubscription:
         return RestorableSystemSubscription()
 
     def test_subscribe_system(self, system_subscription, global_tool_opts, monkeypatch):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         global_tool_opts.username = "user"
         global_tool_opts.password = "pass"
+        monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
 
         system_subscription.enable()
 
@@ -66,10 +67,11 @@ class TestRestorableSystemSubscription:
         assert not subscription.register_system.called
 
     def test_enable_fail_once(self, system_subscription, global_tool_opts, caplog, monkeypatch):
-        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
-        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
         global_tool_opts.username = "user"
         global_tool_opts.password = "pass"
+        monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(subscription, "register_system", RegisterSystemMocked())
+        monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=1))
 
         with pytest.raises(exceptions.CriticalError):
             system_subscription.enable()

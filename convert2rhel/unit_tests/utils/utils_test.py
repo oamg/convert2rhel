@@ -328,7 +328,7 @@ class TestFindKeys:
             return self.real_rmtree(*args, **kwargs)
 
     gpg_key = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), "../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
+        os.path.join(os.path.dirname(__file__), "../../data/version-independent/gpg-keys/RPM-GPG-KEY-redhat-release")
     )
 
     def test_find_keyid(self):
@@ -439,6 +439,10 @@ def test_remove_tmp_dir(monkeypatch, dir_name, caplog, tmpdir):
 
 
 class TestDownload_pkg:
+    @pytest.fixture(autouse=True)
+    def apply_cls_global_tool_opts(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
+
     def test_download_pkgs(self, monkeypatch):
         monkeypatch.setattr(
             utils,
@@ -548,7 +552,7 @@ class TestDownload_pkg:
             ("",),
         ),
     )
-    def test_download_pkg_incorrect_output(self, output, monkeypatch):
+    def test_download_pkg_incorrect_output(self, output, monkeypatch, global_tool_opts):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_string=output))
@@ -573,8 +577,8 @@ def test_get_rpm_path_from_yumdownloader_output(output):
         ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to disregard this check"),
     ),
 )
-def test_report_on_a_download_error(envvar, activity, should_raise, message, monkeypatch, caplog):
-    monkeypatch.setattr(toolopts.tool_opts, "activity", activity)
+def test_report_on_a_download_error(envvar, activity, should_raise, message, monkeypatch, caplog, global_tool_opts):
+    global_tool_opts.activity = activity
     monkeypatch.setattr(os, "environ", {envvar: "1"})
 
     if should_raise:

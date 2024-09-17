@@ -26,7 +26,6 @@ import six
 
 from convert2rhel import logger, systeminfo, utils
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import all_systems, centos8
 
@@ -185,7 +184,7 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 def test_corresponds_to_rhel_eus_release(major, minor, expected, monkeypatch, global_tool_opts):
     version = Version(major, minor)
     global_tool_opts.eus = True
-    monkeypatch.setattr(tool_opts, "eus", global_tool_opts)
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
     monkeypatch.setattr(system_info, "version", version)
 
     assert system_info.corresponds_to_rhel_eus_release() == expected

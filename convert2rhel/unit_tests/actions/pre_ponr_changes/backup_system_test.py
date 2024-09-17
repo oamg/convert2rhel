@@ -26,9 +26,9 @@ from convert2rhel import unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
-from convert2rhel.toolopts import PRE_RPM_VA_LOG_FILENAME
 from convert2rhel.unit_tests import CriticalErrorCallableObject
 from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
+from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))

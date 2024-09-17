@@ -71,6 +71,11 @@ def update_kernel_instance():
     return preserve_only_rhel_kernel.UpdateKernel()
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(pkgmanager, "tool_opts", global_tool_opts)
+
+
 class TestInstallRhelKernel:
     @pytest.mark.parametrize(
         (

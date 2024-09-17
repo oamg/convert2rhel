@@ -20,7 +20,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import actions, checks
+from convert2rhel import actions, checks, grub
 from convert2rhel.actions.post_conversion import kernel_boot_files
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
@@ -65,51 +65,38 @@ def test_check_kernel_boot_files(pretend_os, tmpdir, caplog, monkeypatch, kernel
 
 
 @pytest.mark.parametrize(
-    ("create_initramfs", "create_vmlinuz", "run_piped_subprocess", "rpm_last_kernel_output", "latest_installed_kernel"),
+    ("vmlinuz_exists", "initiramfs_exists", "rpm_last_kernel_output", "latest_installed_kernel"),
     (
         pytest.param(
             False,
-            False,
-            ("", 0),
+            True,
             ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
             "6.1.8-200.fc37.x86_64",
-            id="both-files-missing",
+            id="vmlinuz-missing",
         ),
         pytest.param(
             True,
             False,
-            ("test", 0),
             ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
             "6.1.8-200.fc37.x86_64",
             id="vmlinuz-missing",
         ),
         pytest.param(
             False,
-            True,
-            ("test", 0),
+            False,
             ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
             "6.1.8-200.fc37.x86_64",
-            id="initramfs-missing",
-        ),
-        pytest.param(
-            True,
-            True,
-            ("error", 1),
-            ("kernel-core-6.1.8-200.fc37.x86_64 Wed 01 Feb 2023 14:01:01 -03", 0),
-            "6.1.8-200.fc37.x86_64",
-            id="initramfs-corrupted",
+            id="vmlinuz-missing",
         ),
     ),
 )
 @centos8
 def test_check_kernel_boot_files_missing(
     pretend_os,
-    create_initramfs,
-    create_vmlinuz,
-    run_piped_subprocess,
+    vmlinuz_exists,
+    initiramfs_exists,
     rpm_last_kernel_output,
     latest_installed_kernel,
-    tmpdir,
     caplog,
     monkeypatch,
     kernel_boot_files_instance,
@@ -123,36 +110,16 @@ def test_check_kernel_boot_files_missing(
     # that the second iteration may not run sometimes, as this is specific for
     # when we want to check if a file is corrupted or not.
     monkeypatch.setattr(
-        checks,
+        kernel_boot_files,
         "run_subprocess",
-        mock.Mock(
-            side_effect=[
-                rpm_last_kernel_output,
-                run_piped_subprocess,
-            ]
-        ),
+        mock.Mock(side_effect=[rpm_last_kernel_output]),
     )
-    # monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
-    boot_folder = tmpdir.mkdir("/boot")
-    if create_initramfs:
-        initramfs_file = boot_folder.join("initramfs-%s.img")
-        initramfs_file = str(initramfs_file)
-        with open(initramfs_file % latest_installed_kernel, mode="w") as _:
-            pass
 
-        monkeypatch.setattr(kernel_boot_files, "INITRAMFS_FILEPATH", initramfs_file)
-    else:
-        monkeypatch.setattr(kernel_boot_files, "INITRAMFS_FILEPATH", "/non-existing-%s.img")
-
-    if create_vmlinuz:
-        vmlinuz_file = boot_folder.join("vmlinuz-%s")
-        vmlinuz_file = str(vmlinuz_file)
-        with open(vmlinuz_file % latest_installed_kernel, mode="w") as _:
-            pass
-
-        monkeypatch.setattr(kernel_boot_files, "VMLINUZ_FILEPATH", vmlinuz_file)
-    else:
-        monkeypatch.setattr(kernel_boot_files, "VMLINUZ_FILEPATH", "/non-existing-%s")
+    # We are always expecting that the grub config file is pointed to /boot/grub2/grub.cfg. We can change this in the
+    # future, but for this test is fine if the path is always the same.
+    monkeypatch.setattr(grub, "get_grub_config_file", lambda: "/boot/grub2/grub.cfg")
+    monkeypatch.setattr(checks, "is_initramfs_file_valid", lambda x: initiramfs_exists)
+    monkeypatch.setattr(os.path, "exists", lambda x: vmlinuz_exists)
 
     expected = set(
         (
@@ -163,10 +130,13 @@ def test_check_kernel_boot_files_missing(
                 description="We failed to determine whether boot partition is configured correctly and that boot"
                 " files exists. This may cause problems during the next boot of your system.",
                 diagnosis=None,
-                remediations="In order to fix this problem you might need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
-                "1. yum reinstall kernel-core- -y\n"
-                "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
-                "3. reboot",
+                remediations=(
+                    "In order to fix this problem you might need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
+                    "1. yum reinstall kernel-core-%s -y\n"
+                    "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
+                    "3. reboot"
+                )
+                % latest_installed_kernel,
             ),
         )
     )

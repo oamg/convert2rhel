@@ -18,7 +18,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel import actions, pkghandler, pkgmanager, repo, unit_tests, utils
 from convert2rhel.actions.pre_ponr_changes import handle_packages
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import (
@@ -42,6 +42,11 @@ class RemovePkgsUnlessFromRedhatMocked(MockFunctionObject):
 @pytest.fixture
 def list_third_party_packages_instance():
     return handle_packages.ListThirdPartyPackages()
+
+
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
 
 
 def test_list_third_party_packages_no_packages(list_third_party_packages_instance, monkeypatch, caplog):

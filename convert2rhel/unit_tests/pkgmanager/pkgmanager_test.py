@@ -20,7 +20,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import pkgmanager, utils
+from convert2rhel import pkgmanager, systeminfo, utils
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import RunSubprocessMocked, run_subprocess_side_effect
@@ -29,6 +29,11 @@ from convert2rhel.unit_tests.conftest import centos7, centos8
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
+
+
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(pkgmanager, "tool_opts", global_tool_opts)
 
 
 @pytest.mark.skipif(
@@ -89,7 +94,8 @@ def test_rpm_db_lock():
 
 
 class TestCallYumCmd:
-    def test_call_yum_cmd(self, monkeypatch):
+    def test_call_yum_cmd(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
         monkeypatch.setattr(system_info, "version", Version(8, 0))
         monkeypatch.setattr(system_info, "releasever", "8")
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
@@ -114,11 +120,12 @@ class TestCallYumCmd:
         assert utils.run_subprocess.cmd == ["yum", "install", "--setopt=exclude=", "-y"]
 
     @centos7
-    def test_call_yum_cmd_with_disablerepo_and_enablerepo(self, pretend_os, monkeypatch):
+    def test_call_yum_cmd_with_disablerepo_and_enablerepo(self, pretend_os, monkeypatch, global_tool_opts):
+        global_tool_opts.disablerepo = ["*"]
+        global_tool_opts.enablerepo = ["rhel-7-extras-rpm"]
+        global_tool_opts.no_rhsm = True
+        monkeypatch.setattr(pkgmanager, "tool_opts", global_tool_opts)
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
-        monkeypatch.setattr(tool_opts, "no_rhsm", True)
-        monkeypatch.setattr(tool_opts, "disablerepo", ["*"])
-        monkeypatch.setattr(tool_opts, "enablerepo", ["rhel-7-extras-rpm"])
 
         pkgmanager.call_yum_cmd("install")
 
@@ -133,10 +140,11 @@ class TestCallYumCmd:
         ]
 
     @centos7
-    def test_call_yum_cmd_with_submgr_enabled_repos(self, pretend_os, monkeypatch):
+    def test_call_yum_cmd_with_submgr_enabled_repos(self, pretend_os, monkeypatch, global_tool_opts):
+        global_tool_opts.enablerepo = ["not-to-be-used-in-the-yum-call"]
+        monkeypatch.setattr(pkgmanager, "tool_opts", global_tool_opts)
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         monkeypatch.setattr(system_info, "submgr_enabled_repos", ["rhel-7-extras-rpm"])
-        monkeypatch.setattr(tool_opts, "enablerepo", ["not-to-be-used-in-the-yum-call"])
 
         pkgmanager.call_yum_cmd("install")
 
@@ -150,10 +158,11 @@ class TestCallYumCmd:
         ]
 
     @centos7
-    def test_call_yum_cmd_with_repo_overrides(self, pretend_os, monkeypatch):
+    def test_call_yum_cmd_with_repo_overrides(self, pretend_os, monkeypatch, global_tool_opts):
+        global_tool_opts.enablerepo = ["not-to-be-used-in-the-yum-call"]
+        monkeypatch.setattr(pkgmanager, "tool_opts", global_tool_opts)
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
         monkeypatch.setattr(system_info, "submgr_enabled_repos", ["not-to-be-used-in-the-yum-call"])
-        monkeypatch.setattr(tool_opts, "enablerepo", ["not-to-be-used-in-the-yum-call"])
 
         pkgmanager.call_yum_cmd("install", ["pkg"], enable_repos=[], disable_repos=[])
 

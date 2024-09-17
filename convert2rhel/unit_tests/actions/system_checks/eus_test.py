@@ -35,6 +35,11 @@ class DateMock(datetime.date):
         return cls(2023, 11, 15)
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(eus, "tool_opts", global_tool_opts)
+
+
 class TestEus:
     @pytest.mark.parametrize(
         ("version_string", "message_reported"),

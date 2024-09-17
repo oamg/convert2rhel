@@ -17,15 +17,9 @@
 __metaclass__ = type
 
 import pytest
-import six
 
 from convert2rhel import checks
 from convert2rhel.unit_tests import RunSubprocessMocked
-from convert2rhel.unit_tests.conftest import centos8
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 
 @pytest.mark.parametrize(

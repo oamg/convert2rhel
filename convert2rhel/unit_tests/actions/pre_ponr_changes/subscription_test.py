@@ -31,6 +31,7 @@ from convert2rhel.actions.pre_ponr_changes.subscription import PreSubscription, 
 from convert2rhel.backup.subscription import RestorableDisableRepositories, RestorableSystemSubscription
 from convert2rhel.subscription import RefreshSubscriptionManagerError, SubscriptionAutoAttachmentError
 from convert2rhel.unit_tests import AutoAttachSubscriptionMocked, RefreshSubscriptionManagerMocked, RunSubprocessMocked
+from convert2rhel.utils import subscription as subscription_utils
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -55,6 +56,11 @@ def install_repo_cert_instance():
 @pytest.fixture
 def install_gpg_key_instance():
     return appc_subscription.InstallRedHatGpgKeyForRpm()
+
+
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
 
 
 class TestInstallRedHatCertForYumRepositories:
@@ -228,7 +234,9 @@ class TestSubscribeSystem:
         # partial saves the real copy of tool_opts to use with
         # _should_subscribe so we have to monkeypatch with the mocked version
         # of tool_opts.
-        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
+        monkeypatch.setattr(
+            subscription, "should_subscribe", partial(subscription_utils._should_subscribe, global_tool_opts)
+        )
         monkeypatch.setattr(RestorableSystemSubscription, "enable", mock.Mock())
         monkeypatch.setattr(repo, "get_rhel_repoids", mock.Mock())
         monkeypatch.setattr(RestorableDisableRepositories, "enable", mock.Mock())
@@ -249,7 +257,7 @@ class TestSubscribeSystem:
         # partial saves the real copy of tool_opts to use with
         # _should_subscribe so we have to monkeypatch with the mocked version
         # of tool_opts.
-        monkeypatch.setattr(subscription, "should_subscribe", partial(toolopts._should_subscribe, global_tool_opts))
+        monkeypatch.setattr(subscription, "should_subscribe", partial(subscription._should_subscribe, global_tool_opts))
 
         expected = set(
             (
