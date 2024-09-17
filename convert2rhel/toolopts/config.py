@@ -25,6 +25,7 @@ import six
 
 from six.moves import configparser
 
+
 loggerinst = logging.getLogger(__name__)
 
 #: Map name of the convert2rhel mode to run in from the command line to the
