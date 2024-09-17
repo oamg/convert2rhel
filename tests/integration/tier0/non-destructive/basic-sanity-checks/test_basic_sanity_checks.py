@@ -105,6 +105,9 @@ def test_c2r_version_latest_with_mocked_newer_version(convert2rhel, c2r_version,
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Latest available convert2rhel version is installed.", timeout=300) == 0
 
         c2r.sendcontrol("c")
@@ -150,6 +153,9 @@ def test_c2r_version_latest_override_inhibitor(convert2rhel, c2r_version, versio
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
