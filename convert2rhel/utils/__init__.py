@@ -40,6 +40,7 @@ from six import moves
 
 from convert2rhel import exceptions, i18n
 from convert2rhel.logger import root_logger
+from convert2rhel.toolopts import tool_opts
 
 
 logger = root_logger.getChild(__name__)
@@ -320,8 +321,6 @@ def store_content_to_file(filename, content):
 
 
 def restart_system():
-    from convert2rhel.toolopts import tool_opts
-
     if tool_opts.restart:
         run_subprocess(["reboot"])
     else:
@@ -505,8 +504,6 @@ def ask_to_continue():
     """Ask user whether to continue with the system conversion. If no,
     execution of the tool is stopped.
     """
-    from convert2rhel.toolopts import tool_opts
-
     if tool_opts.autoaccept:
         return
     while True:
