@@ -1,4 +1,4 @@
-from conftest import TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 def test_rhsm_with_eus_system_conversion(convert2rhel, shell):
@@ -19,7 +19,7 @@ def test_rhsm_with_eus_system_conversion(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect_exact("Enabling RHEL repositories:")
-        c2r.expect_exact("rhel-8-for-x86_64-baseos-eus-rpms")
-        c2r.expect_exact("rhel-8-for-x86_64-appstream-eus-rpms")
+        c2r.expect_exact(f"rhel-{SystemInformationRelease.version.major}-for-x86_64-baseos-eus-rpms")
+        c2r.expect_exact(f"rhel-{SystemInformationRelease.version.major}-for-x86_64-appstream-eus-rpms")
         c2r.expect_exact("Conversion successful!")
     assert c2r.exitstatus == 0

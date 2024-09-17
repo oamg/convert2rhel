@@ -1,7 +1,7 @@
 import os
 import re
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, SystemInformationRelease
 
 
 def test_latest_kernel_check_skip(shell, convert2rhel, backup_directory):
@@ -25,7 +25,7 @@ def test_latest_kernel_check_skip(shell, convert2rhel, backup_directory):
             os.rename(old_filepath, new_filepath)
 
     # EUS version use hardcoded repos from c2r as well
-    if re.match(r"^(alma|rocky)-8\.8$", SYSTEM_RELEASE_ENV) or "centos-8-latest" in SYSTEM_RELEASE_ENV:
+    if SystemInformationRelease.is_eus:
         assert shell(f"mkdir {eus_backup_dir}").returncode == 0
         assert shell(f"mv /usr/share/convert2rhel/repos/* {eus_backup_dir}").returncode == 0
 
