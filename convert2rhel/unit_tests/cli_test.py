@@ -184,7 +184,7 @@ activation_key                   = conf_key
 org                              = conf_org
 
 [host_metering]
-configure_host_metering          = 0
+configure_host_metering          = "auto"
 
 [inhibitor_overrides]
 incomplete_rollback              = 0
@@ -568,7 +568,7 @@ def test_setting_no_rpm_va(argv, expected, message, monkeypatch, caplog, tmpdir)
     with open(path, "w") as file:
         content = """\
 [inhibitor_overrides]
-incomplete_rollback = "1"
+incomplete_rollback = 1
 """
         file.write(content)
 

@@ -53,6 +53,8 @@ CONFIG_FILE_MAPPING_OPTIONS = {
     ],
 }
 
+BOOLEAN_OPTIONS_HEADERS = ["inhibitor_overrides"]
+
 
 @six.add_metaclass(abc.ABCMeta)
 class BaseConfig:
@@ -137,22 +139,7 @@ class FileConfig(BaseConfig):
             raise FileNotFoundError("No such file or directory: %s" % ", ".join(paths))
 
         found_opts = self._parse_options_from_config(paths)
-        found_opts = self._normalize_settings_options(found_opts)
         return found_opts
-
-    def _normalize_settings_options(self, opts):
-        """Normalize the inhibitor and host metering options to be boolean instead of integers."""
-        unparsed_opts = copy.copy(opts)
-        # Loop through the options from inhibitor_overrides and host_metering to apply the conversion of integer (str)
-        # to bool.
-        for option in zip(
-            CONFIG_FILE_MAPPING_OPTIONS["inhibitor_overrides"], CONFIG_FILE_MAPPING_OPTIONS["host_metering"]
-        ):
-            # Not all options might be set in the config file.
-            if option in unparsed_opts:
-                unparsed_opts[option] = False if unparsed_opts[option] == "0" else True
-
-        return unparsed_opts
 
     def _parse_options_from_config(self, paths):
         """Parse the options from the given config files.
@@ -184,7 +171,6 @@ class FileConfig(BaseConfig):
                         "Couldn't find header '%s' in the configuration file %s." % (supported_header, path)
                     )
                     continue
-
                 options = self._get_options_value(config_file, supported_header, supported_opts)
                 found_opts.update(options)
 
@@ -214,7 +200,12 @@ class FileConfig(BaseConfig):
                 loggerinst.warning("Unsupported option '%s' in '%s'" % (option, header))
                 continue
 
-            options[option] = config_file.get(header, option)
+            # This is the only header that can contain boolean values for now.
+            if header in BOOLEAN_OPTIONS_HEADERS:
+                options[option] = config_file.getboolean(header, option)
+            else:
+                options[option] = config_file.get(header, option)
+
             loggerinst.debug("Found %s in %s" % (option, header))
 
         return options
@@ -227,24 +218,24 @@ class CliConfig(BaseConfig):
         super(CliConfig, self).__init__()
 
         self.debug = False  # type: bool
-        self.username = None  # type: str
-        self.password = None  # type: str
-        self.org = None  # type: str
-        self.activation_key = None  # type: str
-        self.config_file = None  # type: str
+        self.username = None  # type: str | None
+        self.password = None  # type: str | None
+        self.org = None  # type: str | None
+        self.activation_key = None  # type: str | None
+        self.config_file = None  # type: str | None
         self.no_rhsm = False  # type: bool
         self.enablerepo = []  # type: list[str]
         self.disablerepo = []  # type: list[str]
-        self.pool = None  # type: str
-        self.autoaccept = None  # type: bool
-        self.auto_attach = None  # type: str
+        self.pool = None  # type: str | None
+        self.autoaccept = False  # type: bool
+        self.auto_attach = None  # type: str | None
         self.restart = False  # type: bool
-        self.arch = None  # type: str
+        self.arch = None  # type: str | None
         self.no_rpm_va = False  # type: bool
         self.eus = False  # type: bool
         self.els = False  # type: bool
-        self.activity = None  # type: str
-        self.serverurl = None  # type: str
+        self.activity = None  # type: str | None
+        self.serverurl = None  # type: str | None
 
         self._opts = opts  # type: arpgparse.Namepsace
 

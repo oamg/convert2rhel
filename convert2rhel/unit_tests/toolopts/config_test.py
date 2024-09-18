@@ -114,40 +114,67 @@ org = correct_org
             ),
             (
                 """\
-[inhibitor_override]
-incomplete_rollback = 1
+[inhibitor_overrides]
+incomplete_rollback = false
                 """,
-                {"incomplete_rollback": "1"},
+                {"incomplete_rollback": False},
             ),
             (
                 """\
 [subscription_manager]
 org = correct_org
 
-[inhibitor_override]
-incomplete_rollback = 1
+[inhibitor_overrides]
+incomplete_rollback = false
                 """,
-                {"org": "correct_org", "incomplete_rollback": "1"},
+                {"org": "correct_org", "incomplete_rollback": False},
             ),
             (
                 """\
-[inhibitor_override]
-incomplete_rollback = 1
-tainted_kernel_module_check_skip = 1
-outdated_package_check_skip = 1
-allow_older_version = 1
-allow_unavailable_kmods = 1
-configure_host_metering = 1
-skip_kernel_currency_check = 1
+[inhibitor_overrides]
+incomplete_rollback = false
+tainted_kernel_module_check_skip = false
+outdated_package_check_skip = false
+allow_older_version = false
+allow_unavailable_kmods = false
+configure_host_metering = false
+skip_kernel_currency_check = false
                 """,
                 {
-                    "incomplete_rollback": "1",
-                    "tainted_kernel_module_check_skip": "1",
-                    "outdated_package_check_skip": "1",
-                    "allow_older_version": "1",
-                    "allow_unavailable_kmods": "1",
-                    "configure_host_metering": "1",
-                    "skip_kernel_currency_check": "1",
+                    "incomplete_rollback": False,
+                    "tainted_kernel_module_check_skip": False,
+                    "outdated_package_check_skip": False,
+                    "allow_older_version": False,
+                    "allow_unavailable_kmods": False,
+                    "configure_host_metering": False,
+                    "skip_kernel_currency_check": False,
+                },
+            ),
+            (
+                """\
+[inhibitor_overrides]
+incomplete_rollback = on
+                """,
+                {
+                    "incomplete_rollback": True,
+                },
+            ),
+            (
+                """\
+[inhibitor_overrides]
+incomplete_rollback = 1
+                """,
+                {
+                    "incomplete_rollback": True,
+                },
+            ),
+            (
+                """\
+[inhibitor_overrides]
+incomplete_rollback = yes
+                """,
+                {
+                    "incomplete_rollback": True,
                 },
             ),
         ),
@@ -164,10 +191,8 @@ skip_kernel_currency_check = 1
         monkeypatch.setattr(FileConfig, "DEFAULT_CONFIG_FILES", value=paths)
         file_config = FileConfig(None)
         opts = file_config.options_from_config_files()
-
-        for key in ["username", "password", "activation_key", "org"]:
-            if key in opts:
-                assert opts[key] == output[key]
+        for key in output.keys():
+            assert opts[key] == output[key]
 
     @pytest.mark.parametrize(
         ("content", "output", "content_lower_priority"),
