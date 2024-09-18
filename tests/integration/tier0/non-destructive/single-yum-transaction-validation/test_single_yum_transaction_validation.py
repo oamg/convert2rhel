@@ -192,6 +192,9 @@ def test_packages_with_in_name_period(shell, convert2rhel, packages_with_period)
         c2r.expect("Continue with the system conversion", timeout=300)
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion", timeout=300)
+        c2r.sendline("y")
+
         c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
 
     assert c2r.exitstatus == 0
