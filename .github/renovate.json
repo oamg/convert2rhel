@@ -21,6 +21,18 @@
         "requirements/centos8.requirements.txt"
       ],
       "allowedVersions": "<=7.0"
+    },
+    {
+      "matchPackageNames": [
+        "Sphinx"
+      ],
+      "allowedVersions": "<=7.4.7"
+    },
+    {
+      "matchPackageNames": [
+        "sphinx_autodoc_typehints"
+      ],
+      "allowedVersions": "<=2.3.0"
     }
   ],
   "dockerfile": {
