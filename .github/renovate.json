@@ -26,11 +26,17 @@
       "matchPackageNames": [
         "Sphinx"
       ],
+      "matchFiles": [
+        "docs/requirements.txt"
+      ],
       "allowedVersions": "<=7.4.7"
     },
     {
       "matchPackageNames": [
         "sphinx_autodoc_typehints"
+      ],
+      "matchFiles": [
+        "docs/requirements.txt"
       ],
       "allowedVersions": "<=2.3.0"
     }
