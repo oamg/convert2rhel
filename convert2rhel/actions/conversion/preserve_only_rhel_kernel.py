@@ -68,9 +68,7 @@ class InstallRhelKernel(actions.Action):
             return
 
         # Get list of kernel pkgs not signed by Red Hat
-        non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_fingerprint(
-            system_info.fingerprints_rhel, "kernel"
-        )
+        non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel")
         # Extract the NEVRA from the package object to a list
         non_rhel_kernels = [pkghandler.get_pkg_nevra(kernel) for kernel in non_rhel_kernels_pkg_info]
         rhel_kernels = [kernel for kernel in already_installed if kernel not in non_rhel_kernels]
@@ -134,9 +132,7 @@ class VerifyRhelKernelInstalled(actions.Action):
         super(VerifyRhelKernelInstalled, self).run()
 
         loggerinst.info("Verifying that RHEL kernel has been installed")
-        installed_rhel_kernels = pkghandler.get_installed_pkgs_by_fingerprint(
-            system_info.fingerprints_rhel, name="kernel"
-        )
+        installed_rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
         if len(installed_rhel_kernels) <= 0:
             self.set_result(
                 level="ERROR",
@@ -269,9 +265,7 @@ class KernelPkgsInstall(actions.Action):
 
     def remove_non_rhel_kernels(self):
         loggerinst.info("Searching for non-RHEL kernels ...")
-        non_rhel_kernels = pkghandler.get_installed_pkgs_w_different_fingerprint(
-            system_info.fingerprints_rhel, "kernel*"
-        )
+        non_rhel_kernels = pkghandler.get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel*")
         if not non_rhel_kernels:
             loggerinst.info("None found.")
             return None

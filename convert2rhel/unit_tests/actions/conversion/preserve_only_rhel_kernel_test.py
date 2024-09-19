@@ -27,8 +27,8 @@ from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import (
     CallYumCmdMocked,
     FormatPkgInfoMocked,
-    GetInstalledPkgsByFingerprintMocked,
-    GetInstalledPkgsWDifferentFingerprintMocked,
+    GetInstalledPkgsByKeyIdMocked,
+    GetInstalledPkgsWDifferentKeyIdMocked,
     RemovePkgsMocked,
     RunSubprocessMocked,
     StoreContentToFileMocked,
@@ -75,7 +75,7 @@ class TestInstallRhelKernel:
     @pytest.mark.parametrize(
         (
             "subprocess_output",
-            "pkgs_w_diff_fingerprint",
+            "pkgs_w_diff_key_id",
             "no_newer_kernel_call",
             "update_kernel",
             "action_message",
@@ -83,7 +83,7 @@ class TestInstallRhelKernel:
         ),
         (
             (
-                # Info about installed kernel from yum contains the same version as is listed in the different fingerprint pkgs
+                # Info about installed kernel from yum contains the same version as is listed in the different key_id pkgs
                 # The latest installed kernel is from CentOS
                 "Package kernel-4.18.0-193.el8.x86_64 is already installed.",
                 [
@@ -108,7 +108,7 @@ class TestInstallRhelKernel:
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
             (
-                # Output from yum contains different version than is listed in different fingerprint
+                # Output from yum contains different version than is listed in different key_id
                 # Rhel kernel already installed with centos kernels
                 "Package kernel-4.18.0-205.el8.x86_64 is already installed.",
                 [
@@ -142,7 +142,7 @@ class TestInstallRhelKernel:
                 actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
             (
-                # Output from yum contains different version than is listed in different fingerprint
+                # Output from yum contains different version than is listed in different key_id
                 # Rhel kernel already installed in older versin than centos kernel
                 "Package kernel-4.18.0-183.el8.x86_64 is already installed.",
                 [
@@ -183,7 +183,7 @@ class TestInstallRhelKernel:
         self,
         monkeypatch,
         subprocess_output,
-        pkgs_w_diff_fingerprint,
+        pkgs_w_diff_key_id,
         install_rhel_kernel_instance,
         no_newer_kernel_call,
         update_kernel,
@@ -199,8 +199,8 @@ class TestInstallRhelKernel:
         )
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkgs_w_different_fingerprint",
-            GetInstalledPkgsWDifferentFingerprintMocked(return_value=pkgs_w_diff_fingerprint),
+            "get_installed_pkgs_w_different_key_id",
+            GetInstalledPkgsWDifferentKeyIdMocked(return_value=pkgs_w_diff_key_id),
         )
         monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", handle_no_newer_rhel_kernel_available)
 
@@ -279,8 +279,8 @@ class TestKernelPkgsInstall:
     def test_remove_non_rhel_kernels(self, monkeypatch, kernel_packages_install_instance):
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkgs_w_different_fingerprint",
-            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+            "get_installed_pkgs_w_different_key_id",
+            GetInstalledPkgsWDifferentKeyIdMocked(pkg_selection="kernels"),
         )
         monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
         monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
@@ -300,8 +300,8 @@ class TestKernelPkgsInstall:
     def test_install_additional_rhel_kernel_pkgs(self, monkeypatch, kernel_packages_install_instance):
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkgs_w_different_fingerprint",
-            GetInstalledPkgsWDifferentFingerprintMocked(pkg_selection="kernels"),
+            "get_installed_pkgs_w_different_key_id",
+            GetInstalledPkgsWDifferentKeyIdMocked(pkg_selection="kernels"),
         )
         monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
         monkeypatch.setattr(utils, "remove_pkgs", RemovePkgsMocked())
@@ -316,8 +316,8 @@ class TestVerifyRHELKernelInstalled:
     def test_verify_rhel_kernel_installed(self, monkeypatch, verify_rhel_kernel_installed_instance):
         monkeypatch.setattr(
             pkghandler,
-            "get_installed_pkgs_by_fingerprint",
-            GetInstalledPkgsByFingerprintMocked(return_value=[create_pkg_information(name="kernel")]),
+            "get_installed_pkgs_by_key_id",
+            GetInstalledPkgsByKeyIdMocked(return_value=[create_pkg_information(name="kernel")]),
         )
         verify_rhel_kernel_installed_instance.run()
         expected = set(
@@ -336,7 +336,7 @@ class TestVerifyRHELKernelInstalled:
         assert expected.issubset(verify_rhel_kernel_installed_instance.messages)
 
     def test_verify_rhel_kernel_installed_not_installed(self, monkeypatch, verify_rhel_kernel_installed_instance):
-        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_fingerprint", mock.Mock(return_value=[]))
+        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_key_id", mock.Mock(return_value=[]))
 
         verify_rhel_kernel_installed_instance.run()
         unit_tests.assert_actions_result(

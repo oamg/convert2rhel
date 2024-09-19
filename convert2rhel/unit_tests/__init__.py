@@ -64,14 +64,14 @@ def create_pkg_information(
     version=None,
     release=None,
     arch=None,
-    fingerprint=None,
+    key_id=None,
     signature=None,
 ):
     pkg_info = PackageInformation(
         packager,
         vendor,
         PackageNevra(name, epoch, version, release, arch),
-        fingerprint,
+        key_id,
         signature,
     )
     return pkg_info
@@ -430,11 +430,10 @@ class GetInstalledPkgInformationMocked(MockFunctionObject):
 
     # Prebake several return values for a couple different use cases
 
-    # fingerprints
-    pkg1 = create_pkg_information(name="pkg1", fingerprint="199e2f91fd431d51")  # RHEL
-    pkg2 = create_pkg_information(name="pkg2", fingerprint="72f97b74ec551f03")  # OL
+    pkg1 = create_pkg_information(name="pkg1", key_id="199e2f91fd431d51")  # RHEL
+    pkg2 = create_pkg_information(name="pkg2", key_id="72f97b74ec551f03")  # OL
     pkg3 = create_pkg_information(
-        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", fingerprint="199e2f91fd431d51"  # RHEL
+        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", key_id="199e2f91fd431d51"  # RHEL
     )
 
     # Oracle Kernel Packages
@@ -482,7 +481,7 @@ class GetInstalledPkgInformationMocked(MockFunctionObject):
     )
 
     prebaked_pkgs = {
-        "fingerprints": [pkg1, pkg2, pkg3],
+        "key_ids": [pkg1, pkg2, pkg3],
         "kernels": [kernel1, kernel2, kernel3, kernel4, kernel5, kernel6],
         "empty": [],
     }
@@ -498,15 +497,15 @@ class GetInstalledPkgInformationMocked(MockFunctionObject):
         super(GetInstalledPkgInformationMocked, self).__init__(**kwargs)
 
 
-class GetInstalledPkgsWDifferentFingerprintMocked(GetInstalledPkgInformationMocked):
-    spec = pkghandler.get_installed_pkgs_w_different_fingerprint
+class GetInstalledPkgsWDifferentKeyIdMocked(GetInstalledPkgInformationMocked):
+    spec = pkghandler.get_installed_pkgs_w_different_key_id
 
 
-class GetInstalledPkgsByFingerprintMocked(GetInstalledPkgInformationMocked):
-    spec = pkghandler.get_installed_pkgs_by_fingerprint
+class GetInstalledPkgsByKeyIdMocked(GetInstalledPkgInformationMocked):
+    spec = pkghandler.get_installed_pkgs_by_key_id
 
 
-class GetPackagesToRemoveMocked(GetInstalledPkgsWDifferentFingerprintMocked):
+class GetPackagesToRemoveMocked(GetInstalledPkgsWDifferentKeyIdMocked):
     spec = pkghandler.get_packages_to_remove
 
 

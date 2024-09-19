@@ -16,7 +16,7 @@
 __metaclass__ = type
 
 from convert2rhel import actions, logger
-from convert2rhel.pkghandler import get_installed_pkgs_w_different_fingerprint, print_pkg_info
+from convert2rhel.pkghandler import get_installed_pkgs_w_different_key_id, print_pkg_info
 from convert2rhel.systeminfo import system_info
 
 
@@ -34,7 +34,7 @@ class ListNonRedHatPkgsLeft(actions.Action):
         super(ListNonRedHatPkgsLeft, self).run()
         loggerinst.task("Convert: List remaining non-Red Hat packages")
         loggerinst.info("Listing packages not signed by Red Hat")
-        non_red_hat_pkgs = get_installed_pkgs_w_different_fingerprint(system_info.fingerprints_rhel)
+        non_red_hat_pkgs = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel)
         if not non_red_hat_pkgs:
             loggerinst.info("All packages are now signed by Red Hat.")
             return

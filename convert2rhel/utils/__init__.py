@@ -869,7 +869,7 @@ def find_keyid(keyfile):
     :arg keyfile: The filename that contains the gpg key.
 
     .. note:: rpm doesn't use the full gpg fingerprint so don't use that even though it would be
-        more secure.
+        more secure, instead use the key id.
     """
     # Newer gpg versions have several easier ways to do this:
     # gpg --with-colons --show-keys keyfile (Can pipe keyfile)
@@ -948,10 +948,10 @@ def find_keyid(keyfile):
     for line in output.splitlines():
         if line.startswith("pub"):
             fields = line.split(":")
-            fingerprint = fields[4]
+            key_id = fields[4]
             # The keyid as represented in rpm's fake packagename is only the last 8 hex digits
             # Example: gpg-pubkey-d651ff2e-5dadbbc1
-            keyid = fingerprint[-8:]
+            keyid = key_id[-8:]
             break
 
     if not keyid:

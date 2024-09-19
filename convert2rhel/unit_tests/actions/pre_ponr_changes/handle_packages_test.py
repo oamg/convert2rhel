@@ -55,7 +55,7 @@ def test_list_third_party_packages_no_packages(list_third_party_packages_instanc
 
 @centos8
 def test_list_third_party_packages(pretend_os, list_third_party_packages_instance, monkeypatch):
-    monkeypatch.setattr(pkghandler, "get_third_party_pkgs", GetThirdPartyPkgsMocked(pkg_selection="fingerprints"))
+    monkeypatch.setattr(pkghandler, "get_third_party_pkgs", GetThirdPartyPkgsMocked(pkg_selection="key_ids"))
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked(return_value=["shim", "ruby", "pytest"]))
     monkeypatch.setattr(system_info, "name", "Centos7")
     monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
@@ -97,7 +97,7 @@ def get_centos_logos_pkg_object():
             release="3.el7.centos",
             arch="noarch",
         ),
-        fingerprint="24c6a8a7f4a80eb5",
+        key_id="24c6a8a7f4a80eb5",
         signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
     )
 
@@ -115,7 +115,7 @@ def pkgs_to_remove():
                 release="3.el7.centos",
                 arch="noarch",
             ),
-            fingerprint="24c6a8a7f4a80eb5",
+            key_id="24c6a8a7f4a80eb5",
             signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
         ),
         pkghandler.PackageInformation(
@@ -128,7 +128,7 @@ def pkgs_to_remove():
                 release="3.el7.centos",
                 arch="noarch",
             ),
-            fingerprint="24c6a8a7f4a80eb5",
+            key_id="24c6a8a7f4a80eb5",
             signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
         ),
         pkghandler.PackageInformation(
@@ -141,7 +141,7 @@ def pkgs_to_remove():
                 release="3.el7.centos",
                 arch="noarch",
             ),
-            fingerprint="24c6a8a7f4a80eb5",
+            key_id="24c6a8a7f4a80eb5",
             signature="RSA/SHA256, Wed Sep 30 20:10:39 2015, Key ID 24c6a8a7f4a80eb5",
         ),
     ]
@@ -224,9 +224,7 @@ class TestRemoveSpecialPackages:
                 ),
             )
         )
-        monkeypatch.setattr(
-            pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(pkg_selection="fingerprints")
-        )
+        monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(pkg_selection="key_ids"))
         monkeypatch.setattr(
             handle_packages,
             "_remove_packages_unless_from_redhat",
