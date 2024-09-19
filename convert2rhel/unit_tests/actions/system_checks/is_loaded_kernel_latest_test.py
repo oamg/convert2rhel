@@ -40,6 +40,11 @@ def is_loaded_kernel_latest_action():
     return is_loaded_kernel_latest.IsLoadedKernelLatest()
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
+
+
 class TestIsLoadedKernelLatest:
     @oracle8
     def test_is_loaded_kernel_latest_skip_on_not_latest_ol(

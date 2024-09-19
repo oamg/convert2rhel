@@ -63,7 +63,7 @@ def test_std_path_std_filename(convert2rhel, c2r_config_setup):
     with the config file having standard filename.
     """
     with convert2rhel("--debug") as c2r:
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found password in subscription_manager")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
@@ -92,7 +92,8 @@ def test_user_path_custom_filename(convert2rhel, c2r_config_setup):
     filename and the path is passed to the utility command.
     """
     with convert2rhel('--debug -c "~/.convert2rhel_custom.ini"') as c2r:
-        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel_custom.ini")
+        c2r.expect("DEBUG - Checking configuration file at /root/.convert2rhel_custom.ini")
+        c2r.expect("DEBUG - Found activation_key in subscription_manager")
 
     assert c2r.exitstatus == 1
 
@@ -122,10 +123,11 @@ def test_config_cli_priority(convert2rhel, c2r_config_setup):
     """
     with convert2rhel("--username username --password password --debug") as c2r:
         # Found options in config file
-        c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini", timeout=120)
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini", timeout=120)
-        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini", timeout=120)
-        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Checking configuration file at /root/.convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Found username in subscription_manager", timeout=120)
+        c2r.expect("DEBUG - Found password in subscription_manager", timeout=120)
+        c2r.expect("DEBUG - Found activation_key in subscription_manager", timeout=120)
+        c2r.expect("DEBUG - Found org in subscription_manager", timeout=120)
         c2r.expect(
             "WARNING - You have passed either the RHSM password or activation key through both the command line and"
             " the configuration file. We're going to use the command line values.",
@@ -171,14 +173,12 @@ def test_config_standard_paths_priority_diff_methods(convert2rhel, c2r_config_se
     (password and activation key) the activation key is preferred.
     """
     with convert2rhel(f"analyze --serverurl {TEST_VARS['RHSM_SERVER_URL']} -y --debug") as c2r:
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found activation_key in /etc/convert2rhel.ini")
-        c2r.expect(
-            "WARNING - Passing the RHSM password or activation key through the --activationkey or --password options"
-            " is insecure as it leaks the values through the list of running processes."
-            " We recommend using the safer --config-file option instead."
-        )
-
+        c2r.expect("DEBUG - Checking configuration file at /etc/convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Found activation_key in subscription_manager")
+        c2r.expect("DEBUG - Found org in subscription_manager")
+        c2r.expect("DEBUG - Checking configuration file at /root/.convert2rhel.ini", timeout=120)
+        c2r.expect("DEBUG - Found password in subscription_manager")
+        c2r.expect("DEBUG - Found username in subscription_manager")
         c2r.expect(
             "WARNING - Either a password or an activation key can be used for system registration."
             " We're going to use the activation key."
@@ -222,8 +222,8 @@ def test_config_standard_paths_priority(convert2rhel, c2r_config_setup):
     Config file located in the home folder to be preferred.
     """
     with convert2rhel(f"analyze --serverurl {TEST_VARS['RHSM_SERVER_URL']} -y --debug") as c2r:
-        c2r.expect("DEBUG - Found username in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found password in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found username in subscription_manager")
+        c2r.expect("DEBUG - Found password in subscription_manager")
         c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
 
     assert c2r.exitstatus == 0

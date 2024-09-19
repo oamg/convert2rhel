@@ -35,7 +35,8 @@ from convert2rhel.logger import root_logger
 from convert2rhel.redhatrelease import os_release_file
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import _should_subscribe, tool_opts
+from convert2rhel.toolopts import tool_opts
+from convert2rhel.utils.subscription import _should_subscribe
 
 
 logger = root_logger.getChild(__name__)

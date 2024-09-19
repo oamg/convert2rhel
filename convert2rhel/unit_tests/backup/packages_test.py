@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import exceptions, pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel import exceptions, pkghandler, pkgmanager, repo, unit_tests, utils
 from convert2rhel.backup import packages
 from convert2rhel.backup.packages import RestorablePackage, RestorablePackageSet
 from convert2rhel.systeminfo import Version
@@ -38,6 +38,11 @@ from convert2rhel.unit_tests.conftest import centos7
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
+
+
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
 
 
 class DownloadPkgsMocked(MockFunctionObject):

@@ -31,6 +31,11 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from convert2rhel import unit_tests
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(lock_releasever, "tool_opts", global_tool_opts)
+
+
 @pytest.fixture
 def lock_releasever_in_rhel_repositories_instance():
     return lock_releasever.LockReleaseverInRHELRepositories()

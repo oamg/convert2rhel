@@ -46,6 +46,11 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(subscription, "tool_opts", global_tool_opts)
+
+
 @pytest.fixture
 def mocked_rhsm_call_blocking(monkeypatch, request):
     rhsm_returns = get_pytest_marker(request, "rhsm_returns")

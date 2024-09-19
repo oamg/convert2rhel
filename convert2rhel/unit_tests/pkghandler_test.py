@@ -27,7 +27,7 @@ import pytest
 import rpm
 import six
 
-from convert2rhel import pkghandler, pkgmanager, unit_tests, utils
+from convert2rhel import pkghandler, pkgmanager, repo, systeminfo, unit_tests, utils
 from convert2rhel.backup.certs import RestorableRpmKey
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.pkghandler import (
@@ -38,7 +38,6 @@ from convert2rhel.pkghandler import (
     get_total_packages_to_update,
 )
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import (
     CallYumCmdMocked,
     DownloadPkgMocked,
@@ -229,6 +228,11 @@ class TestGetRpmHeader:
             pkghandler.get_rpm_header(unknown_pkg)
 
 
+@pytest.fixture(autouse=True)
+def apply_global_tool_opts(monkeypatch, global_tool_opts):
+    monkeypatch.setattr(pkgmanager, "tool_opts", global_tool_opts)
+
+
 class TestGetKernelAvailability:
     @pytest.mark.parametrize(
         ("subprocess_output", "expected_installed", "expected_available"),
@@ -248,7 +252,7 @@ class TestGetKernelAvailability:
     )
     @centos7
     def test_get_kernel_availability(
-        self, pretend_os, subprocess_output, expected_installed, expected_available, monkeypatch
+        self, pretend_os, subprocess_output, expected_installed, expected_available, monkeypatch, global_tool_opts
     ):
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string=subprocess_output))
 
@@ -310,6 +314,11 @@ class TestHandleNoNewerRHELKernelAvailable:
 
 
 class TestReplaceNonRHELInstalledKernel:
+    @pytest.fixture(autouse=True)
+    def apply_global_tool_opts(self, monkeypatch, global_tool_opts):
+        monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(pkghandler, "tool_opts", global_tool_opts)
+
     def test_replace_non_rhel_installed_kernel_rhsm_repos(self, monkeypatch):
         monkeypatch.setattr(system_info, "submgr_enabled_repos", ["enabled_rhsm_repo"])
         monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
@@ -332,10 +341,11 @@ class TestReplaceNonRHELInstalledKernel:
             "%skernel-4.7.4-200.fc24*" % utils.TMP_DIR,
         ]
 
-    def test_replace_non_rhel_installed_kernel_custom_repos(self, monkeypatch):
+    def test_replace_non_rhel_installed_kernel_custom_repos(self, monkeypatch, global_tool_opts):
+        global_tool_opts.enablerepo = ["custom_repo"]
+        global_tool_opts.no_rhsm = True
+        monkeypatch.setattr(pkghandler, "tool_opts", global_tool_opts)
         monkeypatch.setattr(system_info, "submgr_enabled_repos", [])
-        monkeypatch.setattr(tool_opts, "enablerepo", ["custom_repo"])
-        monkeypatch.setattr(tool_opts, "no_rhsm", True)
         monkeypatch.setattr(utils, "ask_to_continue", mock.Mock())
         monkeypatch.setattr(utils, "download_pkg", DownloadPkgMocked())
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked())
@@ -729,7 +739,9 @@ def test_get_total_packages_to_update(
     expected,
     pretend_os,
     monkeypatch,
+    global_tool_opts,
 ):
+    monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
     monkeypatch.setattr(pkgmanager, "TYPE", package_manager_type)
     if package_manager_type == "dnf":
         monkeypatch.setattr(

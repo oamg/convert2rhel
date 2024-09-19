@@ -11,7 +11,6 @@ from convert2rhel import backup, pkgmanager, redhatrelease, systeminfo, toolopts
 from convert2rhel.backup.certs import RestorablePEMCert
 from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import MinimalRestorable
 
 
@@ -108,9 +107,41 @@ def sys_path():
     sys.path = real_sys_path
 
 
+class CliConfigMock:
+    SOURCE = "command line"
+
+    def __init__(self):
+        self.debug = None
+        self.username = None
+        self.password = None
+        self.org = None
+        self.activation_key = None
+        self.config_file = None
+        self.no_rhsm = None
+        self.enablerepo = []
+        self.disablerepo = []
+        self.pool = None
+        self.rhsm_hostname = None
+        self.rhsm_port = None
+        self.rhsm_prefix = None
+        self.autoaccept = True
+        self.auto_attach = None
+        self.restart = None
+        self.arch = None
+        self.no_rpm_va = None
+        self.eus = None
+        self.els = None
+        self.activity = None
+        self.serverurl = None
+
+    def run(self):
+        pass
+
+
 @pytest.fixture
 def global_tool_opts(monkeypatch):
     local_tool_opts = toolopts.ToolOpts()
+    local_tool_opts.initialize(config_sources=[CliConfigMock()])
     monkeypatch.setattr(toolopts, "tool_opts", local_tool_opts)
     return local_tool_opts
 
@@ -130,7 +161,7 @@ def global_backup_control(monkeypatch):
 
 
 @pytest.fixture()
-def pretend_os(request, pkg_root, monkeypatch):
+def pretend_os(request, pkg_root, monkeypatch, global_tool_opts):
     """Parametric fixture to pretend to be one of the available OSes for conversion.
 
     See https://docs.pytest.org/en/6.2.x/example/parametrize.html#indirect-parametrization
@@ -189,6 +220,8 @@ def pretend_os(request, pkg_root, monkeypatch):
     system_version, system_name = request.param
     system_version_major, system_version_minor, _ = system_version.split(".")
 
+    global_tool_opts.no_rpm_va = True
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
     monkeypatch.setattr(
         utils,
         "DATA_DIR",
@@ -209,7 +242,6 @@ def pretend_os(request, pkg_root, monkeypatch):
         "_get_architecture",
         value=lambda: "x86_64",
     )
-    monkeypatch.setattr(tool_opts, "no_rpm_va", True)
 
     # We can't depend on a test environment (containers) having an init system so we have to
     # disable probing for the right value by hardcoding an anwer
@@ -218,7 +250,6 @@ def pretend_os(request, pkg_root, monkeypatch):
         "_is_dbus_running",
         value=lambda: True,
     )
-
     monkeypatch.setattr(system_info, "releasever", value=system_version_major)
 
     system_info.resolve_system_info()

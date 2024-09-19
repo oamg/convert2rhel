@@ -225,12 +225,7 @@ def _critical(self, msg, *args, **kwargs):
 
 def _debug(self, msg, *args, **kwargs):
     if self.isEnabledFor(logging.DEBUG):
-        from convert2rhel.toolopts import tool_opts
-
-        if tool_opts.debug:
-            self._log(logging.DEBUG, msg, args, **kwargs)
-        else:
-            self._log(LogLevelFile.level, msg, args, **kwargs)
+        self._log(logging.DEBUG, msg, args, **kwargs)
 
 
 class bcolors:

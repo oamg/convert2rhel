@@ -30,6 +30,7 @@ import six
 from convert2rhel import (
     backup,
     breadcrumbs,
+    cli,
     exceptions,
     grub,
     initialize,
@@ -586,12 +587,12 @@ class ResolveSystemInfoMocked(MockFunctionObject):
 
 
 #
-# toolopts mocks
+# cli mocks
 #
 
 
 class CLIMocked(MockFunctionObject):
-    spec = toolopts.CLI
+    spec = cli.CLI
 
 
 #

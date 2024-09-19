@@ -20,10 +20,11 @@ __metaclass__ = type
 
 import os
 
-from convert2rhel import actions, applock, backup, breadcrumbs, exceptions
+from convert2rhel import actions, applock, backup, breadcrumbs, cli, exceptions
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, toolopts, utils
+from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, utils
 from convert2rhel.actions import level_for_raw_action_data, report
+from convert2rhel.toolopts import tool_opts
 
 
 loggerinst = logger_module.root_logger.getChild(__name__)
@@ -110,7 +111,7 @@ def main():
     """
 
     # handle command line arguments
-    toolopts.CLI()
+    cli.CLI()
 
     # Make sure we're being run by root
     utils.require_root()
@@ -148,7 +149,7 @@ def main_locked():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_pre_actions()
 
-        if toolopts.tool_opts.activity == "analysis":
+        if tool_opts.activity == "analysis":
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
 
@@ -242,7 +243,7 @@ def _raise_for_skipped_failures(results):
             "The {method} process failed.\n\n"
             "A problem was encountered during {method} and a rollback will be "
             "initiated to restore the system as the previous state."
-        ).format(method=toolopts.tool_opts.activity)
+        ).format(method=tool_opts.activity)
         raise _InhibitorsFound(message)
 
 
@@ -264,7 +265,7 @@ def _handle_main_exceptions(process_phase, results=None):
     breadcrumbs.breadcrumbs.finish_collection()
 
     no_changes_msg = "No changes were made to the system."
-    utils.log_traceback(toolopts.tool_opts.debug)
+    utils.log_traceback(tool_opts.debug)
 
     if process_phase == ConversionPhase.POST_CLI:
         loggerinst.info(no_changes_msg)

@@ -12,3 +12,5 @@ kwds  # unused variable (convert2rhel/unit_tests/pkgmanager/handlers/dnf/dnf_tes
 z  # unused variable (convert2rhel/unit_tests/utils_test.py:470)
 cols  # unused variable (convert2rhel/utils.py:491)
 rows  # unused variable (convert2rhel/utils.py:491)
+x  # unused variable (convert2rhel/unit_tests/actions/pre_ponr_changes/subscription_test.py:68)
+y  # unused variable (convert2rhel/unit_tests/utils/utils_test.py:473)

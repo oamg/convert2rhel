@@ -53,30 +53,6 @@ def test_logger_handlers(monkeypatch, tmpdir, read_std, global_tool_opts):
         assert "Test debug: other data" in log_f.readline().rstrip()
 
 
-def test_tools_opts_debug(monkeypatch, read_std, is_py2, global_tool_opts):
-    monkeypatch.setattr("convert2rhel.toolopts.tool_opts", global_tool_opts)
-    logger_module.setup_logger_handler()
-    logger = logger_module.root_logger.getChild(__name__)
-    global_tool_opts.debug = True
-    logger.debug("debug entry 1: %s", "data")
-    stdouterr_out, stdouterr_err = read_std()
-    # TODO should be in stdout, but this only works when running this test
-    #   alone (see https://github.com/pytest-dev/pytest/issues/5502)
-    try:
-        assert "debug entry 1: data" in stdouterr_out
-    except AssertionError:
-        if not is_py2:
-            assert "debug entry 1: data" in stdouterr_err
-        else:
-            # this workaround is not working for py2 - passing
-            pass
-
-    global_tool_opts.debug = False
-    logger.debug("debug entry 2: %s", "data")
-    stdouterr_out, stdouterr_err = read_std()
-    assert "debug entry 2: data" not in stdouterr_out
-
-
 class Testroot_logger:
     @pytest.mark.parametrize(
         ("log_method_name", "level_name"),
