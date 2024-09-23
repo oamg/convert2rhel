@@ -72,8 +72,9 @@ class RhelCompatibleKernel(actions.Action):
                     title="Incompatible booted kernel version",
                     description="Please refer to the diagnosis for further information",
                     diagnosis=(
-                        "The booted kernel version is incompatible with the standard RHEL kernel. %s"
-                        % bad_kernel_message
+                        "The booted kernel version is incompatible with the standard RHEL kernel. {}".format(
+                            bad_kernel_message
+                        )
                     ),
                     remediations=(
                         "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
@@ -87,7 +88,7 @@ class RhelCompatibleKernel(actions.Action):
                     ),
                 )
                 return
-        logger.info("The booted kernel %s is compatible with RHEL." % system_info.booted_kernel)
+        logger.info("The booted kernel {} is compatible with RHEL.".format(system_info.booted_kernel))
 
 
 def _bad_kernel_version(kernel_release):
@@ -123,7 +124,7 @@ def _bad_kernel_version(kernel_release):
 
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
-    vmlinuz_path = "/boot/vmlinuz-%s" % kernel_release
+    vmlinuz_path = "/boot/vmlinuz-{}".format(kernel_release)
 
     kernel_pkg, return_code = run_subprocess(["rpm", "-qf", "--qf", "%{NEVRA}", vmlinuz_path], print_output=False)
     logger.debug("Booted kernel package name: %s", kernel_pkg)
@@ -146,7 +147,7 @@ def _bad_kernel_package_signature(kernel_release):
             {"os_vendor": os_vendor},
         )
 
-    logger.debug("The booted kernel is signed by %s." % os_vendor)
+    logger.debug("The booted kernel is signed by {}.".format(os_vendor))
     return False
 
 

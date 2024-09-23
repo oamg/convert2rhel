@@ -96,7 +96,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         self._base.read_all_repos()
         repos = self._base.repos.all()
         enabled_repos = system_info.get_enabled_rhel_repos()
-        logger.info("Enabling RHEL repositories:\n%s" % "\n".join(enabled_repos))
+        logger.info("Enabling RHEL repositories:\n{}".format("\n".join(enabled_repos)))
         try:
             for repo in repos:
                 # Disable the repositories that we don't want if the `repo.id`
@@ -107,13 +107,13 @@ class DnfTransactionHandler(TransactionHandlerBase):
             # Load metadata of the enabled repositories
             self._base.fill_sack()
         except pkgmanager.exceptions.RepoError as e:
-            logger.debug("Loading repository metadata failed: %s" % e)
+            logger.debug("Loading repository metadata failed: {}".format(e))
             logger.critical_no_exit("Failed to populate repository metadata.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_ENABLE_REPOS",
                 title="Failed to enable repositories.",
                 description="We've encountered a failure when accessing repository metadata.",
-                diagnosis="Loading repository metadata failed with error %s." % (str(e)),
+                diagnosis="Loading repository metadata failed with error {}.".format(str(e)),
             )
 
     def _swap_base_os_specific_packages(self):
@@ -127,10 +127,10 @@ class DnfTransactionHandler(TransactionHandlerBase):
         # Related issue: https://issues.redhat.com/browse/RHELC-1130, see comments
         # to get more proper description of solution
         for old_package, new_package in system_info.swap_pkgs.items():
-            logger.debug("Checking if %s installed for later swap." % old_package)
+            logger.debug("Checking if {} installed for later swap.".format(old_package))
             is_installed = system_info.is_rpm_installed(old_package)
             if is_installed:
-                logger.debug("Package %s will be swapped to %s during conversion." % (old_package, new_package))
+                logger.debug("Package {} will be swapped to {} during conversion.".format(old_package, new_package))
                 # Order of commands based on DNF implementation of swap, different from YUM order:
                 # https://github.com/rpm-software-management/dnf/blob/master/dnf/cli/commands/swap.py#L60
                 self._base.install(pkg_spec=new_package)
@@ -187,26 +187,26 @@ class DnfTransactionHandler(TransactionHandlerBase):
         try:
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
-            logger.debug("Got the following exception message: %s" % e)
+            logger.debug("Got the following exception message: {}".format(e))
             logger.critical_no_exit("Failed to resolve dependencies in the transaction.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_RESOLVE_DEPENDENCIES",
                 title="Failed to resolve dependencies.",
                 description="During package transaction dnf failed to resolve the necessary dependencies needed for a package replacement.",
-                diagnosis="Resolve dependencies failed with error %s." % (str(e)),
+                diagnosis="Resolve dependencies failed with error {}.".format(str(e)),
             )
 
         logger.info("Downloading the packages that were added to the dnf transaction set.")
         try:
             self._base.download_packages(self._base.transaction.install_set, PackageDownloadCallback())
         except pkgmanager.exceptions.DownloadError as e:
-            logger.debug("Got the following exception message: %s" % e)
+            logger.debug("Got the following exception message: {}".format(e))
             logger.critical_no_exit("Failed to download the transaction packages.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_DOWNLOAD_TRANSACTION_PACKAGES",
                 title="Failed to download packages in the transaction.",
                 description="During package transaction dnf failed to download the necessary packages needed for the transaction.",
-                diagnosis="Package download failed with error %s." % (str(e)),
+                diagnosis="Package download failed with error {}.".format(str(e)),
             )
 
     def _process_transaction(self, validate_transaction):
@@ -222,7 +222,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             logger.info("Validating the dnf transaction set, no modifications to the system will happen this time.")
             self._base.conf.tsflags.append("test")
         else:
-            logger.info("Replacing %s packages. This process may take some time to finish." % system_info.name)
+            logger.info("Replacing {} packages. This process may take some time to finish.".format(system_info.name))
 
         try:
             self._base.do_transaction(display=TransactionDisplayCallback())
@@ -236,7 +236,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
                 title="Failed to validate dnf transaction.",
                 description="During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction.",
-                diagnosis="Transaction processing failed with error: %s" % str(e),
+                diagnosis="Transaction processing failed with error: {}".format(str(e)),
             )
 
         if validate_transaction:

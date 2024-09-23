@@ -44,8 +44,8 @@ from convert2rhel.unit_tests import RunCmdInPtyMocked, RunSubprocessMocked, is_r
 
 
 DOWNLOADED_RPM_NVRA = "kernel-4.18.0-193.28.1.el8_2.x86_64"
-DOWNLOADED_RPM_NEVRA = "7:%s" % DOWNLOADED_RPM_NVRA
-DOWNLOADED_RPM_FILENAME = "%s.rpm" % DOWNLOADED_RPM_NVRA
+DOWNLOADED_RPM_NEVRA = "7:{}".format(DOWNLOADED_RPM_NVRA)
+DOWNLOADED_RPM_FILENAME = "{}.rpm".format(DOWNLOADED_RPM_NVRA)
 
 YUMDOWNLOADER_OUTPUTS = (
     "{0}                  97% [================================================- ] 6.8 MB/s |  21 MB  00:00:00 ETA\n"
@@ -53,11 +53,11 @@ YUMDOWNLOADER_OUTPUTS = (
     "{0}                                                                                    |  21 MB  00:00:01\n"
     "== Rebuilding _local repo. with 1 new packages ==".format(DOWNLOADED_RPM_FILENAME),
     "Last metadata expiration check: 2:47:36 ago on Thu 22 Oct 2020 06:07:08 PM CEST.\n"
-    "%s         2.7 MB/s | 2.8 MB     00:01" % DOWNLOADED_RPM_FILENAME,
-    "/var/lib/convert2rhel/%s already exists and appears to be complete" % DOWNLOADED_RPM_FILENAME,
-    "rpmdb time: 0.000\nusing local copy of %s" % DOWNLOADED_RPM_NEVRA,
-    "rpmdb time: 0.000\nusing local copy of %s\r\n" % DOWNLOADED_RPM_NEVRA,
-    "[SKIPPED] %s: Already downloaded" % DOWNLOADED_RPM_FILENAME,
+    "{}         2.7 MB/s | 2.8 MB     00:01".format(DOWNLOADED_RPM_FILENAME),
+    "/var/lib/convert2rhel/{} already exists and appears to be complete".format(DOWNLOADED_RPM_FILENAME),
+    "rpmdb time: 0.000\nusing local copy of {}".format(DOWNLOADED_RPM_NEVRA),
+    "rpmdb time: 0.000\nusing local copy of {}\r\n".format(DOWNLOADED_RPM_NEVRA),
+    "[SKIPPED] {}: Already downloaded".format(DOWNLOADED_RPM_FILENAME),
 )
 
 
@@ -145,7 +145,7 @@ def test_run_cmd_in_pty_expect_script(capfd):
         prompt_cmd = "input"
     with capfd.disabled():
         output, code = utils.run_cmd_in_pty(
-            [sys.executable, "-c", 'print(%s("Ask for password: "))' % prompt_cmd],
+            [sys.executable, "-c", 'print({}("Ask for password: "))'.format(prompt_cmd)],
             expect_script=(("password: *", "Foo bar\n"),),
         )
 
@@ -389,7 +389,8 @@ class TestFindKeys:
         monkeypatch.setattr(utils, "run_subprocess", FakeSecondCallToRunSubprocessMocked(second_call_return_code=0))
 
         with pytest.raises(
-            utils.ImportGPGKeyError, match="Unable to determine the gpg keyid for the rpm key file: %s" % self.gpg_key
+            utils.ImportGPGKeyError,
+            match="Unable to determine the gpg keyid for the rpm key file: {}".format(self.gpg_key),
         ):
             utils.find_keyid(self.gpg_key)
 
@@ -447,7 +448,14 @@ class TestDownload_pkg:
         monkeypatch.setattr(
             utils,
             "download_pkg",
-            lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever, custom_releasever, varsdir: "/filepath/",
+            lambda pkg,
+            dest,
+            reposdir,
+            enable_repos,
+            disable_repos,
+            set_releasever,
+            custom_releasever,
+            varsdir: "/filepath/",
         )
 
         paths = utils.download_pkgs(
@@ -493,8 +501,8 @@ class TestDownload_pkg:
             "yumdownloader",
             "-v",
             "--setopt=exclude=",
-            "--destdir=%s" % dest,
-            "--setopt=reposdir=%s" % reposdir,
+            "--destdir={}".format(dest),
+            "--setopt=reposdir={}".format(reposdir),
             "--disablerepo=*",
             "--enablerepo=repo1",
             "--enablerepo=repo2",
@@ -900,12 +908,12 @@ class TestRunSubprocess:
 
         assert (output, code) == expected
 
-    @pytest.mark.popen_output([u"test of nonascii output: café".encode("utf-8")])
+    @pytest.mark.popen_output(["test of nonascii output: café".encode("utf-8")])
     def test_run_subprocess_env(self, dummy_popen, monkeypatch):
         monkeypatch.setattr(utils.subprocess, "Popen", dummy_popen)
 
         output, rc = utils.run_subprocess(["echo", "foobar"])
-        assert u"test of nonascii output: café" == output
+        assert "test of nonascii output: café" == output
         assert 0 == rc
 
 
@@ -946,7 +954,7 @@ class RunAsChildProcessFunctions:
 
     @staticmethod
     def return_with_both_args_and_kwargs(args, kwargs):
-        return "%s, %s" % (args, kwargs)
+        return "{}, {}".format(args, kwargs)
 
     @staticmethod
     def raise_bare_system_exit_exception():

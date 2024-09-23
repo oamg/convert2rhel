@@ -60,7 +60,6 @@ def test_get_pkg_manager_conf_content(monkeypatch):
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
 def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch, pkg_manager_conf_instance):
-
     monkeypatch.setattr(system_info, "version", version)
     pkg_manager_conf = pkg_manager_conf_instance
     pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITHOUT_DISTROVERPKG
@@ -74,7 +73,6 @@ def test_patch_pkg_manager_conf_missing_distroverpkg(version, monkeypatch, pkg_m
 
 @pytest.mark.parametrize("version", SUPPORTED_RHEL_VERSIONS)
 def test_patch_pkg_manager_conf_existing_distroverpkg(version, monkeypatch, pkg_manager_conf_instance):
-
     monkeypatch.setattr(system_info, "version", systeminfo.Version(version, 0))
     pkg_manager_conf = pkg_manager_conf_instance
     pkg_manager_conf._pkg_manager_conf_content = PKG_MANAGER_CONF_WITH_DISTROVERPKG

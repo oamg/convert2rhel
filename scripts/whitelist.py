@@ -3,7 +3,6 @@ This file is intended to hold a list of variables (and their respective paths)
 of things to be ignored by vulture.
 """
 
-# pylint: skip-file
 ti_done  # unused variable (convert2rhel/pkgmanager/handlers/dnf/callback.py:231)
 ti_total  # unused variable (convert2rhel/pkgmanager/handlers/dnf/callback.py:231)
 te_current  # unused variable (convert2rhel/pkgmanager/handlers/yum/callback.py:126)

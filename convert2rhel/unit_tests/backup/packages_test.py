@@ -173,7 +173,7 @@ class TestRestorablePackage:
         rp = RestorablePackage(pkgs=["pkg-1"])
         rp.enable()
 
-        assert "Can't access %s" % backup_dir in caplog.records[-1].message
+        assert "Can't access {}".format(backup_dir) in caplog.records[-1].message
 
     def test_install_local_rpms_package_install_warning(self, monkeypatch, caplog):
         pkg_name = "pkg-1"
@@ -188,9 +188,9 @@ class TestRestorablePackage:
         rp._backedup_pkgs_paths = pkgs
         result = rp._install_local_rpms(replace=False, critical=False)
 
-        assert result == False
+        assert not result
         assert run_subprocess_mock.call_count == 1
-        assert "Couldn't install %s packages." % pkg_name in caplog.records[-1].message
+        assert "Couldn't install {} packages.".format(pkg_name) in caplog.records[-1].message
 
     def test_test_install_local_rpms_system_exit(self, monkeypatch, caplog):
         pkg_name = ["pkg-1"]
@@ -211,7 +211,7 @@ class TestRestorablePackage:
             rp._install_local_rpms(replace=False, critical=True)
 
         assert run_subprocess_mock.call_count == 1
-        assert "Error: Couldn't install %s packages." % "".join(pkg_name) in caplog.records[-1].message
+        assert "Error: Couldn't install {} packages.".format("".join(pkg_name)) in caplog.records[-1].message
 
 
 class TestRestorablePackageSet:
@@ -259,7 +259,7 @@ class TestRestorablePackageSet:
 
         assert package_set.enabled is False
         # We actually care that this is an empty list and not just False-y
-        assert package_set.installed_pkgs == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert package_set.installed_pkgs == []
 
     @pytest.mark.parametrize(
         ("major", "minor"),

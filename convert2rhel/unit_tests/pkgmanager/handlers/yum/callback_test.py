@@ -77,7 +77,7 @@ class TestTransactionDisplayCallback:
         for package in packages:
             instance.event(package=package, action=20, te_current=1, te_total=1, ts_current=1, ts_total=1)
 
-            assert "Installing: %s [1/1]" % package in caplog.records[-1].message
+            assert "Installing: {} [1/1]".format(package) in caplog.records[-1].message
 
         assert len(caplog.records) == 2
 

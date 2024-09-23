@@ -267,7 +267,6 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         is_loaded_kernel_latest_action,
     ):
-
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(

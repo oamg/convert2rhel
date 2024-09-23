@@ -67,7 +67,7 @@ class TestBackupController:
         assert restorable2.called["restore"] == 1
         assert restorable3.called["restore"] == 1
 
-        assert backup_controller.rollback_failed == False
+        assert backup_controller.rollback_failed is False
         assert backup_controller.rollback_failures == []
 
     def test_pop_when_empty(self, backup_controller):
@@ -94,7 +94,7 @@ class TestBackupController:
         assert restorable2.called["restore"] == 1
         assert restorable3.called["restore"] == 1
 
-        assert backup_controller.rollback_failed == False
+        assert backup_controller.rollback_failed is False
         assert backup_controller.rollback_failures == []
 
     def test_ready_to_push_after_pop_all(self, backup_controller):
@@ -109,13 +109,13 @@ class TestBackupController:
         assert popped_restorables[0] == restorable1
         assert len(backup_controller._restorables) == 1
         assert backup_controller._restorables[0] is restorable2
-        assert backup_controller.rollback_failed == False
+        assert backup_controller.rollback_failed is False
 
     def test_pop_all_when_empty(self, backup_controller):
         with pytest.raises(IndexError, match="No backups to restore"):
             backup_controller.pop_all()
 
-        assert backup_controller.rollback_failed == False
+        assert backup_controller.rollback_failed is False
         assert backup_controller.rollback_failures == []
 
     def test_pop_all_error_in_restore(self, backup_controller, caplog):
@@ -132,7 +132,7 @@ class TestBackupController:
         assert len(popped_restorables) == 3
         assert popped_restorables == [restorable3, restorable2, restorable1]
         assert caplog.records[-1].message == "Error while rolling back a ErrorOnRestoreRestorable: Restorable2 failed"
-        assert backup_controller.rollback_failed == True
+        assert backup_controller.rollback_failed is True
         assert backup_controller.rollback_failures == [
             "Error while rolling back a ErrorOnRestoreRestorable: Restorable2 failed"
         ]

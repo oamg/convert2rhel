@@ -22,8 +22,6 @@ import itertools
 import os
 import sys
 
-from typing import Any
-
 import pytest
 import six
 
@@ -39,7 +37,6 @@ from convert2rhel import (
     pkgmanager,
     subscription,
     systeminfo,
-    toolopts,
     utils,
 )
 from convert2rhel.actions import STATUS_CODE, report
@@ -48,7 +45,7 @@ from convert2rhel.utils import run_subprocess
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock as six_mock
+from six.moves import mock as six_mock  # noqa: E402
 
 
 TMP_DIR = "/tmp/convert2rhel_test/"
@@ -163,7 +160,7 @@ def mock(class_or_module, orig_obj, mock_obj):
             # (e.g. to have the mocked function just as a wrapper for the
             # original function), save it as a temporary attribute
             # named "<original object name>_orig"
-            orig_obj_attr = "%s_orig" % orig_obj
+            orig_obj_attr = "{}_orig".format(orig_obj)
             setattr(class_or_module, orig_obj_attr, orig_obj_saved)
             # Call the decorated test function
             return_value = None
@@ -434,7 +431,11 @@ class GetInstalledPkgInformationMocked(MockFunctionObject):
     pkg1 = create_pkg_information(name="pkg1", key_id="199e2f91fd431d51")  # RHEL
     pkg2 = create_pkg_information(name="pkg2", key_id="72f97b74ec551f03")  # OL
     pkg3 = create_pkg_information(
-        name="gpg-pubkey", version="1.0.0", release="1", arch="x86_64", key_id="199e2f91fd431d51"  # RHEL
+        name="gpg-pubkey",
+        version="1.0.0",
+        release="1",
+        arch="x86_64",
+        key_id="199e2f91fd431d51",  # RHEL
     )
 
     # Oracle Kernel Packages
@@ -835,7 +836,7 @@ class EFIBootInfoMocked:
         """
         if not self._exception:
             return self
-        raise self._exception  # pylint: disable=raising-bad-type
+        raise self._exception
 
     def set_default_efi_entries(self):
         if not self.entries:

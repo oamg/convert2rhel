@@ -270,5 +270,5 @@ def test_remove_packages_unless_from_redhat(pkgs_to_remove, monkeypatch, caplog)
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     handle_packages._remove_packages_unless_from_redhat(pkgs_list=pkgs_to_remove)
 
-    assert "Removing the following %s packages" % len(pkgs_to_remove) in caplog.records[-3].message
-    assert "Successfully removed %s packages" % len(pkgs_to_remove) in caplog.records[-1].message
+    assert "Removing the following {} packages".format(len(pkgs_to_remove)) in caplog.records[-3].message
+    assert "Successfully removed {} packages".format(len(pkgs_to_remove)) in caplog.records[-1].message

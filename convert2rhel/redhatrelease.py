@@ -47,7 +47,7 @@ def get_system_release_content():
     try:
         return utils.get_file_content(filepath)
     except EnvironmentError as err:
-        logger.critical("%s\n%s file is essential for running this tool." % (err, filepath))
+        logger.critical("{}\n{} file is essential for running this tool.".format(err, filepath))
 
 
 class PkgManagerConf:
@@ -79,7 +79,7 @@ class PkgManagerConf:
             # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
             self._comment_out_distroverpkg_tag()
             self._write_altered_pkg_manager_conf()
-            logger.info("%s patched." % self._pkg_manager_conf_path)
+            logger.info("{} patched.".format(self._pkg_manager_conf_path))
         else:
             logger.info("Skipping patching, package manager configuration file has not been modified.")
 
@@ -99,9 +99,11 @@ class PkgManagerConf:
         output, _ = utils.run_subprocess(["rpm", "-Vf", self._pkg_manager_conf_path], print_output=False)
         # rpm -Vf does not return information about the queried file but about all files owned by the rpm
         # that owns the queried file. Character '5' on position 3 means that the file was modified.
-        return True if re.search(r"^.{2}5.*? %s$" % self._pkg_manager_conf_path, output, re.MULTILINE) else False
+        return (
+            True if re.search(r"^.{{2}}5.*? {}$".format(self._pkg_manager_conf_path), output, re.MULTILINE) else False
+        )
 
 
 # Code to be executed upon module import
-system_release_file = RestorableFile(get_system_release_filepath())  # pylint: disable=C0103
-os_release_file = RestorableFile(OS_RELEASE_FILEPATH)  # pylint: disable=C0103
+system_release_file = RestorableFile(get_system_release_filepath())
+os_release_file = RestorableFile(OS_RELEASE_FILEPATH)

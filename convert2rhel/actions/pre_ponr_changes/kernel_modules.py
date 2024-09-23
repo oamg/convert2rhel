@@ -68,13 +68,13 @@ class EnsureKernelModulesCompatibility(actions.Action):
         precache = [
             "yum",
             "makecache",
-            "--releasever=%s" % system_info.releasever,
+            "--releasever={}".format(system_info.releasever),
             "--setopt=*.skip_if_unavailable=False",
         ]
         # Clearing the exclude field with setopt to prevent kernel being
         # excluded in the config.
         # https://issues.redhat.com/browse/RHELC-774
-        basecmd = ["repoquery", "--releasever=%s" % system_info.releasever, "--setopt=exclude="]
+        basecmd = ["repoquery", "--releasever={}".format(system_info.releasever), "--setopt=exclude="]
 
         if system_info.version.major >= 8:
             basecmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
@@ -94,11 +94,11 @@ class EnsureKernelModulesCompatibility(actions.Action):
         precache_out, precache_exit_code = run_subprocess(precache, print_output=False)
         if precache_exit_code != 0:
             raise PackageRepositoryError(
-                "We were unable to download the repository metadata for (%s) to"
+                "We were unable to download the repository metadata for ({}) to"
                 " determine packages containing kernel modules.  Can be caused by"
                 " not enough disk space in /var/cache or too little memory.  The"
                 " yum output below may have a clue for what went wrong in this"
-                " case:\n\n%s" % (", ".join(system_info.get_enabled_rhel_repos()), precache_out)
+                " case:\n\n{}".format(", ".join(system_info.get_enabled_rhel_repos()), precache_out)
             )
 
         cmd = basecmd[:]
@@ -112,18 +112,20 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
         if repoquery_exit_code != 0:
             raise PackageRepositoryError(
-                "We were unable to query the repositories (%s) to"
+                "We were unable to query the repositories ({}) to"
                 " determine packages containing kernel modules."
-                " Output from the failed repoquery command:\n\n%s"
-                % (", ".join(system_info.get_enabled_rhel_repos()), kmod_pkgs_str)
+                " Output from the failed repoquery command:\n\n{}".format(
+                    ", ".join(system_info.get_enabled_rhel_repos()), kmod_pkgs_str
+                )
             )
         # from these packages we select only the latest one
         kmod_pkgs = self._get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
         if not kmod_pkgs:
             logger.debug("Output of the previous repoquery command:\n{0}".format(kmod_pkgs_str))
             raise RHELKernelModuleNotFound(
-                "No packages containing kernel modules available in the enabled repositories (%s)."
-                % ", ".join(system_info.get_enabled_rhel_repos())
+                "No packages containing kernel modules available in the enabled repositories ({}).".format(
+                    ", ".join(system_info.get_enabled_rhel_repos())
+                )
             )
 
         logger.info(
@@ -306,5 +308,5 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 id="CANNOT_COMPARE_PACKAGE_VERSIONS",
                 title="Error while comparing packages",
                 description="There was an error while detecting the kernel package which corresponds to the kernel modules present on the system.",
-                diagnosis="Package comparison failed: %s" % str(e),
+                diagnosis="Package comparison failed: {}".format(str(e)),
             )

@@ -1,7 +1,5 @@
 import re
 
-from test_helpers.common_functions import log_file_data
-
 
 def test_verify_initramfs_and_vmlinuz_present(log_file_data):
     """

@@ -1,5 +1,3 @@
-import re
-
 from conftest import TEST_VARS, SystemInformationRelease
 
 
@@ -22,7 +20,7 @@ def test_single_yum_transaction(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect("no modifications to the system will happen this time.", timeout=1200)
-        c2r.expect("Successfully validated the %s transaction set." % pkgmanager, timeout=600)
+        c2r.expect("Successfully validated the {} transaction set.".format(pkgmanager), timeout=600)
         c2r.expect("This process may take some time to finish.", timeout=300)
         c2r.expect("System packages replaced successfully.", timeout=900)
         c2r.expect("Conversion successful!")

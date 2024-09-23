@@ -122,7 +122,7 @@ class TestTooloptsParseFromCLI:
         message = (
             "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
             "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
-            "Supplied serverurl: %s\nError: " % serverurl
+            "Supplied serverurl: {}\nError: ".format(serverurl)
         )
         assert message in caplog.records[-1].message
         assert caplog.records[-1].levelname == "CRITICAL"

@@ -240,18 +240,18 @@ def test_save_rhsm_facts(pretend_os, monkeypatch, tmpdir, caplog):
     )
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
-    assert "Writing RHSM custom facts to '%s'" % rhsm_file in caplog.records[-1].message
+    assert "Writing RHSM custom facts to '{}'".format(rhsm_file) in caplog.records[-1].message
 
 
 def test_save_rhsm_facts_no_rhsm_folder(monkeypatch, tmpdir, caplog):
     rhsm_folder = str(tmpdir.join("rhsm").join("facts"))
-    rhsm_file = "%s/convert2rhel.facts" % rhsm_folder
+    rhsm_file = "{}/convert2rhel.facts".format(rhsm_folder)
     monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FOLDER", rhsm_folder)
     monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_file)
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
-    assert "No RHSM facts folder found at '%s'." % rhsm_folder in caplog.records[-2].message
-    assert "Writing RHSM custom facts to '%s'" % rhsm_file in caplog.records[-1].message
+    assert "No RHSM facts folder found at '{}'.".format(rhsm_folder) in caplog.records[-2].message
+    assert "Writing RHSM custom facts to '{}'".format(rhsm_file) in caplog.records[-1].message
 
 
 def test_save_migration_results(tmpdir, monkeypatch, caplog):
@@ -262,7 +262,7 @@ def test_save_migration_results(tmpdir, monkeypatch, caplog):
 
     breadcrumbs.breadcrumbs._save_migration_results()
 
-    assert "Writing breadcrumbs to '%s'." % migration_results in caplog.records[-1].message
+    assert "Writing breadcrumbs to '{}'.".format(migration_results) in caplog.records[-1].message
     assert write_obj_to_array_json_mock.call_count == 1
 
 
@@ -292,14 +292,6 @@ def test_set_nevra_yum(monkeypatch, _mock_pkg_obj):
     breadcrumbs.breadcrumbs._set_nevra()
 
     assert breadcrumbs.breadcrumbs.nevra == "1:convert2rhel-2-3.x86_64"
-
-
-def test_set_nevra_dnf(monkeypatch, _mock_pkg_obj):
-    monkeypatch.setattr(pkgmanager, "TYPE", "dnf")
-    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
-    breadcrumbs.breadcrumbs._set_nevra()
-
-    assert breadcrumbs.breadcrumbs.nevra == "convert2rhel-1:2-3.x86_64"
 
 
 def test_set_signature(monkeypatch, _mock_pkg_obj, _mock_pkg_information):

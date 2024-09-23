@@ -69,12 +69,15 @@ class ModifiedRPMFilesDiff(actions.Action):
 
         if modified_rpm_files_diff:
             logger.info(
-                "Comparison of modified rpm files from before and after the conversion:\n%s" % modified_rpm_files_diff
+                "Comparison of modified rpm files from before and after the conversion:\n{}".format(
+                    modified_rpm_files_diff
+                )
             )
             self.add_message(
                 level="INFO",
                 id="FOUND_MODIFIED_RPM_FILES",
                 title="Modified rpm files from before and after the conversion were found.",
-                description="Comparison of modified rpm files from before and after "
-                "the conversion: \n%s" % modified_rpm_files_diff,
+                description="Comparison of modified rpm files from before and after " "the conversion: \n{}".format(
+                    modified_rpm_files_diff
+                ),
             )

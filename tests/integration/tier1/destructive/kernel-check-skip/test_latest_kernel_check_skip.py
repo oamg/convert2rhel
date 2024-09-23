@@ -1,5 +1,4 @@
 import os
-import re
 
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, SystemInformationRelease
 

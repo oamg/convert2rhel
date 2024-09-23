@@ -34,7 +34,7 @@ class RestorableSystemSubscription(RestorableChange):
     """
 
     # We need this __init__ because it is an abstractmethod in the base class
-    def __init__(self):  # pylint: disable=useless-parent-delegation
+    def __init__(self):
         super(RestorableSystemSubscription, self).__init__()
 
     def enable(self):
@@ -124,7 +124,9 @@ class RestorableDisableRepositories(RestorableChange):
 
         if repositories:
             self._repos_to_enable = repositories
-            logger.debug("Repositories enabled in the system prior to the conversion: %s" % ",".join(repositories))
+            logger.debug(
+                "Repositories enabled in the system prior to the conversion: {}".format(",".join(repositories))
+            )
 
         subscription.disable_repos()
         super(RestorableDisableRepositories, self).enable()
@@ -136,7 +138,7 @@ class RestorableDisableRepositories(RestorableChange):
         logger.task("Rollback: Restoring state of the repositories")
 
         if self._repos_to_enable:
-            logger.debug("Repositories to enable: %s" % ",".join(self._repos_to_enable))
+            logger.debug("Repositories to enable: {}".format(",".join(self._repos_to_enable)))
 
             # This is not the ideal state. We should really have a generic
             # class for enabling/disabling the repositories we have touched for

@@ -52,7 +52,7 @@ class DuplicatePackages(actions.Action):
                 id="DUPLICATE_PACKAGES_FOUND",
                 title="Duplicate packages found on the system",
                 description="The system contains one or more packages with multiple versions.",
-                diagnosis="The following packages have multiple versions: %s." % ", ".join(duplicate_packages),
+                diagnosis="The following packages have multiple versions: {}.".format(", ".join(duplicate_packages)),
                 remediations="This error can be resolved by removing duplicate versions of the listed packages."
                 " The command 'package-cleanup' can be used to automatically remove duplicate packages"
                 " on the system.",

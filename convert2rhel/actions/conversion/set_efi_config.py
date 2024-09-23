@@ -48,10 +48,10 @@ class NewDefaultEfiBin(actions.Action):
         for filename in grub.DEFAULT_INSTALLED_EFIBIN_FILENAMES:
             efi_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
             if os.path.exists(efi_path):
-                logger.info("UEFI binary found: %s" % efi_path)
+                logger.info("UEFI binary found: {}".format(efi_path))
                 new_default_efibin = efi_path
                 break
-            logger.debug("UEFI binary %s not found. Checking next possibility..." % efi_path)
+            logger.debug("UEFI binary {} not found. Checking next possibility...".format(efi_path))
             missing_binaries.append(efi_path)
         if not new_default_efibin:
             self.set_result(
@@ -65,9 +65,9 @@ class NewDefaultEfiBin(actions.Action):
                 remediations=(
                     "Verify the bootloader configuration as follows and reboot the system."
                     " Ensure that `grubenv` and `grub.cfg` files"
-                    " are present in the %s directory. Verify that `efibootmgr -v`"
+                    " are present in the {} directory. Verify that `efibootmgr -v`"
                     " shows a bootloader entry for Red Hat Enterprise Linux"
-                    " that points to to '\\EFI\\redhat\\shimx64.efi'." % grub.RHEL_EFIDIR_CANONICAL_PATH
+                    " that points to to '\\EFI\\redhat\\shimx64.efi'.".format(grub.RHEL_EFIDIR_CANONICAL_PATH)
                 ),
             )
 
@@ -125,7 +125,7 @@ class MoveGrubFiles(actions.Action):
         # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of
         #  the different grub content...
         # E.g. if the efibin is located in a different directory, are these two files valid?
-        logger.info("Moving GRUB2 configuration files to the new UEFI directory %s." % RHEL_EFIDIR_CANONICAL_PATH)
+        logger.info("Moving GRUB2 configuration files to the new UEFI directory {}.".format(RHEL_EFIDIR_CANONICAL_PATH))
         src_files = [
             os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename) for filename in ["grubenv", "grub.cfg", "user.cfg"]
         ]
@@ -154,20 +154,22 @@ class MoveGrubFiles(actions.Action):
             # Skip non-existing file in destination directory
             if not os.path.exists(src_file):
                 logger.debug(
-                    "The %s file does not exist in %s folder. Moving skipped."
-                    % (os.path.basename(src_file), CENTOS_EFIDIR_CANONICAL_PATH)
+                    "The {} file does not exist in {} folder. Moving skipped.".format(
+                        os.path.basename(src_file), CENTOS_EFIDIR_CANONICAL_PATH
+                    )
                 )
                 continue
             # Skip already existing file in destination directory
             dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
             if os.path.exists(dst_file):
                 logger.debug(
-                    "The %s file already exists in %s folder. Moving skipped."
-                    % (os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH)
+                    "The {} file already exists in {} folder. Moving skipped.".format(
+                        os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH
+                    )
                 )
                 continue
 
-            logger.info("Moving '%s' to '%s'" % (src_file, dst_file))
+            logger.info("Moving '{}' to '{}'".format(src_file, dst_file))
 
             try:
                 shutil.move(src_file, dst_file)
@@ -178,8 +180,9 @@ class MoveGrubFiles(actions.Action):
                     id="GRUB_FILES_NOT_MOVED_TO_BOOT_DIRECTORY",
                     title="GRUB files have not been moved to boot directory",
                     description=(
-                        "I/O error(%s): '%s'. Some GRUB files have not been moved to /boot/efi/EFI/redhat."
-                        % (err.errno, err.strerror)
+                        "I/O error({}): '{}'. Some GRUB files have not been moved to /boot/efi/EFI/redhat.".format(
+                            err.errno, err.strerror
+                        )
                     ),
                 )
 

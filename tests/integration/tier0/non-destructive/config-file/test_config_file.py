@@ -39,20 +39,19 @@ def c2r_config_setup(request, backup_directory):
     shutil.move(bkp_original_config, c2r_original_config)
 
 
+# We disable formatting because it changes the configuration
+# files in parametrize, which makes them hard to read.
+# https://docs.astral.sh/ruff/formatter/#format-suppression
+# fmt: off
 @pytest.mark.parametrize(
     "c2r_config_setup",
     [
         Config(
             "~/.convert2rhel.ini",
-            # We disable the Black pre-commit hook because it changes formatting
-            # of the following configuration files, which makes them hard to read.
-            # https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#ignoring-sections
-            # fmt: off
             (
                 "[subscription_manager]\n"
                 "password = config_password\n"
             ),
-            # fmt: on
         )
     ],
     indirect=True,
@@ -75,12 +74,10 @@ def test_std_path_std_filename(convert2rhel, c2r_config_setup):
     [
         Config(
             "~/.convert2rhel_custom.ini",
-            # fmt: off
             (
                 "[subscription_manager]\n"
                 "activation_key = config_activationkey\n"
             ),
-            # fmt: on
         )
     ],
     indirect=True,
@@ -103,7 +100,6 @@ def test_user_path_custom_filename(convert2rhel, c2r_config_setup):
     [
         Config(
             "~/.convert2rhel.ini",
-            # fmt: off
             (
                 "[subscription_manager]\n"
                 "username = config_username\n"
@@ -111,7 +107,6 @@ def test_user_path_custom_filename(convert2rhel, c2r_config_setup):
                 "activation_key = config_key\n"
                 "org = config_org\n"
             ),
-            # fmt: on
         )
     ],
     indirect=True,
@@ -145,23 +140,19 @@ def test_config_cli_priority(convert2rhel, c2r_config_setup):
         [
             Config(
                 "~/.convert2rhel.ini",
-                # fmt: off
                 (
                     "[subscription_manager]\n"
                     "password   = config_password\n"
                     "username   = config_username\n"
                 ),
-                # fmt: on
             ),
             Config(
                 "/etc/convert2rhel.ini",
-                # fmt: off
                 (
                     "[subscription_manager]\n"
                     f"activation_key    = {TEST_VARS['RHSM_SCA_KEY']}\n"
                     f"org               = {TEST_VARS['RHSM_SCA_ORG']}\n"
                 ),
-                # fmt: on
             ),
         ]
     ],
@@ -194,23 +185,19 @@ def test_config_standard_paths_priority_diff_methods(convert2rhel, c2r_config_se
         [
             Config(
                 "~/.convert2rhel.ini",
-                # fmt: off
                 (
                     "[subscription_manager]\n"
                     f"username = {TEST_VARS['RHSM_SCA_USERNAME']}\n"
                     f"password = {TEST_VARS['RHSM_SCA_PASSWORD']}\n"
                 ),
-                # fmt: on
             ),
             Config(
                 "/etc/convert2rhel.ini",
-                # fmt: off
                 (
                     "[subscription_manager]\n"
                     "username = config_username\n"
                     "password = config_password\n"
                 ),
-                # fmt: on
             ),
         ]
     ],

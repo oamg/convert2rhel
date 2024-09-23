@@ -101,7 +101,7 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
             message = self._DEPSOLVE_MODES[mode]
         except KeyError:
             message = None
-            logger.debug("Unknown operation (%s) for package '%s'." % (mode, pkg))
+            logger.debug("Unknown operation ({}) for package '{}'.".format(mode, pkg))
 
         if message:
             logger.info(message, pkg)
@@ -204,7 +204,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                     self.total_drpm,
                     package,
                 )
-                message = "%s - %s" % (message, err_msg)
+                message = "{} - {}".format(message, err_msg)
             else:
                 message = "(%d/%d) [%s]: %s" % (
                     self.done_files,
@@ -259,7 +259,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         # different.
         package = str(package)
 
-        message = "%s: %s [%s/%s]" % (pkgmanager.transaction.ACTIONS.get(action), package, ts_done, ts_total)
+        message = "{}: {} [{}/{}]".format(pkgmanager.transaction.ACTIONS.get(action), package, ts_done, ts_total)
 
         # The base API will call this callback class on every package update,
         # no matter if it is the same update or not, so, the below statement

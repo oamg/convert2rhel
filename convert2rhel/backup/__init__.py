@@ -68,7 +68,7 @@ class BackupController:
         :arg restorable: RestorableChange object that can be restored later.
         """
         if not isinstance(restorable, RestorableChange):
-            raise TypeError("`%s` is not a RestorableChange object" % restorable)
+            raise TypeError("`{}` is not a RestorableChange object".format(restorable))
 
         # Check if the restorable is already backed up
         # if it is, we skip it
@@ -129,7 +129,7 @@ class BackupController:
             # logger.critical in some places.
             except (Exception, SystemExit) as e:
                 # Don't let a failure in one restore influence the others
-                message = "Error while rolling back a %s: %s" % (restorable.__class__.__name__, str(e))
+                message = "Error while rolling back a {}: {}".format(restorable.__class__.__name__, str(e))
                 logger.warning(message)
                 # Add the rollback failures to the list
                 self._rollback_failures.append(message)

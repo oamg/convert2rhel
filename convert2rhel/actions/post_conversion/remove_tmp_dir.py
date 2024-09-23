@@ -41,11 +41,11 @@ class RemoveTmpDir(actions.Action):
         """
         super(RemoveTmpDir, self).run()
 
-        loggerinst.task("Final: Remove temporary folder %s" % TMP_DIR)
+        loggerinst.task("Final: Remove temporary folder {}".format(TMP_DIR))
 
         try:
             shutil.rmtree(self.tmp_dir)
-            loggerinst.info("Temporary folder %s removed" % self.tmp_dir)
+            loggerinst.info("Temporary folder {} removed".format(self.tmp_dir))
         except OSError as exc:
             # We want run() to be idempotent, so do nothing silently if
             # the path doesn't exist.
@@ -53,8 +53,8 @@ class RemoveTmpDir(actions.Action):
             if exc.errno == errno.ENOENT:
                 return
             warning_message = (
-                "The folder %s is left untouched. You may remove the folder manually"
-                " after you ensure there is no preserved data you would need." % self.tmp_dir
+                "The folder {} is left untouched. You may remove the folder manually"
+                " after you ensure there is no preserved data you would need.".format(self.tmp_dir)
             )
             loggerinst.warning(warning_message)
 

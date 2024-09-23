@@ -46,9 +46,9 @@ class ListThirdPartyPackages(actions.Action):
                 sorted(third_party_pkgs, key=self.extract_packages), disable_repos=disable_repos
             )
             warning_message = (
-                "Only packages signed by %s are to be"
+                "Only packages signed by {} are to be"
                 " replaced. Red Hat support won't be provided"
-                " for the following third party packages:\n" % system_info.name
+                " for the following third party packages:\n".format(system_info.name)
             )
 
             logger.warning(warning_message)
@@ -148,7 +148,7 @@ class RemoveSpecialPackages(actions.Action):
         # shows which packages were not removed, if false, all packages were removed
         pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(all_pkgs)).difference(pkgs_removed))
         if pkgs_not_removed:
-            message = "The following packages were not removed: %s" % ", ".join(pkgs_not_removed)
+            message = "The following packages were not removed: {}".format(", ".join(pkgs_not_removed))
             logger.warning(message)
             self.add_message(
                 level="WARNING",
@@ -159,7 +159,7 @@ class RemoveSpecialPackages(actions.Action):
             )
 
         if pkgs_removed:
-            message = "The following packages will be removed during the conversion: %s" % ", ".join(pkgs_removed)
+            message = "The following packages will be removed during the conversion: {}".format(", ".join(pkgs_removed))
             logger.info(message)
             self.add_message(
                 level="INFO",
@@ -186,10 +186,10 @@ def _remove_packages_unless_from_redhat(pkgs_list, disable_repos=None):
         return []
 
     # this call can return None, which is not ideal to use with sorted.
-    logger.warning("Removing the following %s packages:\n" % len(pkgs_list))
+    logger.warning("Removing the following {} packages:\n".format(len(pkgs_list)))
     pkghandler.print_pkg_info(pkgs_list, disable_repos)
 
     pkgs_removed = utils.remove_pkgs(pkghandler.get_pkg_nevras(pkgs_list))
-    logger.debug("Successfully removed %s packages" % len(pkgs_list))
+    logger.debug("Successfully removed {} packages".format(len(pkgs_list)))
 
     return pkgs_removed

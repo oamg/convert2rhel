@@ -280,7 +280,7 @@ def _summary(results, include_all_reports, disable_colors):
     if not combined_results_and_message:
         report.append("No problems detected!")
 
-    logger.info("%s\n" % "\n".join(report))
+    logger.info("{}\n".format("\n".join(report)))
 
 
 def format_report_section_heading(status_code):

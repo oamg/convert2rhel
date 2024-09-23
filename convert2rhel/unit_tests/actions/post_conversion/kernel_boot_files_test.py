@@ -132,11 +132,10 @@ def test_check_kernel_boot_files_missing(
                 diagnosis=None,
                 remediations=(
                     "In order to fix this problem you might need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
-                    "1. yum reinstall kernel-core-%s -y\n"
+                    "1. yum reinstall kernel-core-{} -y\n"
                     "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
                     "3. reboot"
-                )
-                % latest_installed_kernel,
+                ).format(latest_installed_kernel),
             ),
         )
     )

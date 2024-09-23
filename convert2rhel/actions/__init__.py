@@ -159,7 +159,7 @@ class Action:
     # @property
     # @abc.abstractmethod
     # def id(self):
-    @abc.abstractproperty  # pylint: disable=deprecated-decorator
+    @abc.abstractproperty
     def id(self):
         """
         This should be replaced by a simple class attribute.
@@ -203,7 +203,7 @@ class Action:
             instead.
         """
         if self._has_run:
-            raise ActionError("Action %s has already run" % self.id)
+            raise ActionError("Action {} has already run".format(self.id))
 
         self._has_run = True
 
@@ -324,7 +324,7 @@ class ActionMessageBase:
         return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediations))
 
     def __repr__(self):
-        return "%s(level=%s, id=%s, title=%s, description=%s, diagnosis=%s, remediations=%s, variables=%s)" % (
+        return "{}(level={}, id={}, title={}, description={}, diagnosis={}, remediations={}, variables={})".format(
             self.__class__.__name__,
             _STATUS_NAME_FROM_CODE[self.level],
             self.id,
@@ -364,7 +364,7 @@ class ActionMessage(ActionMessageBase):
         # None of the result status codes are legal as a message.  So we error if any
         # of them were given here.
         if not (STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]):
-            raise InvalidMessageError("Invalid level '%s', set for a non-result message" % level)
+            raise InvalidMessageError("Invalid level '{}', set for a non-result message".format(level))
 
         super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediations, variables)
 
@@ -392,7 +392,7 @@ class ActionResult(ActionMessageBase):
 
         elif STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]:
             raise InvalidMessageError(
-                "Invalid level '%s', the level for result must be SKIP or more fatal or SUCCESS." % level
+                "Invalid level '{}', the level for result must be SKIP or more fatal or SUCCESS.".format(level)
             )
 
         super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediations, variables)
@@ -520,10 +520,10 @@ class Stage:
             running is WARNING or better (WARNING or SUCCESS) and
             failure as worse than WARNING (OVERRIDABLE, ERROR)
         """
-        logger.task("Prepare: %s" % self.task_header)
+        logger.task("Prepare: {}".format(self.task_header))
 
         if self._has_run:
-            raise ActionError("Stage %s has already run." % self.stage_name)
+            raise ActionError("Stage {} has already run.".format(self.stage_name))
         self._has_run = True
 
         # Make a mutable copy of these parameters so we don't overwrite the caller's data.
@@ -548,7 +548,7 @@ class Stage:
                 to_be = "was"
                 if len(failed_deps) > 1:
                     to_be = "were"
-                diagnosis = "Skipped because %s %s not successful" % (
+                diagnosis = "Skipped because {} {} not successful".format(
                     utils.format_sequence_as_message(failed_deps),
                     to_be,
                 )
@@ -559,12 +559,13 @@ class Stage:
                     title="Skipped action",
                     description="This action was skipped due to another action failing.",
                     diagnosis=diagnosis,
-                    remediations="Please ensure that the %s check passes so that this Action can evaluate your system"
-                    % utils.format_sequence_as_message(failed_deps),
+                    remediations="Please ensure that the {} check passes so that this Action can evaluate your system".format(
+                        utils.format_sequence_as_message(failed_deps)
+                    ),
                 )
                 skips.append(action)
                 failed_action_ids.add(action.id)
-                logger.error("Skipped %s. %s" % (action.id, diagnosis))
+                logger.error("Skipped {}. {}".format(action.id, diagnosis))
                 continue
 
             # Run the Action
@@ -574,10 +575,10 @@ class Stage:
                 # Uncaught exceptions are handled by constructing a generic
                 # failure message here that should be reported
                 description = (
-                    "Unhandled exception was caught: %s\n"
+                    "Unhandled exception was caught: {}\n"
                     "Please file a bug at https://issues.redhat.com/ to have this"
                     " fixed or a specific error message added.\n"
-                    "Traceback: %s" % (e, traceback.format_exc())
+                    "Traceback: {}".format(e, traceback.format_exc())
                 )
                 action.set_result(
                     level="ERROR", id="UNEXPECTED_ERROR", title="Unhandled exception caught", description=description
@@ -585,7 +586,7 @@ class Stage:
 
             # Categorize the results
             if action.result.level <= STATUS_CODE["WARNING"]:
-                logger.info("%s has succeeded" % action.id)
+                logger.info("{} has succeeded".format(action.id))
                 successes.append(action)
 
             if action.result.level > STATUS_CODE["WARNING"]:
@@ -687,7 +688,9 @@ def resolve_action_order(potential_actions, previously_resolved_actions=None):
     # that there is a circular dependency that needs to be broken.
     if previous_number_of_unresolved_actions != 0:
         raise DependencyError(
-            "Unsatisfied dependencies in these actions: %s" % ", ".join(action.id for action in unresolved_actions)
+            "Unsatisfied dependencies in these actions: {}".format(
+                ", ".join(action.id for action in unresolved_actions)
+            )
         )
 
 
@@ -749,7 +752,7 @@ def run_pre_actions():
     except DependencyError as e:
         # We want to fail early if dependencies are not properly set.  This
         # way we should fail in testing before release.
-        logger.critical("Some dependencies were set on Actions but not present in convert2rhel: %s" % e)
+        logger.critical("Some dependencies were set on Actions but not present in convert2rhel: {}".format(e))
 
     # Run the Actions in system_checks and all subsequent Stages.
     results = system_checks.run()
@@ -778,7 +781,7 @@ def run_post_actions():
     except DependencyError as e:
         # We want to fail early if dependencies are not properly set.  This
         # way we should fail in testing before release.
-        logger.critical("Some dependencies were set on Actions but not present in convert2rhel: %s" % e)
+        logger.critical("Some dependencies were set on Actions but not present in convert2rhel: {}".format(e))
 
     # Run the Actions in conversion and all subsequent Stages.
     results = conversion.run()

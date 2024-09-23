@@ -195,7 +195,7 @@ class Breadcrumbs:
     def _save_rhsm_facts(self):
         """Write the results of the breadcrumbs to the rhsm custom facts file."""
         if not os.path.exists(RHSM_CUSTOM_FACTS_FOLDER):
-            logger.debug("No RHSM facts folder found at '%s'. Creating a new one..." % RHSM_CUSTOM_FACTS_FOLDER)
+            logger.debug("No RHSM facts folder found at '{}'. Creating a new one...".format(RHSM_CUSTOM_FACTS_FOLDER))
             # Using mkdir_p here as the `/etc/rhsm` might not exist at all.
             # Usually this can happen if we fail in the first run and we want to
             # save the custom facts gathered so far, or, if the `--no-rhsm` option
@@ -268,4 +268,4 @@ def _write_obj_to_array_json(path, new_object, key):
 
 
 # Code to be executed upon module import
-breadcrumbs = Breadcrumbs()  # pylint: disable=C0103
+breadcrumbs = Breadcrumbs()

@@ -30,29 +30,28 @@ logger = root_logger.getChild(__name__)
 
 try:
     # this is used in pkghandler.py to parse version strings in the _parse_pkg_with_yum function
-    from rpmUtils.miscutils import splitFilename
-    from yum import *
-    from yum.callbacks import DownloadBaseCallback as DownloadProgress
+    from rpmUtils.miscutils import splitFilename  # type: ignore  # noqa: F401
+    from yu import *  # type: ignore # noqa: F403
+    from yum.callbacks import DownloadBaseCallback as DownloadProgress  # type: ignore
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
-    from yum.Errors import RepoError
-    from yum.rpmtrans import SimpleCliCallBack as TransactionDisplay
+    from yum.Errors import RepoError  # type: ignore
+    from yum.rpmtrans import SimpleCliCallBack as TransactionDisplay  # type: ignore
 
     TYPE = "yum"
 
 # WARNING: if there is a bug in the yum import section, we might try to import dnf incorrectly
-except ImportError as e:
+except ImportError:
+    import hawkey  # noqa: F401
 
-    import hawkey
-
-    from dnf import *  # pylint: disable=import-error
-    from dnf.callback import Depsolve, DownloadProgress
+    from dnf import *  # noqa: F403
+    from dnf.callback import Depsolve, DownloadProgress  # noqa: F401
 
     # This is added here to prevent a generic try-except in the
     # `check_package_updates()` function.
-    from dnf.exceptions import RepoError
-    from dnf.yum.rpmtrans import TransactionDisplay
+    from dnf.exceptions import RepoError  # noqa: F401
+    from dnf.yum.rpmtrans import TransactionDisplay  # noqa: F401
 
     TYPE = "dnf"
 
@@ -99,10 +98,10 @@ def clean_yum_metadata():
     output, ret_code = utils.run_subprocess(
         ("yum", "clean", "metadata", "--enablerepo=*", "--quiet"), print_output=False
     )
-    logger.debug("Output of yum clean metadata:\n%s" % output)
+    logger.debug("Output of yum clean metadata:\n{}".format(output))
 
     if ret_code != 0:
-        logger.warning("Failed to clean yum metadata:\n%s" % output)
+        logger.warning("Failed to clean yum metadata:\n{}".format(output))
         return
 
     logger.info("Cached repositories metadata cleaned successfully.")
@@ -222,16 +221,16 @@ def call_yum_cmd(
         repos_to_disable = tool_opts.disablerepo
 
     for repo in repos_to_disable:
-        cmd.append("--disablerepo=%s" % repo)
+        cmd.append("--disablerepo={}".format(repo))
 
     if set_releasever:
         if not custom_releasever and not system_info.releasever:
             raise AssertionError("custom_releasever or system_info.releasever must be set.")
 
         if custom_releasever:
-            cmd.append("--releasever=%s" % custom_releasever)
+            cmd.append("--releasever={}".format(custom_releasever))
         else:
-            cmd.append("--releasever=%s" % system_info.releasever)
+            cmd.append("--releasever={}".format(system_info.releasever))
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
     if system_info.version.major >= 8:
@@ -246,10 +245,10 @@ def call_yum_cmd(
         repos_to_enable = system_info.get_enabled_rhel_repos()
 
     for repo in repos_to_enable:
-        cmd.append("--enablerepo=%s" % repo)
+        cmd.append("--enablerepo={}".format(repo))
 
     if setopts:
-        opts = ["--setopt=%s" % opt for opt in setopts]
+        opts = ["--setopt={}".format(opt) for opt in setopts]
         cmd.extend(opts)
 
     cmd.extend(args)

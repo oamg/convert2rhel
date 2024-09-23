@@ -892,7 +892,7 @@ class TestUnregisteringSystem:
 
         with pytest.raises(
             subscription.UnregisterError,
-            match="System unregistration result:\n%s" % output,
+            match="System unregistration result:\n{}".format(output),
         ):
             subscription.unregister_system()
 
@@ -999,8 +999,8 @@ def test_enable_repos_rhel_repoids(
 ):
     monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
-    for repo in rhel_repoids:
-        cmd_mock.append("--enable=%s" % repo)
+    for repo_to_enable in rhel_repoids:
+        cmd_mock.append("--enable={}".format(repo_to_enable))
 
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
@@ -1063,8 +1063,8 @@ def test_enable_repos_toolopts_enablerepo(
 ):
     monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
-    for repo in toolopts_enablerepo:
-        cmd_mock.append("--enable=%s" % repo)
+    for repo_to_enable in toolopts_enablerepo:
+        cmd_mock.append("--enable={}".format(repo_to_enable))
 
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(

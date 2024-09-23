@@ -116,7 +116,7 @@ class TestYumTransactionHandler:
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", lambda: enabled_rhel_repos)
         instance._enable_repos()
 
-        assert "Enabling RHEL repositories:\n%s" % "".join(enabled_rhel_repos) in caplog.records[-1].message
+        assert "Enabling RHEL repositories:\n{}".format("".join(enabled_rhel_repos)) in caplog.records[-1].message
         assert pkgmanager.RepoStorage.disableRepo.called_once()
         assert pkgmanager.RepoStorage.enableRepo.call_count == len(enabled_rhel_repos)
 

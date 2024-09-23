@@ -43,7 +43,7 @@ def _is_modules_cleanup_enabled():
     """
     # Return True is the config file does not exist.
     if not os.path.exists(FIREWALLD_CONFIG_FILE):
-        logger.debug("%s does not exist." % FIREWALLD_CONFIG_FILE)
+        logger.debug("{} does not exist.".format(FIREWALLD_CONFIG_FILE))
         return True
 
     contents = []
@@ -53,7 +53,7 @@ def _is_modules_cleanup_enabled():
     # Contents list is empty for some reason, better to assume that there
     # is no content in the file that was read.
     if not contents:
-        logger.debug("%s is empty." % FIREWALLD_CONFIG_FILE)
+        logger.debug("{} is empty.".format(FIREWALLD_CONFIG_FILE))
         return True
 
     # If the CleanupModulesOnExit is not present inside the contents list, we
@@ -71,12 +71,12 @@ def _is_modules_cleanup_enabled():
     # If the config file has this option set to true/yes, then we need to
     # return True to ask the user to change it to False.
     if list(filter(CLEANUP_MODULES_ON_EXIT_REGEX.match, contents)):
-        logger.debug("CleanupModulesOnExit option enabled in %s" % FIREWALLD_CONFIG_FILE)
+        logger.debug("CleanupModulesOnExit option enabled in {}".format(FIREWALLD_CONFIG_FILE))
         return True
 
     # Default to return False as it is possible that the CleanupModulesOnExit
     # is set to no in the config already.
-    logger.debug("CleanupModulesOnExit option is disabled in %s" % FIREWALLD_CONFIG_FILE)
+    logger.debug("CleanupModulesOnExit option is disabled in {}".format(FIREWALLD_CONFIG_FILE))
     return False
 
 

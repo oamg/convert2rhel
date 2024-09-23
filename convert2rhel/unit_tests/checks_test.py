@@ -43,4 +43,4 @@ def testis_initramfs_file_valid(latest_installed_kernel, subprocess_output, expe
 
     if not expected:
         assert "Couldn't verify initramfs file. It may be corrupted." in caplog.records[-2].message
-        assert "Output of lsinitrd: %s" % subprocess_output[0] in caplog.records[-1].message
+        assert "Output of lsinitrd: {}".format(subprocess_output[0]) in caplog.records[-1].message

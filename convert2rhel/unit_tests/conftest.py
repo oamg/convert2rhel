@@ -225,7 +225,7 @@ def pretend_os(request, pkg_root, monkeypatch, global_tool_opts):
     monkeypatch.setattr(
         utils,
         "DATA_DIR",
-        value=str(pkg_root / ("convert2rhel/data/%s/x86_64/" % system_version_major)),
+        value=str(pkg_root / ("convert2rhel/data/{}/x86_64/".format(system_version_major))),
     )
     monkeypatch.setattr(
         redhatrelease,
@@ -235,7 +235,7 @@ def pretend_os(request, pkg_root, monkeypatch, global_tool_opts):
     monkeypatch.setattr(
         utils,
         "get_file_content",
-        value=lambda _: "%s release %s" % (system_name, system_version),
+        value=lambda _: "{} release {}".format(system_name, system_version),
     )
     monkeypatch.setattr(
         system_info,

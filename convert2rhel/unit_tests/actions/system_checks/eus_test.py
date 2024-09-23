@@ -50,7 +50,6 @@ class TestEus:
     )
     @pytest.mark.skipif(pkgmanager.TYPE != "dnf", reason="el7 systems are not under eus")
     def test_eus_warning_message(self, eus_action, monkeypatch, global_tool_opts, version_string, message_reported):
-
         global_tool_opts.eus = False
         monkeypatch.setattr(system_info, "version", version_string)
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)

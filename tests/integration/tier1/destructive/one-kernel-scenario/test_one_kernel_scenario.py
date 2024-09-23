@@ -47,7 +47,6 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
     """TODO(r0x0d) better description and function name"""
 
     if os.environ["TMT_REBOOT_COUNT"] == "2":
-
         # The nfnetlink kmod is causing issues on OracleLinux 7
         if "oracle-7" in SYSTEM_RELEASE_ENV:
             shell("rmmod nfnetlink")

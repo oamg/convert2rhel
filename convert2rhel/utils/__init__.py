@@ -127,7 +127,7 @@ class Process(multiprocessing.Process):
             try:
                 self._cconn.send(e)
             except pickle.PicklingError:
-                self._cconn.send(UnableToSerialize("Child process raised %s: %s" % (type(e), str(e))))
+                self._cconn.send(UnableToSerialize("Child process raised {}: {}".format(type(e), str(e))))
 
     @property
     def exception(self):
@@ -342,9 +342,9 @@ def run_subprocess(cmd, print_cmd=True, print_output=True):
         raise TypeError("cmd should be a list, not a str")
 
     if print_cmd:
-        logger.debug("Calling command '%s'" % " ".join(cmd))
+        logger.debug("Calling command '{}'".format(" ".join(cmd)))
 
-    process = subprocess.Popen(  # pylint: disable=consider-using-with
+    process = subprocess.Popen(
         # Popen is only a context manager in Python-3.2+
         cmd,
         stdout=subprocess.PIPE,
@@ -401,7 +401,7 @@ def run_cmd_in_pty(cmd, expect_script=(), print_cmd=True, print_output=True, col
         raise TypeError("cmd should be a list, not a str")
 
     if print_cmd:
-        logger.debug("Calling command '%s'" % " ".join(cmd))
+        logger.debug("Calling command '{}'".format(" ".join(cmd)))
 
     process = PexpectSpawnWithDimensions(
         cmd[0],
@@ -490,7 +490,7 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
                 super(PexpectSpawnWithDimensions, self).setwinsize(dimensions[0], dimensions[1])
 
             # Save the real setwinsize and monkeypatch our kludge in
-            real_setwinsize = self.setwinsize  # pylint: disable=access-member-before-definition
+            real_setwinsize = self.setwinsize
             self.setwinsize = _setwinsize
 
             # Call pexpect.spawn.__init__() which will use the monkeypatched setwinsize()
@@ -556,11 +556,11 @@ def remove_tmp_dir():
     """Remove temporary folder (TMP_DIR), not needed post-conversion."""
     try:
         shutil.rmtree(TMP_DIR)
-        logger.info("Temporary folder %s removed" % TMP_DIR)
+        logger.info("Temporary folder {} removed".format(TMP_DIR))
     except OSError as err:
-        logger.warning("Failed removing temporary folder %s\nError (%s): %s" % (TMP_DIR, err.errno, err.strerror))
+        logger.warning("Failed removing temporary folder {}\nError ({}): {}".format(TMP_DIR, err.errno, err.strerror))
     except TypeError:
-        logger.warning("TypeError error while removing temporary folder %s" % TMP_DIR)
+        logger.warning("TypeError error while removing temporary folder {}".format(TMP_DIR))
 
 
 class DictWListValues(dict):
@@ -636,32 +636,32 @@ def download_pkg(
     """
     from convert2rhel.systeminfo import system_info
 
-    logger.debug("Downloading the %s package." % pkg)
+    logger.debug("Downloading the {} package.".format(pkg))
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
-    cmd = ["yumdownloader", "-v", "--setopt=exclude=", "--destdir=%s" % dest]
+    cmd = ["yumdownloader", "-v", "--setopt=exclude=", "--destdir={}".format(dest)]
     if reposdir:
-        cmd.append("--setopt=reposdir=%s" % reposdir)
+        cmd.append("--setopt=reposdir={}".format(reposdir))
 
     if isinstance(disable_repos, list):
         for repo in disable_repos:
-            cmd.append("--disablerepo=%s" % repo)
+            cmd.append("--disablerepo={}".format(repo))
 
     if isinstance(enable_repos, list):
         for repo in enable_repos:
-            cmd.append("--enablerepo=%s" % repo)
+            cmd.append("--enablerepo={}".format(repo))
 
     if set_releasever:
         if not custom_releasever and not system_info.releasever:
             raise AssertionError("custom_releasever or system_info.releasever must be set.")
 
         if custom_releasever:
-            cmd.append("--releasever=%s" % custom_releasever)
+            cmd.append("--releasever={}".format(custom_releasever))
         else:
-            cmd.append("--releasever=%s" % system_info.releasever)
+            cmd.append("--releasever={}".format(system_info.releasever))
 
     if varsdir:
-        cmd.append("--setopt=varsdir=%s" % varsdir)
+        cmd.append("--setopt=varsdir={}".format(varsdir))
 
     if system_info.version.major >= 8:
         cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
@@ -678,8 +678,8 @@ def download_pkg(
         report_on_a_download_error(output, pkg)
         return None
 
-    logger.info("Successfully downloaded the %s package." % pkg)
-    logger.debug("Path of the downloaded package: %s" % path)
+    logger.info("Successfully downloaded the {} package.".format(pkg))
+    logger.debug("Path of the downloaded package: {}".format(path))
 
     return path
 
@@ -709,7 +709,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
         # handle the epoch well and considers the package we want to remove as not installed. On the other hand, the
         # epoch in NEVRA returned by dnf is handled by rpm just fine.
         nvra = _remove_epoch_from_yum_nevra_notation(nevra)
-        logger.info("Removing package: %s" % nvra)
+        logger.info("Removing package: {}".format(nvra))
         _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
         if ret_code != 0:
             pkgs_failed_to_remove.append(nevra)
@@ -719,15 +719,15 @@ def remove_pkgs(pkgs_to_remove, critical=True):
     if pkgs_failed_to_remove:
         pkgs_as_str = format_sequence_as_message(pkgs_failed_to_remove)
         if critical:
-            logger.critical_no_exit("Error: Couldn't remove %s." % pkgs_as_str)
+            logger.critical_no_exit("Error: Couldn't remove {}.".format(pkgs_as_str))
             raise exceptions.CriticalError(
                 id_="FAILED_TO_REMOVE_PACKAGES",
                 title="Couldn't remove packages.",
                 description="While attempting to roll back changes, we encountered an unexpected failure while attempting to remove one or more of the packages we installed earlier.",
-                diagnosis="Couldn't remove %s." % pkgs_as_str,
+                diagnosis="Couldn't remove {}.".format(pkgs_as_str),
             )
         else:
-            logger.warning("Couldn't remove %s." % pkgs_as_str)
+            logger.warning("Couldn't remove {}.".format(pkgs_as_str))
 
     return pkgs_removed
 
@@ -757,7 +757,7 @@ def report_on_a_download_error(output, pkg):
     :param output: Output of the yumdownloader call
     :param pkg: Name of a package to be downloaded
     """
-    logger.warning("Output from the yumdownloader call:\n%s" % output)
+    logger.warning("Output from the yumdownloader call:\n{}".format(output))
 
     # Note: Using toolopts here is a temporary solution. We need to
     # restructure this to raise an exception on error and have the caller
@@ -789,28 +789,28 @@ def report_on_a_download_error(output, pkg):
     if toolopts.tool_opts.activity == "conversion":
         if "CONVERT2RHEL_INCOMPLETE_ROLLBACK" not in os.environ:
             logger.critical(
-                "Couldn't download the %s package. This means we will not be able to do a"
+                "Couldn't download the {} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
-                "Check to make sure that the %s repositories are enabled"
+                "Check to make sure that the {} repositories are enabled"
                 " and the package is updated to its latest version.\n"
                 "If you would rather disregard this check set the environment variable"
-                " 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'." % (pkg, system_info.name)
+                " 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'.".format(pkg, system_info.name)
             )
         else:
             logger.warning(
-                "Couldn't download the %s package. This means we will not be able to do a"
+                "Couldn't download the {} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
                 "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing"
-                " conversion." % pkg
+                " conversion.".format(pkg)
             )
     else:
         logger.critical(
-            "Couldn't download the %s package which is needed to do a rollback of this action."
-            " Check to make sure that the %s repositories are enabled and the package is"
+            "Couldn't download the {} package which is needed to do a rollback of this action."
+            " Check to make sure that the {} repositories are enabled and the package is"
             " updated to its latest version.\n"
             "Note that you can choose to disregard this check when running a conversion by"
             " setting the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
-            " but not during a pre-conversion analysis." % (pkg, system_info.name)
+            " but not during a pre-conversion analysis.".format(pkg, system_info.name)
         )
 
 
@@ -823,7 +823,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
       RHEL 8: "[SKIPPED] oraclelinux-release-8.2-1.0.8.el8.x86_64.rpm: Already downloaded"
     """
     if not output:
-        logger.warning("The output of running yumdownloader is unexpectedly empty. Command:\n%s" % cmd)
+        logger.warning("The output of running yumdownloader is unexpectedly empty. Command:\n{}".format(cmd))
         return None
 
     rpm_name_match = re.search(r"\S+\.rpm", output)
@@ -836,7 +836,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
     else:
         logger.warning(
             "Couldn't find the name of the downloaded rpm in the output of yumdownloader.\n"
-            "Command:\n%s\nOutput:\n%s" % (cmd, output)
+            "Command:\n{}\nOutput:\n{}".format(cmd, output)
         )
         return None
 
@@ -895,7 +895,7 @@ def find_keyid(keyfile):
             print_output=False,
         )
         if ret_code != 0:
-            raise ImportGPGKeyError("Failed to import the rpm gpg key into a temporary keyring: %s" % output)
+            raise ImportGPGKeyError("Failed to import the rpm gpg key into a temporary keyring: {}".format(output))
 
         # Step 2: Print the information about the keys in the temporary keyfile.
         # --with-colons give us guaranteed machine parsable, stable output.
@@ -913,7 +913,7 @@ def find_keyid(keyfile):
             print_output=False,
         )
         if ret_code != 0:
-            raise ImportGPGKeyError("Failed to read the temporary keyring with the rpm gpg key: %s" % output)
+            raise ImportGPGKeyError("Failed to read the temporary keyring with the rpm gpg key: {}".format(output))
     finally:
         # Try five times to work around a race condition:
         #
@@ -939,7 +939,9 @@ def find_keyid(keyfile):
             # If we get here, we tried and failed to rmtree five times
             # Don't make this fatal but do let the user know so they can clean
             # it up themselves.
-            logger.info("Failed to remove temporary directory %s that held Red Hat gpg public keys." % temporary_dir)
+            logger.info(
+                "Failed to remove temporary directory {} that held Red Hat gpg public keys.".format(temporary_dir)
+            )
 
     keyid = None
     for line in output.splitlines():
@@ -952,7 +954,7 @@ def find_keyid(keyfile):
             break
 
     if not keyid:
-        raise ImportGPGKeyError("Unable to determine the gpg keyid for the rpm key file: %s" % keyfile)
+        raise ImportGPGKeyError("Unable to determine the gpg keyid for the rpm key file: {}".format(keyfile))
 
     return keyid.lower()
 

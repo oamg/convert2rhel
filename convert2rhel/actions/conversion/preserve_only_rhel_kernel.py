@@ -39,7 +39,7 @@ class InstallRhelKernel(actions.Action):
 
         # Solution for RHELC-1707
         # Update is needed in the UpdateKernel action
-        global _kernel_update_needed  # pylint: disable=global-statement
+        global _kernel_update_needed
 
         loggerinst.info("Installing RHEL kernel ...")
         output, ret_code = pkgmanager.call_yum_cmd(command="install", args=["kernel"])
@@ -85,7 +85,7 @@ class InstallRhelKernel(actions.Action):
                 "We will try to install a lower version of the package,\n"
                 "remove the conflicting kernel and then update to the latest security patched version."
             )
-            loggerinst.info("\n%s" % info_message)
+            loggerinst.info("\n{}".format(info_message))
             pkghandler.handle_no_newer_rhel_kernel_available()
             _kernel_update_needed = True
 
@@ -102,10 +102,10 @@ class InstallRhelKernel(actions.Action):
                 ("non-RHEL kernel", non_rhel_kernels)
             )
             loggerinst.debug(
-                "Latest installed kernel version from the original vendor: %s" % latest_installed_non_rhel_kernel
+                "Latest installed kernel version from the original vendor: {}".format(latest_installed_non_rhel_kernel)
             )
             latest_installed_rhel_kernel = pkghandler.get_highest_package_version(("RHEL kernel", rhel_kernels))
-            loggerinst.debug("Latest installed RHEL kernel version: %s" % latest_installed_rhel_kernel)
+            loggerinst.debug("Latest installed RHEL kernel version: {}".format(latest_installed_rhel_kernel))
             is_rhel_kernel_higher = pkghandler.compare_package_versions(
                 latest_installed_rhel_kernel, latest_installed_non_rhel_kernel
             )
@@ -180,7 +180,7 @@ class FixInvalidGrub2Entries(actions.Action):
         for entry in boot_entries:
             # The boot loader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
             if machine_id not in os.path.basename(entry):
-                loggerinst.debug("Removing boot entry %s" % entry)
+                loggerinst.debug("Removing boot entry {}".format(entry))
                 os.remove(entry)
 
         # Removing a boot entry that used to be the default makes grubby to choose a different entry as default,
@@ -189,7 +189,7 @@ class FixInvalidGrub2Entries(actions.Action):
         if ret_code:
             # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions,
             # grub should pick one entry in any case.
-            description = "Couldn't get the default GRUB2 boot loader entry:\n%s" % output
+            description = "Couldn't get the default GRUB2 boot loader entry:\n{}".format(output)
             loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
@@ -198,10 +198,10 @@ class FixInvalidGrub2Entries(actions.Action):
                 description=description,
             )
             return
-        loggerinst.debug("Setting RHEL kernel %s as the default boot loader entry." % output.strip())
+        loggerinst.debug("Setting RHEL kernel {} as the default boot loader entry.".format(output.strip()))
         output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--set-default", output.strip()])
         if ret_code:
-            description = "Couldn't set the default GRUB2 boot loader entry:\n%s" % output
+            description = "Couldn't set the default GRUB2 boot loader entry:\n{}".format(output)
             loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
@@ -246,7 +246,7 @@ class FixDefaultKernel(actions.Action):
 
             kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
             utils.store_content_to_file("/etc/sysconfig/kernel", kernel_sys_cfg)
-            loggerinst.info("Boot kernel %s was changed to %s" % (kernel_to_change, new_kernel_str))
+            loggerinst.info("Boot kernel {} was changed to {}".format(kernel_to_change, new_kernel_str))
         else:
             loggerinst.debug("Boot kernel validated.")
 
@@ -288,7 +288,7 @@ class KernelPkgsInstall(actions.Action):
         pkg_names = [p.nevra.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
         for name in set(pkg_names):
             if name != "kernel":
-                loggerinst.info("Installing RHEL %s" % name)
+                loggerinst.info("Installing RHEL {}".format(name))
                 pkgmanager.call_yum_cmd("install", args=[name])
 
 

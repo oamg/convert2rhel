@@ -24,7 +24,6 @@ from convert2rhel import actions, systeminfo, unit_tests, utils
 from convert2rhel.actions.system_checks import duplicate_packages
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import RunSubprocessMocked
-from convert2rhel.unit_tests.conftest import all_systems
 
 
 @pytest.fixture
@@ -70,7 +69,6 @@ def duplicate_packages_action():
 def test_duplicate_packages_error(
     monkeypatch, version_string, output, expected, global_tool_opts, duplicate_packages_action
 ):
-
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=(output, 0)))
     monkeypatch.setattr(system_info, "version", version_string)
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
@@ -82,7 +80,7 @@ def test_duplicate_packages_error(
         id="DUPLICATE_PACKAGES_FOUND",
         title="Duplicate packages found on the system",
         description="The system contains one or more packages with multiple versions.",
-        diagnosis="The following packages have multiple versions: %s." % ", ".join(expected),
+        diagnosis="The following packages have multiple versions: {}.".format(", ".join(expected)),
         remediations="This error can be resolved by removing duplicate versions of the listed packages."
         " The command 'package-cleanup' can be used to automatically remove duplicate packages"
         " on the system.",
@@ -126,7 +124,6 @@ def test_duplicate_packages_unsuccessful(
     ((""),),
 )
 def test_duplicate_packages_success(monkeypatch, duplicate_packages_action, output):
-
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=(output, 0)))
     duplicate_packages_action.run()
     unit_tests.assert_actions_result(

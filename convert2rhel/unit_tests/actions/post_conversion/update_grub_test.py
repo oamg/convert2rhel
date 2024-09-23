@@ -65,7 +65,7 @@ def test_update_grub(
                 (
                     "/usr/sbin/grub2-mkconfig",
                     "-o",
-                    "%s" % config_path,
+                    "{}".format(config_path),
                 ),
                 (
                     "output",
@@ -142,7 +142,7 @@ def test_update_grub_action_messages(
                 (
                     "/usr/sbin/grub2-mkconfig",
                     "-o",
-                    "%s" % config_path,
+                    "{}".format(config_path),
                 ),
                 (
                     "output",
@@ -171,7 +171,6 @@ def test_update_grub_action_messages(
     ),
 )
 def test_update_grub_error(update_grub_instance, monkeypatch, get_partition_error, get_blk_device_error, diagnosis):
-
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_code=0))
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
     if get_partition_error:

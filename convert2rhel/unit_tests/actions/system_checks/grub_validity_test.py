@@ -31,7 +31,6 @@ def grub_validity_instance():
 
 
 def test_grub_validity_error(grub_validity_instance, monkeypatch):
-
     monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=("output", 127)))
     grub_validity_instance.run()
     unit_tests.assert_actions_result(

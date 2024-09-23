@@ -486,7 +486,6 @@ class TestFixInvalidGrub2Entries:
     def test_fix_invalid_grub2_entries_execution(
         self, monkeypatch, fix_invalid_grub2_entries_instance, caplog, version, expected
     ):
-
         monkeypatch.setattr(system_info, "version", version)
         run_subprocess_mocked = RunSubprocessMocked(
             side_effect=unit_tests.run_subprocess_side_effect(
@@ -570,7 +569,7 @@ class TestFixDefaultKernel:
         monkeypatch.setattr(
             utils,
             "get_file_content",
-            lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL=%s\n" % old_kernel,
+            lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL={}\n".format(old_kernel),
         )
         monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
 
@@ -584,10 +583,10 @@ class TestFixDefaultKernel:
         kernel_file_lines = content.splitlines()
 
         assert "/etc/sysconfig/kernel" == filename
-        assert "DEFAULTKERNEL=%s" % new_kernel in kernel_file_lines
+        assert "DEFAULTKERNEL={}".format(new_kernel) in kernel_file_lines
 
         for kernel_name in not_default_kernels:
-            assert "DEFAULTKERNEL=%s" % kernel_name not in kernel_file_lines
+            assert "DEFAULTKERNEL={}".format(kernel_name) not in kernel_file_lines
 
     @centos7
     def test_fix_default_kernel_with_no_incorrect_kernel(

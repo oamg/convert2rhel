@@ -22,7 +22,6 @@ import six
 
 from convert2rhel import pkgmanager, systeminfo, utils
 from convert2rhel.systeminfo import Version, system_info
-from convert2rhel.toolopts import tool_opts
 from convert2rhel.unit_tests import RunSubprocessMocked, run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
@@ -266,7 +265,7 @@ class TestCallYumCmd:
         ]
 
         for setopt in setopts:
-            expected_cmd.append("--setopt=%s" % setopt)
+            expected_cmd.append("--setopt={}".format(setopt))
 
         expected_cmd.append("pkg")
         assert utils.run_subprocess.cmd == expected_cmd

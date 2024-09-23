@@ -24,7 +24,6 @@ loggerinst = logging.getLogger(__name__)
 
 
 class RHSMCustomFactsConfig(actions.Action):
-
     id = "RHSM_CUSTOM_FACTS_CONFIG"
 
     dependencies = ()

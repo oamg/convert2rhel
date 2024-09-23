@@ -63,7 +63,7 @@ class TestRollbackChanges:
         main.rollback_changes()
 
         assert global_backup_control.pop_all.call_args_list == mock.call()
-        assert backup.backup_control.rollback_failed == False
+        assert backup.backup_control.rollback_failed is False
 
     def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
         monkeypatch.setattr(

@@ -127,7 +127,9 @@ class TestAction:
         dupe_actions = []
         for action_id, locations in action_id_locations.items():
             if len(locations) > 1:
-                dupe_actions.append("%s is present in more than one location: %s" % (action_id, ", ".join(locations)))
+                dupe_actions.append(
+                    "{} is present in more than one location: {}".format(action_id, ", ".join(locations))
+                )
 
         assert not dupe_actions, "\n".join(dupe_actions)
 
@@ -228,12 +230,14 @@ class TestGetActions:
         filesystem_detected_actions_count = 0
         for rootdir, dirnames, filenames in os.walk(os.path.dirname(actions.__file__)):
             for directory in dirnames:
-                if "%s.%s." % (actions.__name__, directory) == "convert2rhel.actions.post_ponr":
+                if "{}.{}.".format(actions.__name__, directory) == "convert2rhel.actions.post_ponr":
                     continue
 
                 # Add to the actions that the production code finds here as it is non-recursive
                 computed_actions.extend(
-                    actions.get_actions([os.path.join(rootdir, directory)], "%s.%s." % (actions.__name__, directory))
+                    actions.get_actions(
+                        [os.path.join(rootdir, directory)], "{}.{}.".format(actions.__name__, directory)
+                    )
                 )
 
             for filename in (os.path.join(rootdir, filename) for filename in filenames):
@@ -253,10 +257,7 @@ class TestGetActions:
     def test_no_actions(self, tmpdir):
         """No Actions returns an empty list."""
         # We need to make sure this returns an empty set, not just false-y
-        assert (
-            actions.get_actions([str(tmpdir)], "tmp.")
-            == set()  # pylint: disable=use-implicit-booleaness-not-comparison
-        )
+        assert actions.get_actions([str(tmpdir)], "tmp.") == set()
 
     @pytest.mark.parametrize(
         (
@@ -280,7 +281,7 @@ class TestGetActions:
         test_data = os.path.join(data_dir, test_dir_name)
         computed_action_names = sorted(
             m.__name__
-            for m in actions.get_actions([test_data], "convert2rhel.unit_tests.actions.data.%s." % test_dir_name)
+            for m in actions.get_actions([test_data], "convert2rhel.unit_tests.actions.data.{}.".format(test_dir_name))
         )
         assert computed_action_names == sorted(expected_action_names)
 
@@ -295,7 +296,6 @@ class TestStage:
     # Tests that the Stage is crated successfully
     #
     def test_init(self, stage_actions):
-
         stage1 = actions.Stage("good_deps1", "Task Header")
         stage2 = actions.Stage("good_deps_failed_actions", "Task Header2", stage1)
 

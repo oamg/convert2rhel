@@ -135,7 +135,7 @@ class TestPEMCert:
         assert system_cert._cert_filename == pem
         assert system_cert._source_cert_path == os.path.join(source_cert_dir, pem)
         assert system_cert._target_cert_path == os.path.join(fake_target_dir, pem)
-        assert system_cert.previously_installed == False
+        assert not system_cert.previously_installed
 
     def test_enable_cert(self, system_cert_with_target_path):
         system_cert_with_target_path.enable()
@@ -199,7 +199,7 @@ class TestPEMCert:
         assert system_cert_with_target_path.enabled
         assert system_cert_with_target_path.previously_installed
         assert (
-            "Certificate already present at %s. Skipping copy." % system_cert_with_target_path._target_cert_path
+            "Certificate already present at {}. Skipping copy.".format(system_cert_with_target_path._target_cert_path)
             == caplog.messages[-1]
         )
 
@@ -222,7 +222,7 @@ class TestPEMCert:
 
         system_cert_with_target_path.restore()
 
-        assert "Certificate %s removed" % system_cert_with_target_path._target_cert_path in caplog.messages[-1]
+        assert "Certificate {} removed".format(system_cert_with_target_path._target_cert_path) in caplog.messages[-1]
 
     def test_restore_cert_previously_installed(self, caplog, monkeypatch, system_cert_with_target_path):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
@@ -231,8 +231,9 @@ class TestPEMCert:
         system_cert_with_target_path.restore()
 
         assert (
-            "Certificate %s was present before conversion. Skipping removal."
-            % system_cert_with_target_path._cert_filename
+            "Certificate {} was present before conversion. Skipping removal.".format(
+                system_cert_with_target_path._cert_filename
+            )
             in caplog.messages[-1]
         )
 

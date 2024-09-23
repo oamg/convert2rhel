@@ -337,7 +337,7 @@ class TestBackupSystem:
                     path = line.split()[-1]
                     with open(path, mode="w") as f:
                         # Append the original path to the content
-                        f.write("Content for testing of file %s" % path)
+                        f.write("Content for testing of file {}".format(path))
                 except (OSError, IOError):
                     # case with invalid filepath
                     pass
@@ -365,7 +365,7 @@ class TestBackupSystem:
             if backed_up[i]:
                 # Check if the file exists and contains right content
                 with open(backed_up_file_path, mode="r") as f:
-                    assert f.read() == "Content for testing of file %s" % original_file_path
+                    assert f.read() == "Content for testing of file {}".format(original_file_path)
                 # Remove the original file
                 try:
                     os.remove(original_file_path)
@@ -379,7 +379,7 @@ class TestBackupSystem:
             elif status == "missing":
                 with open(original_file_path, mode="w") as f:
                     # Append the original path to the content
-                    f.write("Content for testing of file %s" % original_file_path)
+                    f.write("Content for testing of file {}".format(original_file_path))
             else:
                 assert not os.path.isfile(backed_up_file_path)
 
@@ -395,7 +395,7 @@ class TestBackupSystem:
             if backed_up[i]:
                 assert os.path.isfile(original_file_path)
                 with open(original_file_path, mode="r") as f:
-                    assert f.read() == "Content for testing of file %s" % original_file_path
+                    assert f.read() == "Content for testing of file {}".format(original_file_path)
             elif status == "missing":
                 assert not os.path.isfile(original_file_path)
 
@@ -470,7 +470,7 @@ class TestBackupRepository:
         backup_repository = backup_repository_action
 
         backup_repository.run()
-        assert ("Repository folder %s seems to be empty." % etc) in caplog.text
+        assert ("Repository folder {} seems to be empty.".format(etc)) in caplog.text
 
 
 class TestBackupVariables:

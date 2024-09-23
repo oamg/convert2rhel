@@ -54,7 +54,7 @@ def remove_entitlement_certs():
         try:
             os.unlink(cert_path)
         except Exception as e:
-            print("Failed to delete %s. Reason: %s" % (cert_path, e))
+            print("Failed to delete {}. Reason: {}".format(cert_path, e))
 
 
 def test_package_download_error(convert2rhel, shell, yum_cache):

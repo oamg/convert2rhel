@@ -38,8 +38,8 @@ def readonly_mount_detection(mount_point):
         if file_mount_point == mount_point:
             if "ro" in flags:
                 return True
-            logger.debug("%s mount point is not read-only." % file_mount_point)
-    logger.info("Read-only %s mount point not detected." % mount_point)
+            logger.debug("{} mount point is not read-only.".format(file_mount_point))
+    logger.info("Read-only {} mount point not detected.".format(mount_point))
     return False
 
 

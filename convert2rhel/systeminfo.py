@@ -104,7 +104,7 @@ class SystemInfo:
         # Operating system name (e.g. Oracle Linux)
         self.name = None
         # Single-word lowercase identificator of the system (e.g. oracle)
-        self.id = None  # pylint: disable=C0103
+        self.id = None
         # The optional last part of the distribution name in brackets: "... (Core)" or "... (Oopta)"
         self.distribution_id = None
         # Major and minor version of the operating system (e.g. version.major == 8, version.minor == 7)
@@ -236,7 +236,7 @@ class SystemInfo:
         )
 
         if not matched:
-            self.logger.critical_no_exit("Couldn't parse the system release content string: %s" % content)
+            self.logger.critical_no_exit("Couldn't parse the system release content string: {}".format(content))
             return {}
 
         name = matched.group("name")
@@ -328,7 +328,7 @@ class SystemInfo:
             return self.cfg_content[option_name]
         else:
             self.logger.error(
-                "Internal error: %s option not found in %s config file." % (option_name, self.cfg_filename)
+                "Internal error: {} option not found in {} config file.".format(option_name, self.cfg_filename)
             )
 
     def _get_gpg_key_ids(self):
@@ -421,7 +421,7 @@ class SystemInfo:
         rpm_va, _ = utils.run_subprocess(["rpm", "-Va", "--nodeps"], print_output=False)
         output_file = os.path.join(logger.LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
-        self.logger.info("The 'rpm -Va' output has been stored in the %s file." % output_file)
+        self.logger.info("The 'rpm -Va' output has been stored in the {} file.".format(output_file))
 
     @staticmethod
     def is_rpm_installed(name):
@@ -491,7 +491,7 @@ class SystemInfo:
 
             # Wait for 1 second, 2 seconds, and then 4 seconds for dbus to be running
             # (In case it was started before convert2rhel but it is slow to start)
-            time.sleep(2 ** retries)
+            time.sleep(2**retries)
             retries += 1
 
         else:  # while-else
@@ -549,4 +549,4 @@ def is_systemd_managed_service_running(service):
 
 
 # Code to be executed upon module import
-system_info = SystemInfo()  # pylint: disable=C0103
+system_info = SystemInfo()

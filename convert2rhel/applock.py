@@ -99,7 +99,7 @@ class ApplicationLock:
                 if exc.errno == errno.EEXIST:
                     return False
                 raise exc
-        logger.debug("%s." % self)
+        logger.debug("{}.".format(self))
         return True
 
     @property
@@ -139,14 +139,14 @@ class ApplicationLock:
             self._locked = True
             return
         if _recursive:
-            raise ApplicationLockedError("Cannot lock %s" % self._name)
+            raise ApplicationLockedError("Cannot lock {}".format(self._name))
 
         with open(self._pidfile, "r") as f:
             file_contents = f.read()
         try:
             pid = int(file_contents.rstrip())
         except ValueError:
-            raise ApplicationLockedError("Lock file %s is corrupt" % self._pidfile)
+            raise ApplicationLockedError("Lock file {} is corrupt".format(self._pidfile))
 
         if self._pid_exists(pid):
             raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
@@ -167,7 +167,7 @@ class ApplicationLock:
             return
         os.unlink(self._pidfile)
         self._locked = False
-        logger.debug("%s." % self)
+        logger.debug("{}.".format(self))
 
     def __enter__(self):
         self.try_to_lock()

@@ -1,5 +1,4 @@
 from conftest import SYSTEM_RELEASE_ENV
-from test_helpers.workarounds import workaround_hybrid_rocky_image
 
 
 def test_install_non_latest_kernel(shell, workaround_hybrid_rocky_image):
