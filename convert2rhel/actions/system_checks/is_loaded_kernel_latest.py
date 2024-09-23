@@ -33,7 +33,7 @@ class IsLoadedKernelLatest(actions.Action):
 
     # disabling here as some of the return statements would be raised as exceptions in normal code
     # but we don't do that in an Action class
-    def run(self):  # pylint: disable= too-many-return-statements
+    def run(self):
         """Check if the loaded kernel is behind or of the same version as in yum repos."""
         super(IsLoadedKernelLatest, self).run()
         logger.task("Prepare: Check if the loaded kernel version is the most recent")
@@ -70,8 +70,8 @@ class IsLoadedKernelLatest(actions.Action):
         if "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" in os.environ:
             logger.warning(
                 "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                "the %s comparison.\n"
-                "Beware, this could leave your system in a broken state." % package_to_check
+                "the {} comparison.\n"
+                "Beware, this could leave your system in a broken state.".format(package_to_check)
             )
 
             self.add_message(
@@ -80,8 +80,8 @@ class IsLoadedKernelLatest(actions.Action):
                 title="Did not perform the kernel currency check",
                 description=(
                     "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                    "the %s comparison.\n"
-                    "Beware, this could leave your system in a broken state." % package_to_check
+                    "the {} comparison.\n"
+                    "Beware, this could leave your system in a broken state.".format(package_to_check)
                 ),
             )
             return
@@ -126,7 +126,7 @@ class IsLoadedKernelLatest(actions.Action):
                 # Mainly for debugging purposes to see what is happening if we got
                 # anything else that does not have the C2R identifier at the start
                 # of the line.
-                logger.debug("Got a line without the C2R identifier: %s" % line)
+                logger.debug("Got a line without the C2R identifier: {}".format(line))
 
         # If we don't have any packages, then something went wrong, bail out by default
         if not packages:
@@ -136,7 +136,9 @@ class IsLoadedKernelLatest(actions.Action):
                 title="Kernel currency check failed",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=(
-                    "Could not find any %s from repositories to compare against the loaded kernel." % package_to_check
+                    "Could not find any {} from repositories to compare against the loaded kernel.".format(
+                        package_to_check
+                    )
                 ),
                 remediations=(
                     "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
@@ -153,8 +155,8 @@ class IsLoadedKernelLatest(actions.Action):
         loaded_kernel = uname_output.rsplit(".", 1)[0]
         # append the package name to loaded_kernel and latest_kernel so they can be properly processed by
         # compare_package_versions()
-        latest_kernel_pkg = "%s-%s" % (package_to_check, latest_kernel)
-        loaded_kernel_pkg = "%s-%s" % (package_to_check, loaded_kernel)
+        latest_kernel_pkg = "{}-{}".format(package_to_check, latest_kernel)
+        loaded_kernel_pkg = "{}-{}".format(package_to_check, loaded_kernel)
         try:
             match = compare_package_versions(latest_kernel_pkg, loaded_kernel_pkg)
         except ValueError as exc:
@@ -175,15 +177,15 @@ class IsLoadedKernelLatest(actions.Action):
                 description="The loaded kernel version mismatch the latest one available in system repositories",
                 diagnosis=(
                     "The version of the loaded kernel is different from the latest version in system repositories. \n"
-                    " Latest kernel version available in %s: %s\n"
-                    " Loaded kernel version: %s" % (repoid, latest_kernel, loaded_kernel)
+                    " Latest kernel version available in {}: {}\n"
+                    " Loaded kernel version: {}".format(repoid, latest_kernel, loaded_kernel)
                 ),
                 remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
-                    "1. yum install %s-%s -y\n"
+                    "1. yum install {}-{} -y\n"
                     "2. reboot\n"
                     "If you wish to ignore this message, set the environment variable "
-                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1." % (package_to_check, latest_kernel)
+                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1.".format(package_to_check, latest_kernel)
                 ),
             )
             return

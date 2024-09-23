@@ -35,7 +35,7 @@ def test_remove_tmp_dir(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
     assert os.path.isdir(path)
     remove_tmp_dir_instance.run()
-    assert "Temporary folder %s removed" % path in caplog.text
+    assert "Temporary folder {} removed".format(path) in caplog.text
     assert not os.path.isdir(path)
 
 
@@ -45,7 +45,7 @@ def test_remove_tmp_dir_non_existent(remove_tmp_dir_instance, monkeypatch, caplo
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
     assert not os.path.isdir(path)
     remove_tmp_dir_instance.run()
-    assert "Temporary folder %s removed" % path not in caplog.text
+    assert "Temporary folder {} removed".format(path) not in caplog.text
 
 
 def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
@@ -55,8 +55,8 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
     os.chmod(path, 0)
     remove_tmp_dir_instance.run()
     expected_message = (
-        "The folder %s is left untouched. You may remove the folder manually"
-        " after you ensure there is no preserved data you would need." % path
+        "The folder {} is left untouched. You may remove the folder manually"
+        " after you ensure there is no preserved data you would need.".format(path)
     )
     expected = set(
         (

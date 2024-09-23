@@ -207,7 +207,6 @@ def test_ensure_compatibility_of_kmods_check_env_and_message(
     pretend_os,
     caplog,
 ):
-
     monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS": "1"})
     monkeypatch.setattr(
         ensure_kernel_modules_compatibility_instance, "_get_loaded_kmods", mock.Mock(return_value=HOST_MODULES_STUB_BAD)

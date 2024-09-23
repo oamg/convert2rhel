@@ -6,7 +6,7 @@ import pytest
 
 from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
 from test_helpers.vars import SYSTEM_RELEASE_ENV
-from test_helpers.workarounds import workaround_grub_setup, workaround_hybrid_rocky_image
+from test_helpers.workarounds import workaround_grub_setup
 
 
 def _cross_vendor_kernel():
@@ -67,7 +67,7 @@ def custom_kernel(shell, workaround_hybrid_rocky_image, backup_directory):
     kernel_info_storage = os.path.join(backup_directory, "original-kernel")
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         # Store the current running kernel NVRA in a file
-        shell("echo $(uname -r) > %s" % kernel_info_storage)
+        shell("echo $(uname -r) > {}".format(kernel_info_storage))
 
         # The version of yum on el7 like systems does not allow the --repofrompath option.
         # Therefore, we need to install the rpm directly

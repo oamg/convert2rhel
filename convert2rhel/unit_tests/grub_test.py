@@ -98,7 +98,7 @@ def test__get_partition(monkeypatch, caplog, expected_res, directory, exception,
     if exception:
         with pytest.raises(exception):
             grub._get_partition(directory)
-        assert "grub2-probe returned %s. Output:\n%s" % (subproc[1], subproc[0]) in caplog.records[-1].message
+        assert "grub2-probe returned {}. Output:\n{}".format(subproc[1], subproc[0]) in caplog.records[-1].message
     else:
         assert grub._get_partition(directory) == expected_res
         assert len(caplog.records) == 0

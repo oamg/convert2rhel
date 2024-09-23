@@ -52,7 +52,7 @@ def lock_releasever_in_rhel_repositories_instance():
 def test_lock_releasever_in_rhel_repositories(
     lock_releasever_in_rhel_repositories_instance, subprocess, expected, monkeypatch, caplog, pretend_os
 ):
-    cmd = ["subscription-manager", "release", "--set=%s" % system_info.releasever]
+    cmd = ["subscription-manager", "release", "--set={}".format(system_info.releasever)]
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
             (cmd, subprocess),

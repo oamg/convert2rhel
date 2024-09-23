@@ -10,7 +10,7 @@ Below are a list of things to keep in mind when developing and submitting
 contributions to this repository.
 
 1. All python code must be compatible with versions 2.7/3.6.
-2. The code should follow linting from pylint.
+2. The code should follow linting from ruff.
 3. All commits should have passed the pre-commit checks.
 4. Don't change code that is not related to your issue/ticket, open a new
    issue/ticket if that's the case.

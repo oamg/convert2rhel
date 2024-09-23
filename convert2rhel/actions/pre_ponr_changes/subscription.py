@@ -137,7 +137,7 @@ class PreSubscription(actions.Action):
                 id="UNABLE_TO_REGISTER",
                 title="System unregistration failure",
                 description="The system is already registered with subscription-manager even though it is running CentOS not RHEL. We have failed to remove that registration.",
-                diagnosis="Failed to unregister the system: %s" % e,
+                diagnosis="Failed to unregister the system: {}".format(e),
                 remediations="You may want to unregister the system manually and re-run convert2rhel.",
             )
 
@@ -227,7 +227,7 @@ class SubscribeSystem(actions.Action):
                 id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
                 title="Missing subscription-manager binary",
                 description="There is a missing subscription-manager binary",
-                diagnosis="Failed to execute command: %s" % e,
+                diagnosis="Failed to execute command: {}".format(e),
             )
         except exceptions.CriticalError as e:
             self.set_result(
@@ -255,5 +255,7 @@ class SubscribeSystem(actions.Action):
                 id="MISSING_REGISTRATION_COMBINATION",
                 title="Missing registration combination",
                 description="There are missing registration combinations",
-                diagnosis="One or more combinations were missing for subscription-manager parameters: %s" % str(e),
+                diagnosis="One or more combinations were missing for subscription-manager parameters: {}".format(
+                    str(e)
+                ),
             )

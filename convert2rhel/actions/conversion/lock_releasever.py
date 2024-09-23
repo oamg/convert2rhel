@@ -53,16 +53,17 @@ class LockReleaseverInRHELRepositories(actions.Action):
             )
             return
         loggerinst.info(
-            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL %s instead of the default latest minor version."
-            % system_info.releasever
+            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL {} instead of the default latest minor version.".format(
+                system_info.releasever
+            )
         )
         cmd = [
             "subscription-manager",
             "release",
-            "--set=%s" % system_info.releasever,
+            "--set={}".format(system_info.releasever),
         ]
         _, ret_code = utils.run_subprocess(cmd, print_output=False)
         if ret_code != 0:
             loggerinst.warning("Locking RHEL repositories failed.")
             return
-        loggerinst.info("RHEL repositories locked to the %s minor version." % system_info.releasever)
+        loggerinst.info("RHEL repositories locked to the {} minor version.".format(system_info.releasever))

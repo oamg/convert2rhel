@@ -53,7 +53,7 @@ def get_rhel_repoids():
     else:
         repos_needed = system_info.default_rhsm_repoids
 
-    logger.info("RHEL repository IDs to enable: %s" % ", ".join(repos_needed))
+    logger.info("RHEL repository IDs to enable: {}".format(", ".join(repos_needed)))
 
     return repos_needed
 
@@ -113,9 +113,8 @@ def download_repofile(repofile_url):
             contents = response.read()
 
             if not contents:
-                description = (
-                    "The requested repository file seems to be empty. No content received when checking for url: %s"
-                    % repofile_url
+                description = "The requested repository file seems to be empty. No content received when checking for url: {}".format(
+                    repofile_url
                 )
                 logger.critical_no_exit(description)
                 raise exceptions.CriticalError(
@@ -124,13 +123,13 @@ def download_repofile(repofile_url):
                     description=description,
                 )
 
-            logger.info("Successfully downloaded a repository file from %s." % repofile_url)
+            logger.info("Successfully downloaded a repository file from {}.".format(repofile_url))
             return contents.decode()
     except urllib.error.URLError as err:
         raise exceptions.CriticalError(
             id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
             title="Failed to download a repository file",
-            description="Failed to download a repository file from %s.\n" "Reason: %s" % (repofile_url, err.reason),
+            description="Failed to download a repository file from {}.\n" "Reason: {}".format(repofile_url, err.reason),
         )
 
 
@@ -150,8 +149,8 @@ def write_temporary_repofile(contents):
         raise exceptions.CriticalError(
             id_="CREATE_TMP_DIR_FOR_REPOFILES_FAILED",
             title="Failed to create a temporary directory",
-            description="Failed to create a temporary directory for storing a repository file under %s.\n"
-            "Reason: %s" % (TMP_DIR, str(err)),
+            description="Failed to create a temporary directory for storing a repository file under {}.\n"
+            "Reason: {}".format(TMP_DIR, str(err)),
         )
     with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
         try:
@@ -161,5 +160,5 @@ def write_temporary_repofile(contents):
             raise exceptions.CriticalError(
                 id_="STORE_REPOFILE_FAILED",
                 title="Failed to store a repository file",
-                description="Failed to write a repository file contents to %s.\n" "Reason: %s" % (f.name, str(err)),
+                description="Failed to write a repository file contents to {}.\n" "Reason: {}".format(f.name, str(err)),
             )

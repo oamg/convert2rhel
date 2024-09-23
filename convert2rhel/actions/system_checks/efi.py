@@ -87,8 +87,8 @@ class Efi(actions.Action):
             # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
             # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
             logger.warning(
-                "The current UEFI bootloader '%s' is not referring to any binary UEFI"
-                " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
+                "The current UEFI bootloader '{}' is not referring to any binary UEFI"
+                " file located on local EFI System Partition (ESP).".format(efiboot_info.current_bootnum)
             )
             self.add_message(
                 level="WARNING",
@@ -96,8 +96,8 @@ class Efi(actions.Action):
                 title="UEFI bootloader mismatch",
                 description="There was a UEFI bootloader mismatch.",
                 diagnosis=(
-                    "The current UEFI bootloader '%s' is not referring to any binary UEFI"
-                    " file located on local EFI System Partition (ESP)." % efiboot_info.current_bootnum
+                    "The current UEFI bootloader '{}' is not referring to any binary UEFI"
+                    " file located on local EFI System Partition (ESP).".format(efiboot_info.current_bootnum)
                 ),
             )
         # TODO(pstodulk): print warning when multiple orig. UEFI entries point

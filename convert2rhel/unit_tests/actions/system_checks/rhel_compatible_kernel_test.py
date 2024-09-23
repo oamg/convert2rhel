@@ -257,7 +257,7 @@ def test_bad_kernel_package_signature_success(
     monkeypatch.setattr(rhel_compatible_kernel, "get_installed_pkg_information", get_installed_pkg_information_mocked)
     assert rhel_compatible_kernel._bad_kernel_package_signature(kernel_release) == exp_return
     run_subprocess_mocked.assert_called_with(
-        ["rpm", "-qf", "--qf", "%{NEVRA}", "/boot/vmlinuz-%s" % kernel_release],
+        ["rpm", "-qf", "--qf", "%{NEVRA}", "/boot/vmlinuz-{}".format(kernel_release)],
         print_output=False,
     )
 
@@ -311,7 +311,7 @@ def test_bad_kernel_package_signature_invalid_signature(
     assert excinfo.value.template == template
     assert excinfo.value.variables == variables
     run_subprocess_mocked.assert_called_with(
-        ["rpm", "-qf", "--qf", "%{NEVRA}", "/boot/vmlinuz-%s" % kernel_release],
+        ["rpm", "-qf", "--qf", "%{NEVRA}", "/boot/vmlinuz-{}".format(kernel_release)],
         print_output=False,
     )
 

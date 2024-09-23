@@ -66,9 +66,10 @@ from convert2rhel.logger import root_logger
 logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
 
+
 # We need to double inherit here, both from the callback class and the base
 # object class, just to initialize properly with `super`
-class PackageDownloadCallback(pkgmanager.DownloadProgress, object):  # pylint: disable=useless-object-inheritance
+class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
     """Package download callback for YUM transaction."""
 
     def __init__(self):
@@ -113,7 +114,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress, object):  # pylint: d
         self.last_package_seen = name
 
 
-class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):  # pylint: disable=useless-object-inheritance
+class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):
     """Transaction display callback for YUM transaction."""
 
     def __init__(self):

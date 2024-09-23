@@ -50,7 +50,7 @@ class CriticalError(Exception):
         self.variables = variables or {}
 
     def __repr__(self):
-        return "%s(%r, %r, description=%r, diagnosis=%r, remediations=%r, variables=%r)" % (
+        return "{}({!r}, {!r}, description={!r}, diagnosis={!r}, remediations={!r}, variables={!r})".format(
             self.__class__.__name__,
             self.id,
             self.title,

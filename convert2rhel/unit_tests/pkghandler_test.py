@@ -94,7 +94,7 @@ class FakeDnfQuery:
         self.pkg_obj = TestPkgObj()
         self.pkg_obj.name = "installed_pkg"
 
-    def __iter__(self):  # pylint: disable=non-iterator-returned
+    def __iter__(self):
         return self
 
     def __next__(self):
@@ -338,7 +338,7 @@ class TestReplaceNonRHELInstalledKernel:
             "--force",
             "--nodeps",
             "--replacepkgs",
-            "%skernel-4.7.4-200.fc24*" % utils.TMP_DIR,
+            "{}kernel-4.7.4-200.fc24*".format(utils.TMP_DIR),
         ]
 
     def test_replace_non_rhel_installed_kernel_custom_repos(self, monkeypatch, global_tool_opts):
@@ -746,13 +746,13 @@ def test_get_total_packages_to_update(
     if package_manager_type == "dnf":
         monkeypatch.setattr(
             pkghandler,
-            "_get_packages_to_update_%s" % package_manager_type,
+            "_get_packages_to_update_{}".format(package_manager_type),
             value=lambda disable_repos: packages,
         )
     else:
         monkeypatch.setattr(
             pkghandler,
-            "_get_packages_to_update_%s" % package_manager_type,
+            "_get_packages_to_update_{}".format(package_manager_type),
             value=lambda disable_repos: packages,
         )
     assert get_total_packages_to_update() == expected
@@ -1806,9 +1806,9 @@ def test_get_package_repositories_repoquery_failure(pretend_os, monkeypatch, cap
     result = pkghandler._get_package_repositories(packages)
 
     assert "Repoquery exited with return code 1 and with output: failed" in caplog.records[-1].message
-    for package, repo in result.items():
+    for package, package_repo in result.items():
         assert package in packages
-        assert repo == "N/A"
+        assert package_repo == "N/A"
 
 
 @pytest.mark.parametrize(

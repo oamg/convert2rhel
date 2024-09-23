@@ -65,6 +65,7 @@ _REPORT_MAPPING = {
     ),
 }
 
+
 # Track the exit codes for different scenarios during the conversion.
 class ConversionExitCodes:
     # No errors detected during the conversion
@@ -96,7 +97,7 @@ def initialize_file_logging(log_name, log_dir):
     try:
         logger_module.archive_old_logger_files(log_name, log_dir)
     except (IOError, OSError) as e:
-        loggerinst.warning("Unable to archive previous log: %s" % e)
+        loggerinst.warning("Unable to archive previous log: {}".format(e))
 
     logger_module.add_file_handler(log_name, log_dir)
 
@@ -210,7 +211,7 @@ def main_locked():
         loggerinst.critical_no_exit(err.diagnosis)
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
         return _handle_main_exceptions(process_phase, results)
-    except (Exception, SystemExit, KeyboardInterrupt) as err:
+    except (Exception, SystemExit, KeyboardInterrupt):
         results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
         return _handle_main_exceptions(process_phase, results)
     finally:
@@ -394,7 +395,7 @@ def provide_status_after_rollback(pre_conversion_results, include_all_reports):
             "It is strongly recommended to store the Convert2RHEL logs for later investigation, and restore"
             " the system from a backup.\n"
             "Following errors were captured during rollback:\n"
-            "%s" % "\n".join(backup.backup_control.rollback_failures)
+            "{}".format("\n".join(backup.backup_control.rollback_failures))
         )
 
         return

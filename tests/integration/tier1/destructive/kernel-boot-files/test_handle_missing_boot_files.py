@@ -13,7 +13,7 @@ def get_latest_installed_kernel_version(kernel_name):
 
     output = subprocess.check_output(["rpm", "-q", "--last", kernel_name]).decode()
     latest_installed_kernel = output.split("\n", maxsplit=1)[0].split(" ")[0]
-    latest_installed_kernel = latest_installed_kernel.split("%s-" % kernel_name)[-1]
+    latest_installed_kernel = latest_installed_kernel.split("{}-".format(kernel_name))[-1]
     return latest_installed_kernel.strip()
 
 
@@ -28,8 +28,8 @@ def remove_kernel_boot_files(shell, kernel_version):
     assert os.path.exists(vmlinuz_file)
 
     # Remove the installed RHEL kernel boot files, simulating that they failed to be generated during the conversion
-    assert shell("rm -f %s" % initramfs_file).returncode == 0
-    assert shell("rm -f %s" % vmlinuz_file).returncode == 0
+    assert shell("rm -f {}".format(initramfs_file)).returncode == 0
+    assert shell("rm -f {}".format(vmlinuz_file)).returncode == 0
 
 
 def test_handling_missing_kernel_boot_files(convert2rhel, shell):

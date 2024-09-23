@@ -130,12 +130,13 @@ class CLI:
             action="store_true",
             help="Skip gathering changed rpm files using"
             " 'rpm -Va'. By default it's performed before and after the conversion with the output"
-            " stored in log files %s and %s. At the end of the conversion, these logs are compared"
+            " stored in log files {} and {}. At the end of the conversion, these logs are compared"
             " to show you what rpm files have been affected by the conversion."
             " Cannot be used with analyze subcommand."
             " The environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK"
-            " needs to be set to 1 to use this argument."
-            % (utils.rpm.PRE_RPM_VA_LOG_FILENAME, utils.rpm.POST_RPM_VA_LOG_FILENAME),
+            " needs to be set to 1 to use this argument.".format(
+                utils.rpm.PRE_RPM_VA_LOG_FILENAME, utils.rpm.POST_RPM_VA_LOG_FILENAME
+            ),
         )
         self._shared_options_parser.add_argument(
             "--eus",
@@ -316,7 +317,7 @@ def _subcommand_used(args):
         if argument in ("convert", "analyze"):
             return argument
 
-        if not argument in PARENT_ARGS and args[index - 1] in ARGS_WITH_VALUES:
+        if argument not in PARENT_ARGS and args[index - 1] in ARGS_WITH_VALUES:
             return None
 
     return None

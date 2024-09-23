@@ -81,7 +81,7 @@ class BackupRepository(actions.Action):
 
         super(BackupRepository, self).run()
 
-        logger.info("Backing up .repo files from %s." % DEFAULT_YUM_REPOFILE_DIR)
+        logger.info("Backing up .repo files from {}.".format(DEFAULT_YUM_REPOFILE_DIR))
 
         if not os.listdir(DEFAULT_YUM_REPOFILE_DIR):
             logger.info("Repository folder %s seems to be empty.", DEFAULT_YUM_REPOFILE_DIR)
@@ -90,7 +90,7 @@ class BackupRepository(actions.Action):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 
             if not repo.endswith(".repo"):
-                logger.info("Skipping backup as %s is not a repository file." % repo)
+                logger.info("Skipping backup as {} is not a repository file.".format(repo))
                 continue
 
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
@@ -107,11 +107,11 @@ class BackupYumVariables(actions.Action):
 
         super(BackupYumVariables, self).run()
 
-        logger.info("Backing up variables files from %s." % DEFAULT_YUM_VARS_DIR)
+        logger.info("Backing up variables files from {}.".format(DEFAULT_YUM_VARS_DIR))
         self._backup_variables(path=DEFAULT_YUM_VARS_DIR)
 
         if system_info.version.major >= 8:
-            logger.info("Backing up variables files from %s." % DEFAULT_DNF_VARS_DIR)
+            logger.info("Backing up variables files from {}.".format(DEFAULT_DNF_VARS_DIR))
             self._backup_variables(path=DEFAULT_DNF_VARS_DIR)
 
     def _backup_variables(self, path):
@@ -195,7 +195,7 @@ class BackupPackageFiles(actions.Action):
             else:
                 # The file should be there
                 # If missing conversion is in unknown state
-                logger.warning("Error(%s): %s" % (err.errno, err.strerror))
+                logger.warning("Error({}): {}".format(err.errno, err.strerror))
                 logger.critical("Missing file {rpm_va_output} in it's location".format(rpm_va_output=path))
 
         lines = output.strip().split("\n")
@@ -214,7 +214,7 @@ class BackupPackageFiles(actions.Action):
         if not match:  # line not matching the regex
             if line.strip() != "":
                 # Line is not empty string
-                logger.debug("Skipping invalid output %s" % line)
+                logger.debug("Skipping invalid output {}".format(line))
             return {"status": None, "file_type": None, "path": None}
 
         line = line.split()

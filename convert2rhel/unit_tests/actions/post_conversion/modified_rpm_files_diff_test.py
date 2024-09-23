@@ -20,7 +20,7 @@ import logging
 import pytest
 import six
 
-from convert2rhel import actions, logger, systeminfo, toolopts, utils
+from convert2rhel import actions, logger, systeminfo, utils
 from convert2rhel.actions.post_conversion import modified_rpm_files_diff
 from convert2rhel.systeminfo import system_info
 

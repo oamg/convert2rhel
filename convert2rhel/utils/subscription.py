@@ -60,7 +60,7 @@ def setup_rhsm_parts(opts):
                 loggerinst.critical(
                     "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
                     "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
-                    "Supplied serverurl: %s\nError: %s" % (opts.serverurl, e)
+                    "Supplied serverurl: {}\nError: {}".format(opts.serverurl, e)
                 )
 
             rhsm_parts["rhsm_hostname"] = url_parts.hostname
@@ -88,7 +88,7 @@ def _parse_subscription_manager_serverurl(serverurl):
             raise ValueError("Unable to parse --serverurl. Make sure it starts with http://HOST or https://HOST")
 
         # If there isn't a scheme, add one now
-        serverurl = "https://%s" % serverurl
+        serverurl = "https://{}".format(serverurl)
 
     url_parts = urllib.parse.urlsplit(serverurl, allow_fragments=False)
 
@@ -105,7 +105,7 @@ def _validate_serverurl_parsing(url_parts):
     """
     if url_parts.scheme not in ("https", "http"):
         raise ValueError(
-            "Subscription manager must be accessed over http or https.  %s is not valid" % url_parts.scheme
+            "Subscription manager must be accessed over http or https.  {} is not valid".format(url_parts.scheme)
         )
 
     if not url_parts.hostname:

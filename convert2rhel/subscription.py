@@ -103,7 +103,7 @@ def remove_subscription():
     subscription_removal_cmd = ["subscription-manager", "remove", "--all"]
     output, ret_code = utils.run_subprocess(subscription_removal_cmd, print_output=False)
     if ret_code != 0:
-        raise SubscriptionRemovalError("Subscription removal result\n%s" % output)
+        raise SubscriptionRemovalError("Subscription removal result\n{}".format(output))
     else:
         logger.info("Subscription removal successful.")
 
@@ -141,7 +141,7 @@ def unregister_system():
     unregistration_cmd = ["subscription-manager", "unregister"]
     output, ret_code = utils.run_subprocess(unregistration_cmd, print_output=False)
     if ret_code != 0:
-        raise UnregisterError("System unregistration result:\n%s" % output)
+        raise UnregisterError("System unregistration result:\n{}".format(output))
     else:
         logger.info("System unregistered successfully.")
 
@@ -211,13 +211,15 @@ def register_system():
                 os_release_file.restore(rollback=False)
         except (OSError, IOError) as e:
             logger.critical_no_exit(
-                "Failed to restore the /etc/os-release file needed for subscribing the system with message: %s" % str(e)
+                "Failed to restore the /etc/os-release file needed for subscribing the system with message: {}".format(
+                    str(e)
+                )
             )
             raise exceptions.CriticalError(
                 id_="FAILED_TO_SUBSCRIBE_SYSTEM",
                 title="Failed to subscribe system.",
                 description="Failed to restore the /etc/os-release file needed for subscribing the system.",
-                diagnosis="The restore failed with error %s." % (str(e)),
+                diagnosis="The restore failed with error {}.".format(str(e)),
             )
 
         try:
@@ -232,7 +234,7 @@ def register_system():
             # When the user hits Control-C to exit, we shouldn't retry
             raise
         except Exception as e:
-            logger.info("System registration failed with error: %s" % str(e))
+            logger.info("System registration failed with error: {}".format(str(e)))
             troublesome_exception = e
             sleep(REGISTRATION_ATTEMPT_DELAYS[attempt])
             attempt += 1
@@ -247,7 +249,7 @@ def register_system():
             id_="FAILED_TO_SUBSCRIBE_SYSTEM",
             title="Failed to subscribe system.",
             description="After several attempts, convert2rhel was unable to subscribe the system using subscription-manager. This issue might occur because of but not limited to DBus, file permission-related issues, bad credentials, or network issues.",
-            diagnosis="System registration failed with error %s." % (str(troublesome_exception)),
+            diagnosis="System registration failed with error {}.".format(str(troublesome_exception)),
         )
 
     return None
@@ -265,7 +267,7 @@ def refresh_subscription_info():
 
     if ret_code != 0:
         raise RefreshSubscriptionManagerError(
-            "Asking subscription-manager to reexamine its configuration failed: %s; output: %s" % (ret_code, output)
+            "Asking subscription-manager to reexamine its configuration failed: {}; output: {}".format(ret_code, output)
         )
 
     logger.info("subscription-manager has reloaded its configuration.")
@@ -276,7 +278,7 @@ def _stop_rhsm():
     cmd = ["/bin/systemctl", "stop", "rhsm"]
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:
-        raise StopRhsmError("Stopping RHSM failed with code: %s; output: %s" % (ret_code, output))
+        raise StopRhsmError("Stopping RHSM failed with code: {}; output: {}".format(ret_code, output))
     logger.info("RHSM service stopped.")
 
 
@@ -558,11 +560,11 @@ class RegistrationCommand:
             logger.info("Setting RHSM connection configuration.")
             sub_man_config_command = ["subscription-manager", "config"]
             for option, value in self.connection_opts.items():
-                sub_man_config_command.append("--%s=%s" % (CONNECT_OPT_NAME_TO_CONFIG_KEY[option], value))
+                sub_man_config_command.append("--{}={}".format(CONNECT_OPT_NAME_TO_CONFIG_KEY[option], value))
 
             output, ret_code = utils.run_subprocess(sub_man_config_command, print_cmd=True)
             if ret_code != 0:
-                raise ValueError("Error setting the subscription-manager connection configuration: %s" % output)
+                raise ValueError("Error setting the subscription-manager connection configuration: {}".format(output))
 
             logger.info("Successfully set RHSM connection configuration.")
 
@@ -628,8 +630,8 @@ def install_rhel_subscription_manager(pkgs_to_install):
         client_tools_repofile_path = repo.write_temporary_repofile(contents)
 
     reposdir = [os.path.dirname(client_tools_repofile_path), backedup_reposdir]
-    setopts.append("reposdir=%s" % ",".join(reposdir))
-    setopts.append("varsdir=%s" % backedup_varsdir)
+    setopts.append("reposdir={}".format(",".join(reposdir)))
+    setopts.append("varsdir={}".format(backedup_varsdir))
     installed_pkg_set = RestorablePackageSet(
         pkgs_to_install,
         custom_releasever=system_info.version.major,
@@ -722,7 +724,7 @@ def get_pool_id(sub_raw_attrs):
     if pool_id:
         return pool_id.group(1)
 
-    logger.critical("Cannot parse the subscription pool ID from string:\n%s" % sub_raw_attrs)
+    logger.critical("Cannot parse the subscription pool ID from string:\n{}".format(sub_raw_attrs))
 
 
 def verify_rhsm_installed():
@@ -751,12 +753,12 @@ def disable_repos():
     cmd.extend(disable_cmd)
     output, ret_code = utils.run_subprocess(cmd, print_output=False)
     if ret_code != 0:
-        logger.critical_no_exit("Could not disable subscription-manager repositories:\n%s" % output)
+        logger.critical_no_exit("Could not disable subscription-manager repositories:\n{}".format(output))
         raise exceptions.CriticalError(
             id_="FAILED_TO_DISABLE_SUBSCRIPTION_MANAGER_REPOSITORIES",
             title="Could not disable repositories through subscription-manager.",
             description="As part of the conversion process, convert2rhel disables all current subscription-manager repositories and enables only repositories required for the conversion. convert2rhel was unable to disable these repositories, and the conversion is unable to proceed.",
-            diagnosis="Failed to disable repositories: %s." % (output),
+            diagnosis="Failed to disable repositories: {}.".format(output),
         )
 
     logger.info("Repositories disabled.")
@@ -782,7 +784,7 @@ def enable_repos(rhel_repoids):
     """
     repos_to_enable = tool_opts.enablerepo if tool_opts.enablerepo else rhel_repoids
 
-    logger.info("Trying to enable the following RHEL repositories: %s" % ", ".join(repos_to_enable))
+    logger.info("Trying to enable the following RHEL repositories: {}".format(", ".join(repos_to_enable)))
     submgr_enable_repos(repos_to_enable)
 
     system_info.submgr_enabled_repos = repos_to_enable
@@ -791,12 +793,12 @@ def enable_repos(rhel_repoids):
 def submgr_enable_repos(repos_to_enable):
     """Go through subscription manager repos and try to enable them through subscription-manager."""
     enable_cmd = ["subscription-manager", "repos"]
-    for repo in repos_to_enable:
-        enable_cmd.append("--enable=%s" % repo)
+    for repo_to_enable in repos_to_enable:
+        enable_cmd.append("--enable={}".format(repo_to_enable))
 
     output, ret_code = utils.run_subprocess(enable_cmd, print_output=False)
     if ret_code != 0:
-        description = "Repositories were not possible to enable through subscription-manager:\n%s" % output
+        description = "Repositories were not possible to enable through subscription-manager:\n{}".format(output)
         logger.critical_no_exit(description)
         raise exceptions.CriticalError(
             id_="FAILED_TO_ENABLE_RHSM_REPOSITORIES",
@@ -837,10 +839,10 @@ def needed_subscription_manager_pkgs():
     # `get_installed_pkg_information()` again.
     installed_submgr_pkgs = [pkg.nevra.name for pkg in installed_submgr_pkgs]
 
-    logger.debug("Need the following packages: %s" % utils.format_sequence_as_message(subscription_manager_pkgs))
-    logger.debug("Detected the following packages: %s" % utils.format_sequence_as_message(installed_submgr_pkgs))
+    logger.debug("Need the following packages: {}".format(utils.format_sequence_as_message(subscription_manager_pkgs)))
+    logger.debug("Detected the following packages: {}".format(utils.format_sequence_as_message(installed_submgr_pkgs)))
 
-    logger.debug("Packages we will install: %s" % utils.format_sequence_as_message(to_install_pkgs))
+    logger.debug("Packages we will install: {}".format(utils.format_sequence_as_message(to_install_pkgs)))
 
     return to_install_pkgs
 
@@ -929,7 +931,7 @@ def get_rhsm_facts():
             logger.info("RHSM facts loaded.")
     except (IOError, ValueError) as e:
         logger.critical_no_exit(
-            "Failed to get the RHSM facts : %s." % e,
+            "Failed to get the RHSM facts : {}.".format(e),
         )
     return rhsm_facts
 

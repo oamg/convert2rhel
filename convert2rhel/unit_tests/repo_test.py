@@ -20,13 +20,10 @@ __metaclass__ = type
 import os
 
 import pytest
-import six
 
 from convert2rhel import exceptions, repo
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock, urllib
 
 

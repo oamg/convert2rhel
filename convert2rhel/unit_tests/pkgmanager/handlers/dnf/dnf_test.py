@@ -178,7 +178,7 @@ class TestDnfTransactionHandler:
         monkeypatch.setattr(system_info, "get_enabled_rhel_repos", lambda: enabled_rhel_repos)
         instance._enable_repos()
 
-        assert "Enabling RHEL repositories:\n%s" % "\n".join(enabled_rhel_repos) in caplog.records[-1].message
+        assert "Enabling RHEL repositories:\n{}".format("\n".join(enabled_rhel_repos)) in caplog.records[-1].message
 
         for repo in enabled_repos:
             assert repo.enabled == is_enabled

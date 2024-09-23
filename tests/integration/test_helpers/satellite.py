@@ -39,7 +39,7 @@ class Satellite:
         # Should be around November 2024
         if "oracle-7.9" in SystemInformationRelease.system_release:
             self.shell(
-                fr"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {self._sat_script_location}"
+                rf"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {self._sat_script_location}"
             )
 
     def _run_satellite_reg_script(self):

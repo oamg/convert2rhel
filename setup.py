@@ -41,11 +41,10 @@ def get_version():
         except IndexError:
             raise ValueError(
                 (
-                    "Unable to extract the version from %s file. Make sure the "
+                    "Unable to extract the version from {} file. Make sure the "
                     "first line has the following form: `__version__ = "
                     '"some.version.here"`'
-                )
-                % version_source
+                ).format(version_source)
             )
 
 

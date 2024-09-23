@@ -4,16 +4,11 @@ import hashlib
 import os
 
 import pytest
-import six
 
 from convert2rhel import exceptions
 from convert2rhel.backup import files
 from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.unit_tests.conftest import centos7, centos8
-
-
-six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock
 
 
 class TestRestorableFile:
@@ -220,7 +215,7 @@ class TestRestorableFile:
             assert not os.path.isfile(orig_file_path)
 
     @centos7
-    def test_restorable_file_missing_backup(self, tmpdir, pretend_os):
+    def test_restorable_file_missing_backup_centos7(self, tmpdir, pretend_os):
         """Test when the backed up file is missing in the backup folder."""
         # Get the path of the original file, not creating it
         orig_file_path = str(tmpdir.join("filename"))
@@ -239,7 +234,7 @@ class TestRestorableFile:
             file_backup.restore()
 
     @centos8
-    def test_restorable_file_missing_backup(self, tmpdir, pretend_os):
+    def test_restorable_file_missing_backup_centos8(self, tmpdir, pretend_os):
         """Test when the backed up file is missing in the backup folder."""
         # Get the path of the original file, not creating it
         orig_file_path = str(tmpdir.join("filename"))
@@ -299,7 +294,7 @@ class TestRestorableFile:
         backup_dir = str(tmpdir)
         monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
         path, name = os.path.split(filepath)
-        expected = "%s/%s/%s" % (backup_dir, hashlib.md5(path.encode()).hexdigest(), name)
+        expected = "{}/{}/{}".format(backup_dir, hashlib.md5(path.encode()).hexdigest(), name)
         file = RestorableFile(filepath)
 
         result = file._hash_backup_path()

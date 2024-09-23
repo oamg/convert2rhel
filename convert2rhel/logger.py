@@ -17,6 +17,16 @@
 
 __metaclass__ = type
 
+
+import logging
+import os
+import shutil
+import sys
+
+from logging.handlers import BufferingHandler
+from time import gmtime, strftime
+
+
 """
 Customized logging functionality
 
@@ -29,14 +39,6 @@ TASK                (20)    CUSTOM LABEL - Prints a task header message (using a
 DEBUG               (10)    Prints debug message (using date/time)
 FILE                (10)    CUSTOM LABEL - Outputs with the DEBUG label but only to a file
 """
-
-import logging
-import os
-import shutil
-import sys
-
-from logging.handlers import BufferingHandler
-from time import gmtime, strftime
 
 
 LOG_DIR = "/var/log/convert2rhel"
@@ -171,7 +173,7 @@ def should_disable_color_output():
     """
     if "NO_COLOR" in os.environ:
         NO_COLOR = os.environ["NO_COLOR"]
-        return NO_COLOR != None and NO_COLOR != "0" and NO_COLOR.lower() != "false"
+        return NO_COLOR is not None and NO_COLOR != "0" and NO_COLOR.lower() != "false"
 
     return False
 
@@ -211,7 +213,7 @@ def archive_old_logger_files(log_name, log_dir):
         os.makedirs(archive_log_dir)
 
     file_name, suffix = tuple(log_name.rsplit(".", 1))
-    archive_log_file = "%s/%s-%s.%s" % (archive_log_dir, file_name, formatted_time, suffix)
+    archive_log_file = "{}/{}-{}.{}".format(archive_log_dir, file_name, formatted_time, suffix)
     shutil.move(current_log_file, archive_log_file)
 
 

@@ -155,7 +155,7 @@ class ConfigureHostMetering(actions.Action):
             return False
 
         if self.env_var not in ("force", "auto"):
-            logger.debug("Value for environment variable not recognized: %s" % self.env_var)
+            logger.debug("Value for environment variable not recognized: {}".format(self.env_var))
             self.add_message(
                 level="WARNING",
                 id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",
@@ -221,7 +221,7 @@ class ConfigureHostMetering(actions.Action):
         command = ["systemctl", "enable", "host-metering.service"]
         output, ret_enable = run_subprocess(command)
         if output:
-            logger.debug("Output of systemctl call: %s" % output)
+            logger.debug("Output of systemctl call: {}".format(output))
         if ret_enable:
             logger.warning("Failed to enable host-metering service.")
             return " ".join(command), output
@@ -230,7 +230,7 @@ class ConfigureHostMetering(actions.Action):
         command = ["systemctl", "start", "host-metering.service"]
         output, ret_start = run_subprocess(command)
         if output:
-            logger.debug("Output of systemctl call: %s" % output)
+            logger.debug("Output of systemctl call: {}".format(output))
         if ret_start:
             logger.warning("Failed to start host-metering service.")
             return " ".join(command), output

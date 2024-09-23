@@ -50,7 +50,6 @@ class TestEus:
         ),
     )
     def test_els_warning_message(self, els_action, monkeypatch, global_tool_opts, version_string, message_reported):
-
         global_tool_opts.els = False
         monkeypatch.setattr(system_info, "version", version_string)
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)

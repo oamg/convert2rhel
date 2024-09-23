@@ -136,7 +136,7 @@ class FileConfig(BaseConfig):
         paths = [os.path.expanduser(path) for path in self._config_files if os.path.exists(os.path.expanduser(path))]
 
         if not paths:
-            raise FileNotFoundError("No such file or directory: %s" % ", ".join(paths))
+            raise FileNotFoundError("No such file or directory: {}".format(", ".join(paths)))
 
         found_opts = self._parse_options_from_config(paths)
         return found_opts
@@ -156,19 +156,19 @@ class FileConfig(BaseConfig):
         found_opts = {}
 
         for path in reversed(paths):
-            loggerinst.debug("Checking configuration file at %s" % path)
+            loggerinst.debug("Checking configuration file at {}".format(path))
             # Check for correct permissions on file
             if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
-                loggerinst.critical("The %s file must only be accessible by the owner (0600)" % path)
+                loggerinst.critical("The {} file must only be accessible by the owner (0600)".format(path))
 
             config_file.read(path)
 
             # Mapping of all supported options we can have in the config file
             for supported_header, supported_opts in CONFIG_FILE_MAPPING_OPTIONS.items():
-                loggerinst.debug("Checking for header '%s'" % supported_header)
+                loggerinst.debug("Checking for header '{}'".format(supported_header))
                 if supported_header not in config_file.sections():
                     loggerinst.warning(
-                        "Couldn't find header '%s' in the configuration file %s." % (supported_header, path)
+                        "Couldn't find header '{}' in the configuration file {}.".format(supported_header, path)
                     )
                     continue
                 options = self._get_options_value(config_file, supported_header, supported_opts)
@@ -192,12 +192,12 @@ class FileConfig(BaseConfig):
         conf_options = config_file.options(header)
 
         if len(conf_options) == 0:
-            loggerinst.debug("No options found for %s. It seems to be empty or commented." % header)
+            loggerinst.debug("No options found for {}. It seems to be empty or commented.".format(header))
             return options
 
         for option in conf_options:
             if option.lower() not in supported_opts:
-                loggerinst.warning("Unsupported option '%s' in '%s'" % (option, header))
+                loggerinst.warning("Unsupported option '{}' in '{}'".format(option, header))
                 continue
 
             # This is the only header that can contain boolean values for now.
@@ -206,7 +206,7 @@ class FileConfig(BaseConfig):
             else:
                 options[option] = config_file.get(header, option)
 
-            loggerinst.debug("Found %s in %s" % (option, header))
+            loggerinst.debug("Found {} in {}".format(option, header))
 
         return options
 
@@ -240,7 +240,6 @@ class CliConfig(BaseConfig):
         self._opts = opts  # type: arpgparse.Namepsace
 
     def run(self):
-
         opts = vars(self._opts)
 
         opts = self._normalize_opts(opts)
@@ -310,7 +309,7 @@ class CliConfig(BaseConfig):
             if duplicate_repos:
                 message = "Duplicate repositories were found across disablerepo and enablerepo options:"
                 for repo in duplicate_repos:
-                    message += "\n%s" % repo
+                    message += "\n{}".format(repo)
                 message += "\nThis ambiguity may have unintended consequences."
                 loggerinst.warning(message)
 

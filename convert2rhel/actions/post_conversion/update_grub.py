@@ -45,7 +45,7 @@ class UpdateGrub(actions.Action):
         output, ret_code = utils.run_subprocess(
             ["/usr/sbin/grub2-mkconfig", "-o", grub2_config_file], print_output=False
         )
-        logger.debug("Output of the grub2-mkconfig call:\n%s" % output)
+        logger.debug("Output of the grub2-mkconfig call:\n{}".format(output))
 
         if ret_code != 0:
             logger.warning("GRUB2 config file generation failed.")
@@ -85,10 +85,10 @@ class UpdateGrub(actions.Action):
                 )
                 return
 
-            logger.debug("Device to install the GRUB2 image to: '%s'" % blk_device)
+            logger.debug("Device to install the GRUB2 image to: '{}'".format(blk_device))
 
             output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-install", blk_device], print_output=False)
-            logger.debug("Output of the grub2-install call:\n%s" % output)
+            logger.debug("Output of the grub2-install call:\n{}".format(output))
 
             if ret_code != 0:
                 logger.warning("Couldn't install the new images with GRUB2.")

@@ -114,7 +114,7 @@ def get_installed_pkgs_by_key_id(key_ids, name=""):
     # architecture to make sure both of them will be passed to dnf and, if
     # possible, converted. This issue does not happen on yum, so we can still
     # use only the package name for it.
-    return ["%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in pkgs_w_key_ids if pkg.key_id in key_ids]
+    return ["{}.{}".format(pkg.nevra.name, pkg.nevra.arch) for pkg in pkgs_w_key_ids if pkg.key_id in key_ids]
 
 
 def _get_pkg_key_id(signature):
@@ -196,7 +196,7 @@ def get_rpm_header(pkg_obj):
             return rpm_hdr
 
     # Package not found in the rpm db
-    logger.critical("Unable to find package '%s' in the rpm database." % pkg_obj.name)
+    logger.critical("Unable to find package '{}' in the rpm database.".format(pkg_obj.name))
 
 
 def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
@@ -217,13 +217,13 @@ def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=N
     if name:
         pattern = name
         if version:
-            pattern += "-%s" % version
+            pattern += "-{}".format(version)
 
         if release:
-            pattern += "-%s" % release
+            pattern += "-{}".format(release)
 
         if arch:
-            pattern += ".%s" % arch
+            pattern += ".{}".format(arch)
 
         return yum_base.rpmdb.returnPackages(patterns=[pattern])
 
@@ -465,7 +465,7 @@ def get_pkg_nvra(pkg_obj):
     :rtype: str
     """
     nevra = _get_nevra_from_pkg_obj(pkg_obj)
-    return "%s-%s-%s.%s" % (
+    return "{}-{}-{}.{}".format(
         nevra.name,
         nevra.version,
         nevra.release,
@@ -493,7 +493,7 @@ def get_pkg_nevra(pkg_obj, include_zero_epoch=False):
     nevra = _get_nevra_from_pkg_obj(pkg_obj)
     epoch = "" if str(nevra.epoch) == "0" and not include_zero_epoch else str(nevra.epoch) + ":"
     if pkgmanager.TYPE == "yum":
-        return "%s%s-%s-%s.%s" % (
+        return "{}{}-{}-{}.{}".format(
             epoch,
             nevra.name,
             nevra.version,
@@ -501,7 +501,7 @@ def get_pkg_nevra(pkg_obj, include_zero_epoch=False):
             nevra.arch,
         )
 
-    return "%s-%s%s-%s.%s" % (
+    return "{}-{}{}-{}.{}".format(
         nevra.name,
         epoch,
         nevra.version,
@@ -559,7 +559,7 @@ def get_packages_to_remove(pkgs):
         temp = "." * (50 - len(pkg) - 2)
         pkg_objects = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, pkg)
         pkgs_to_remove.extend(pkg_objects)
-        logger.info("%s %s %s" % (pkg, temp, str(len(pkg_objects))))
+        logger.info("{} {} {}".format(pkg, temp, str(len(pkg_objects))))
 
     return pkgs_to_remove
 
@@ -576,7 +576,7 @@ def get_system_packages_for_replacement():
     key_ids = system_info.key_ids_orig_os
     packages_with_key_ids = get_installed_pkg_information()
 
-    return ["%s.%s" % (pkg.nevra.name, pkg.nevra.arch) for pkg in packages_with_key_ids if pkg.key_id in key_ids]
+    return ["{}.{}".format(pkg.nevra.name, pkg.nevra.arch) for pkg in packages_with_key_ids if pkg.key_id in key_ids]
 
 
 def install_gpg_keys():
@@ -588,7 +588,7 @@ def install_gpg_keys():
             restorable_key = RestorableRpmKey(gpg_key)
             backup.backup_control.push(restorable_key)
         except utils.ImportGPGKeyError as e:
-            logger.critical("Importing the GPG key into rpm failed:\n %s" % str(e))
+            logger.critical("Importing the GPG key into rpm failed:\n {}".format(str(e)))
 
         logger.info("GPG key %s imported successfuly.", gpg_key)
 
@@ -607,15 +607,15 @@ def handle_no_newer_rhel_kernel_available():
             # of them - the one that has the same version as the available RHEL
             # kernel
             older = available[-1]
-            utils.remove_pkgs(pkgs_to_remove=["kernel-%s" % older])
-            pkgmanager.call_yum_cmd(command="install", args=["kernel-%s" % older])
+            utils.remove_pkgs(pkgs_to_remove=["kernel-{}".format(older)])
+            pkgmanager.call_yum_cmd(command="install", args=["kernel-{}".format(older)])
         else:
             replace_non_rhel_installed_kernel(installed[0])
 
         return
 
     # Install the latest out of the available non-clashing RHEL kernels
-    pkgmanager.call_yum_cmd(command="install", args=["kernel-%s" % to_install[-1]])
+    pkgmanager.call_yum_cmd(command="install", args=["kernel-{}".format(to_install[-1])])
 
 
 def get_kernel_availability():
@@ -645,7 +645,7 @@ def replace_non_rhel_installed_kernel(version):
     )
     utils.ask_to_continue()
 
-    pkg = "kernel-%s" % version
+    pkg = "kernel-{}".format(version)
 
     # For downloading the RHEL kernel we need to use the RHEL repositories.
     repos_to_enable = system_info.get_enabled_rhel_repos()
@@ -658,7 +658,7 @@ def replace_non_rhel_installed_kernel(version):
     if not path:
         logger.critical("Unable to download the RHEL kernel package.")
 
-    logger.info("Replacing %s %s with RHEL kernel with the same NEVRA ... " % (system_info.name, pkg))
+    logger.info("Replacing {} {} with RHEL kernel with the same NEVRA ... ".format(system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
         # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
         # is not installed at this stage.
@@ -668,14 +668,14 @@ def replace_non_rhel_installed_kernel(version):
             "--force",
             "--nodeps",
             "--replacepkgs",
-            "%s*" % os.path.join(utils.TMP_DIR, pkg),
+            "{}*".format(os.path.join(utils.TMP_DIR, pkg)),
         ],
         print_output=False,
     )
     if ret_code != 0:
-        logger.critical("Unable to replace the kernel package: %s" % output)
+        logger.critical("Unable to replace the kernel package: {}".format(output))
 
-    logger.info("\nRHEL %s installed.\n" % pkg)
+    logger.info("\nRHEL {} installed.\n".format(pkg))
 
 
 def update_rhel_kernel():
@@ -758,8 +758,8 @@ def _get_packages_to_update_yum(disable_repos=None):
     base = pkgmanager.YumBase()
 
     # Disable rhel repos during checks if system is up-to-date
-    for repo in disable_repos:
-        base.repos.disableRepo(repo)
+    for repo_to_disable in disable_repos:
+        base.repos.disableRepo(repo_to_disable)
 
     packages = base.doPackageLists(pkgnarrow="updates")
     for package in packages.updates:
@@ -848,15 +848,17 @@ def compare_package_versions(version1, version2):
     # ensure package names match, error if not
     if version1_components[0] != version2_components[0]:
         raise ValueError(
-            "The package names ('%s' and '%s') do not match. Can only compare versions for the same packages."
-            % (version1_components[0], version2_components[0])
+            "The package names ('{}' and '{}') do not match. Can only compare versions for the same packages.".format(
+                version1_components[0], version2_components[0]
+            )
         )
 
     # ensure package arches match, error if not
     if version1_components[4] != version2_components[4] and all(([version1_components[4]], version2_components[4])):
         raise ValueError(
-            "The arches ('%s' and '%s') do not match. Can only compare versions for the same arches. There is an architecture mismatch likely due to incorrectly defined repositories on the system."
-            % (version1_components[4], version2_components[4])
+            "The arches ('{}' and '{}') do not match. Can only compare versions for the same arches. There is an architecture mismatch likely due to incorrectly defined repositories on the system.".format(
+                version1_components[4], version2_components[4]
+            )
         )
 
     # create list containing EVR for comparison
@@ -911,18 +913,18 @@ def _validate_parsed_fields(package, name, epoch, version, release, arch):
     seperators = 4
 
     if name is None or not PKG_NAME.match(name):
-        errors.append("name : %s" % name if name else "name : [None]")
+        errors.append("name : {}".format(name) if name else "name : [None]")
     if epoch is not None and not PKG_EPOCH.match(epoch):
-        errors.append("epoch : %s" % epoch)
+        errors.append("epoch : {}".format(epoch))
     if version is None or not PKG_VERSION.match(version):
-        errors.append("version : %s" % version if version else "version : [None]")
+        errors.append("version : {}".format(version) if version else "version : [None]")
     if release is None or not PKG_RELEASE.match(release):
-        errors.append("release : %s" % release if release else "release : [None]")
+        errors.append("release : {}".format(release) if release else "release : [None]")
     if arch is not None and arch not in PKG_ARCH:
-        errors.append("arch : %s" % arch)
+        errors.append("arch : {}".format(arch))
 
     if errors:
-        raise ValueError("The following field(s) are invalid - %s" % ", ".join(errors))
+        raise ValueError("The following field(s) are invalid - {}".format(", ".join(errors)))
 
     pkg_fields = [name, epoch, version, release, arch]
     # this loop determines the number of separators required for each package type. The separators
@@ -940,8 +942,8 @@ def _validate_parsed_fields(package, name, epoch, version, release, arch):
     parsed_pkg_length = len("".join(pkg_fields)) + seperators
     if pkg_length != parsed_pkg_length:
         raise ValueError(
-            "Invalid package - %s, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
-            " Reason: The total length of the parsed package fields does not equal the package length," % package
+            "Invalid package - {}, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR."
+            " Reason: The total length of the parsed package fields does not equal the package length,".format(package)
         )
 
 
@@ -975,7 +977,7 @@ def _parse_pkg_with_yum(pkg):
         if arch not in PKG_ARCH:
             temp_release = arch
             arch = None
-            release = "%s.%s" % (release, temp_release)
+            release = "{}.{}".format(release, temp_release)
 
     # convert any empty strings to None for consistency
     pkg_ver_components = tuple((i or None) for i in (name, epoch, version, release, arch))
@@ -1009,7 +1011,6 @@ def _parse_pkg_with_dnf(pkg):
 
     # loop through each possible set of nevra fields and select the valid one
     for nevra in possible_nevra:
-
         # current arch is valid
         if str(nevra.arch) in PKG_ARCH:
             name = nevra.name
@@ -1026,13 +1027,12 @@ def _parse_pkg_with_dnf(pkg):
         # arch is not valid, move on to next iteration
 
     else:  # This else goes with the for loop
-
         # if no_arch_data is still None by this point, the parser wasn't able to find valid fields
         # therefore the package entered is invalid and/or in the wrong format
         if no_arch_data is None:
             raise ValueError(
-                "Invalid package - %s, packages need to be in one of the following"
-                " formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR." % pkg
+                "Invalid package - {}, packages need to be in one of the following"
+                " formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR.".format(pkg)
             )
 
         name = no_arch_data.name
@@ -1062,7 +1062,7 @@ def get_highest_package_version(pkgs):
     name, nevra_list = pkgs
 
     if not nevra_list:
-        logger.debug("The list of %s packages is empty." % name)
+        logger.debug("The list of {} packages is empty.".format(name))
         raise ValueError
 
     highest_version = nevra_list[0]

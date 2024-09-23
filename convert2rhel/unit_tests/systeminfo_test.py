@@ -160,7 +160,7 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 
     side_effects = []
     for state in states:
-        side_effects.append(("ActiveState=%s\n" % state, 0))
+        side_effects.append(("ActiveState={}\n".format(state), 0))
 
     run_subprocess_mocked = RunSubprocessMocked(side_effect=side_effects)
     monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)

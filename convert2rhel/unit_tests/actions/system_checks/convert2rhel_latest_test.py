@@ -158,8 +158,8 @@ class TestCheckConvert2rhelLatest:
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
             diagnosis=(
-                "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                "Only the latest version is supported for conversion." % (running_version, latest_version)
+                "You are currently running {} and the latest version of convert2rhel is {}.\n"
+                "Only the latest version is supported for conversion.".format(running_version, latest_version)
             ),
             remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
@@ -245,8 +245,8 @@ class TestCheckConvert2rhelLatest:
                 title="Outdated convert2rhel version detected",
                 description="An outdated convert2rhel version has been detected",
                 diagnosis=(
-                    "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                    "We encourage you to update to the latest version." % (running_version, latest_version)
+                    "You are currently running {} and the latest version of convert2rhel is {}.\n"
+                    "We encourage you to update to the latest version.".format(running_version, latest_version)
                 ),
                 remediations=None,
             )
@@ -334,9 +334,10 @@ class TestCheckConvert2rhelLatest:
         running_version, latest_version = prepare_convert2rhel_latest_action
 
         log_msg = (
-            "You are currently running %s and the latest version of convert2rhel is %s.\n"
-            "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"
-            % (running_version, latest_version)
+            "You are currently running {} and the latest version of convert2rhel is {}.\n"
+            "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion".format(
+                running_version, latest_version
+            )
         )
         assert log_msg in caplog.text
 
@@ -577,8 +578,8 @@ class TestCheckConvert2rhelLatest:
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
             diagnosis=(
-                "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                "Only the latest version is supported for conversion." % (running_version, latest_version)
+                "You are currently running {} and the latest version of convert2rhel is {}.\n"
+                "Only the latest version is supported for conversion.".format(running_version, latest_version)
             ),
             remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
@@ -646,8 +647,9 @@ class TestCheckConvert2rhelLatest:
 
         log_msg = (
             "Some files in the convert2rhel package have changed so the installed convert2rhel is not what was packaged."
-            " We will check that the version of convert2rhel (%s) is the latest but ignore the rpm release."
-            % running_version
+            " We will check that the version of convert2rhel ({}) is the latest but ignore the rpm release.".format(
+                running_version
+            )
         )
 
         assert log_msg in caplog.text
@@ -713,9 +715,8 @@ class TestCheckConvert2rhelLatest:
         running_version, latest_version = prepare_convert2rhel_latest_action
         convert2rhel_latest_action_instance.run()
 
-        log_msg = (
-            "Couldn't determine the rpm release; We will check that the version of convert2rhel (%s) is the latest but ignore the rpm release."
-            % running_version
+        log_msg = "Couldn't determine the rpm release; We will check that the version of convert2rhel ({}) is the latest but ignore the rpm release.".format(
+            running_version
         )
 
         assert log_msg in caplog.text
@@ -760,8 +761,8 @@ class TestCheckConvert2rhelLatest:
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
             diagnosis=(
-                "You are currently running %s and the latest version of convert2rhel is %s.\n"
-                "Only the latest version is supported for conversion." % (running_version, latest_version)
+                "You are currently running {} and the latest version of convert2rhel is {}.\n"
+                "Only the latest version is supported for conversion.".format(running_version, latest_version)
             ),
             remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )

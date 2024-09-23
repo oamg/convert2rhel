@@ -65,7 +65,7 @@ class PackageUpdates(actions.Action):
             package_up_to_date_error_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifying the system is up to date manually"
-                " before proceeding with the conversion. %s" % str(e)
+                " before proceeding with the conversion. {}".format(str(e))
             )
 
             logger.warning(package_up_to_date_error_message)
@@ -81,11 +81,12 @@ class PackageUpdates(actions.Action):
         if len(packages_to_update) > 0:
             package_not_up_to_date_skip = os.environ.get("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP", None)
             package_not_up_to_date_error_message = (
-                "The system has %s package(s) not updated based on repositories defined in the system repositories.\n"
-                "List of packages to update: %s.\n\n"
+                "The system has {} package(s) not updated based on repositories defined in the system repositories.\n"
+                "List of packages to update: {}.\n\n"
                 "Not updating the packages may cause the conversion to fail.\n"
-                "Consider updating the packages before proceeding with the conversion."
-                % (len(packages_to_update), " ".join(packages_to_update))
+                "Consider updating the packages before proceeding with the conversion.".format(
+                    len(packages_to_update), " ".join(packages_to_update)
+                )
             )
             if not package_not_up_to_date_skip:
                 logger.warning(package_not_up_to_date_error_message)

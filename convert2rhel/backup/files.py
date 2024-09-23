@@ -53,16 +53,16 @@ class RestorableFile(RestorableChange):
         if self.enabled:
             return
 
-        logger.info("Backing up %s." % self.filepath)
+        logger.info("Backing up {}.".format(self.filepath))
         if os.path.isfile(self.filepath):
             try:
                 backup_path = self._hash_backup_path()
                 self.backup_path = backup_path
                 shutil.copy2(self.filepath, backup_path)
-                logger.debug("Copied %s to %s." % (self.filepath, backup_path))
+                logger.debug("Copied {} to {}.".format(self.filepath, backup_path))
             except (OSError, IOError) as err:
                 # IOError for py2 and OSError for py3
-                logger.critical_no_exit("Error(%s): %s" % (err.errno, err.strerror))
+                logger.critical_no_exit("Error({}): {}".format(err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
                     title="Failed to copy file to the backup directory.",
@@ -72,7 +72,9 @@ class RestorableFile(RestorableChange):
                         "In the current case, we encountered a failure while performing that backup so it is unsafe "
                         "to continue. See the diagnosis section to identify which problem ocurred during the backup."
                     ),
-                    diagnosis="Failed to backup %s. Errno: %s, Error: %s" % (self.filepath, err.errno, err.strerror),
+                    diagnosis="Failed to backup {}. Errno: {}, Error: {}".format(
+                        self.filepath, err.errno, err.strerror
+                    ),
                 )
         else:
             logger.info("Can't find %s.", self.filepath)
@@ -120,12 +122,12 @@ class RestorableFile(RestorableChange):
         :raises IOError: When the backed up file is missing.
         """
         if rollback:
-            logger.task("Rollback: Restore %s from backup" % self.filepath)
+            logger.task("Rollback: Restore {} from backup".format(self.filepath))
         else:
-            logger.info("Restoring %s from backup" % self.filepath)
+            logger.info("Restoring {} from backup".format(self.filepath))
 
         if not self.enabled:
-            logger.info("%s hasn't been backed up." % self.filepath)
+            logger.info("{} hasn't been backed up.".format(self.filepath))
             return
 
         # Possible exceptions will be handled in the BackupController
@@ -135,10 +137,10 @@ class RestorableFile(RestorableChange):
             os.remove(self.backup_path)
 
         if rollback:
-            logger.info("File %s restored." % self.filepath)
+            logger.info("File {} restored.".format(self.filepath))
             super(RestorableFile, self).restore()
         else:
-            logger.debug("File %s restored." % self.filepath)
+            logger.debug("File {} restored.".format(self.filepath))
             # not setting enabled to false since this is not being rollback
             # restoring the backed up file for conversion purposes
 
@@ -146,9 +148,9 @@ class RestorableFile(RestorableChange):
         """Remove restored file from original place, backup isn't removed"""
         try:
             os.remove(self.filepath)
-            logger.debug("File %s removed." % self.filepath)
+            logger.debug("File {} removed.".format(self.filepath))
         except (OSError, IOError):
-            logger.debug("Couldn't remove restored file %s" % self.filepath)
+            logger.debug("Couldn't remove restored file {}".format(self.filepath))
 
     def __eq__(self, value):
         if hash(self) == hash(value):

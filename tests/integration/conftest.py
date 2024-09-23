@@ -1,3 +1,12 @@
+from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
+from test_helpers.satellite import Satellite
+from test_helpers.shell import live_shell
+from test_helpers.subscription_manager import SubscriptionManager
+from test_helpers.vars import SYSTEM_RELEASE_ENV, TEST_VARS
+from test_helpers.workarounds import (
+    workaround_grub_setup,
+)
+
 import configparser
 import json
 import logging
@@ -23,20 +32,6 @@ except ImportError:
 # This tells pytest to also rewrite assertions in utils/helpers.py.
 #
 pytest.register_assert_rewrite("test_helpers")
-
-from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
-from test_helpers.satellite import Satellite
-from test_helpers.shell import live_shell
-from test_helpers.subscription_manager import SubscriptionManager
-from test_helpers.vars import SYSTEM_RELEASE_ENV, TEST_VARS
-from test_helpers.workarounds import (
-    workaround_grub_setup,
-    workaround_hybrid_rocky_image,
-    workaround_keep_centos_pointed_to_vault,
-    workaround_missing_os_release_package,
-    workaround_remove_uek,
-)
-
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
@@ -165,7 +160,7 @@ def convert2rhel(shell):
                         message.extend(
                             (
                                 "== Action caught SystemExit and returned an UNKNOWN_ERROR:",
-                                "%s: %s" % (action.id, action["result"]),
+                                "{}: {}".format(action.id, action["result"]),
                             )
                         )
 
@@ -173,7 +168,7 @@ def convert2rhel(shell):
                         message.extend(
                             (
                                 "== Action Framework caught an unhandled exception from an Action and returned an UNEXPECTED_ERROR:",
-                                "%s: %s" % (action.id, action["result"]),
+                                "{}: {}".format(action.id, action["result"]),
                             )
                         )
 
@@ -187,7 +182,7 @@ def convert2rhel(shell):
                         message.extend(
                             (
                                 "== Action caught SystemExit while removing packages:",
-                                "%s: %s" % (action.id, action["result"]),
+                                "{}: {}".format(action.id, action["result"]),
                             )
                         )
 
@@ -199,7 +194,7 @@ def convert2rhel(shell):
                         message.extend(
                             (
                                 "== Action caught SystemExit while removing packages:",
-                                "%s: %s" % (action.id, action["result"]),
+                                "{}: {}".format(action.id, action["result"]),
                             )
                         )
 
@@ -305,7 +300,7 @@ def pre_registered(shell, request, fixture_subman):
             hide_command=True,
         ).returncode
         == 0
-    ), f"Failed to pre-register the system. The subscription manager call has failed."
+    ), "Failed to pre-register the system. The subscription manager call has failed."
 
     rhsm_uuid_command = "subscription-manager identity | grep identity"
 
