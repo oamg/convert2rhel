@@ -128,15 +128,17 @@ can run a series of pre-defined hooks against our codebase to keep it clean and
 maintainable. Here is an example of output from `pre-commit` being run:
 
 ```
-(.venv3) [r0x0d@fedora convert2rhel]$ pre-commit run --all-files
-Format code (black)......................................................Passed
-isort....................................................................Passed
-Fix End of Files.........................................................Passed
-Trim Trailing Whitespace.................................................Passed
-Check JSON...........................................(no files to check)Skipped
-Check Toml...............................................................Passed
-Check Yaml...............................................................Passed
-Check for merge conflicts................................................Passed
+$ pre-commit run --all-files
+ruff.....................................................................Passed
+ruff-format..............................................................Passed
+fix end of files.........................................................Passed
+trim trailing whitespace.................................................Passed
+check toml...............................................................Passed
+check yaml...............................................................Passed
+check for merge conflicts................................................Passed
+check json5..............................................................Passed
+tmt tests lint...........................................................Passed
+vulture..................................................................Passed
 ```
 
 We automatically run `pre-commit` as part of our CI infrastructure as well. If you have a PR it will run and see if everything passes. Sometimes there may be an outage or unexpected result from `pre-commit`, if that happens you can create a new comment on the PR saying:
@@ -216,8 +218,10 @@ Code](https://www.python.org/dev/peps/pep-0008/) as well some
 linters/formatters that are run directly from
 [pre-commit](https://pre-commit.com).
 
-Don't worry, most of the code formatting and styleguide is handled by
-[black](https://github.com/psf/black), an awesome formatter for python code.
+Don't worry, most of the code formatting and linting is handled by
+[ruff](https://docs.astral.sh/ruff/), an awesome formatter for python code.
+
+We make use of [PyFormat instead of percent-formatting](https://pyformat.info/), read more in the link. We cannot make use of f-strings due to requiring backwards compatibility.
 
 #### Documenting the code
 
