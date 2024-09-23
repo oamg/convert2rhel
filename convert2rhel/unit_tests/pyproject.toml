@@ -1,0 +1,5 @@
+[tool.ruff]
+# Extend the `pyproject.toml` file in the parent directory...
+extend = "../../pyproject.toml"
+
+ignore = ["E402"]

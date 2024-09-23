@@ -1,27 +1,15 @@
 minimum_pre_commit_version: "2.9.0"
 repos:
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.6.7
     hooks:
-      - id: black
-        name: black
-        entry: black
-        types: [python]
-        language: python
-        language_version: "python3"
-        additional_dependencies: [click==7.1.2, black==21.12b0]
-  - repo: https://github.com/pylint-dev/pylint
-    rev: v3.2.7
-    hooks:
-      - id: pylint
-        args: [
-          "-sn", # Don't display the score
-          "--rcfile=.pylintrc", # Link to your config file
-        ]
-  - repo: "https://github.com/timothycrosley/isort"
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        additional_dependencies: [toml]
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+      # Run the formatter.
+      - id: ruff-format
+
   - repo: "https://github.com/pre-commit/pre-commit-hooks"
     rev: "v4.6.0"
     hooks:

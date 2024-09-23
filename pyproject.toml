@@ -1,22 +1,30 @@
-[tool.black]
-line-length=120
-target-version=["py27", "py36", "py37", "py38", "py39", "py310"]
-
-[tool.isort]
-profile = "black"
-atomic=true
-line_length = 120
-lines_after_imports=2
-lines_between_types=1
-known_third_party=[
-    "pytest",
-    "click",
-]
-known_first_party=["convert2rhel"]
-
 [tool.vulture]
 exclude = ["convert2rhel/unit_tests/actions/data"]
 ignore_decorators = ["@pytest.fixture"]
 ignore_names = ["pretend_os", "stage_actions"]
 min_confidence = 90
 paths = ["convert2rhel", "scripts/whitelist.py"]
+
+[tool.ruff]
+builtins = ["convert2rhel", "six"]
+
+
+line-length = 120
+fix = true
+
+# We technically only support py27 py36 due to el7 and el8 but ruff only
+# supports py37 as minimum. This is not a huge issue as any rules we do not
+# want we can disable
+target-version = "py37"
+
+[tool.ruff.lint]
+# Set our root_logger as the de-facto logger
+logger-objects = ["convert2rhel.logger.root_logger"]
+extend-select = [
+    "UP031", # Forbid percent-string formatting
+]
+
+[tool.ruff.lint.per-file-ignores]
+"whitelist.py" = [
+    "F821", # For ignoring undefined variables in this file
+]

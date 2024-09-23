@@ -43,7 +43,8 @@
 				"GitHub.vscode-pull-request-github",
 				"Cameron.vscode-pytest",
 				"njpwerner.autodocstring",
-				"ms-python.python"
+				"ms-python.python",
+				"charliermarsh.ruff"
 			]
 		}
 	}
