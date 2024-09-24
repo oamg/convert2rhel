@@ -41,7 +41,7 @@ class RemoveTmpDir(actions.Action):
         """
         super(RemoveTmpDir, self).run()
 
-        loggerinst.task("Final: Remove temporary folder {}".format(TMP_DIR))
+        loggerinst.task("Remove temporary folder {}".format(TMP_DIR))
 
         try:
             shutil.rmtree(self.tmp_dir)

@@ -122,7 +122,7 @@ class RestorableFile(RestorableChange):
         :raises IOError: When the backed up file is missing.
         """
         if rollback:
-            logger.task("Rollback: Restore {} from backup".format(self.filepath))
+            logger.task("Restore {} from backup".format(self.filepath))
         else:
             logger.info("Restoring {} from backup".format(self.filepath))
 
@@ -198,7 +198,7 @@ class MissingFile(RestorableChange):
         if not self.enabled:
             return
 
-        logger.task("Rollback: Remove file created during conversion {filepath}".format(filepath=self.filepath))
+        logger.task("Remove file created during conversion {filepath}".format(filepath=self.filepath))
 
         if not os.path.isfile(self.filepath):
             logger.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))

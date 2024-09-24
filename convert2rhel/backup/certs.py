@@ -135,7 +135,7 @@ class RestorablePEMCert(RestorableChange):
 
     def restore(self):
         """Remove certificate (.pem), which was copied to system's cert dir."""
-        logger.task("Rollback: Remove installed certificate")
+        logger.task("Remove installed certificate")
 
         if self.enabled and not self.previously_installed:
             self._restore()
