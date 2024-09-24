@@ -95,33 +95,21 @@ endif
 	@echo "or login first with '$(PODMAN) login ghcr.io -u $$github_username'"
 	@echo "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry"
 	@echo
-.fetch-image7:
-	@echo "Pulling $(IMAGE)-centos7"
-	@$(PODMAN) pull $(IMAGE)-centos7
-.fetch-image8:
-	@echo "Pulling $(IMAGE)-centos8"
-	@$(PODMAN) pull $(IMAGE)-centos8
-.fetch-image9:
-	@echo "Pulling $(IMAGE)-centos9"
-	@$(PODMAN) pull $(IMAGE)-centos9
+.fetch-image%:
+	@echo "Pulling $(IMAGE)-centos$*"
+	@$(PODMAN) pull $(IMAGE)-centos$*
 
 .build-image-message:
 	@echo "Building images"
-.build-image7:
-	@$(PODMAN) build -f Containerfiles/centos7.Containerfile -t $(IMAGE)-centos7 .
+.build-image%:
+	@$(PODMAN) build -f Containerfiles/centos$*.Containerfile -t $(IMAGE)-centos$* .
 	touch $@
-.build-image8:
-	@$(PODMAN) build -f Containerfiles/centos8.Containerfile -t $(IMAGE)-centos8 .
-	touch $@
-.build-image9:
-	@$(PODMAN) build -f Containerfiles/centos9.Containerfile -t $(IMAGE)-centos9 .
-	touch $@
-
-tests: tests7 tests8 tests9
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
 CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
+
+tests: tests7 tests8 tests9
 
 tests7: image7
 	@echo 'CentOS Linux 7 tests'
@@ -135,26 +123,20 @@ tests9: image9
 	@echo 'CentOS 9 tests'
 	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
 
+.rpm-clean:
+	rm -frv .rpms/*el*
 
-.rpm7:
-	rm -frv .rpms/*el7*
-	$(PODMAN) build -f Containerfiles/rpmbuild.centos7.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild .
-	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos7rpmbuild):/data/.rpms .
+.rpm-clean%:
+	rm -frv .rpms/*el$**
 
-.rpm8:
-	rm -frv .rpms/*el8*
-	$(PODMAN) build -f Containerfiles/rpmbuild.centos8.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild .
-	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos8rpmbuild):/data/.rpms .
+.rpm%:
+	$(PODMAN) build -f Containerfiles/rpmbuild.centos$*.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos$*rpmbuild .
+	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos$*rpmbuild):/data/.rpms .
 
-.rpm9:
-	rm -frv .rpms/*el9*
-	$(PODMAN) build -f Containerfiles/rpmbuild.centos9.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild .
-	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos9rpmbuild):/data/.rpms .
-
-rpms: .rpm7 .rpm8 .rpm9
-rpm7: .rpm7
-rpm8: .rpm8
-rpm9: .rpm9
+rpms: .rpm-clean .rpm7 .rpm8 .rpm9
+rpm7: .rpm-clean7 .rpm7
+rpm8: .rpm-clean8 .rpm8
+rpm9: .rpm-clean9 .rpm9
 
 copr-build: rpms
 	mkdir -p .srpms
