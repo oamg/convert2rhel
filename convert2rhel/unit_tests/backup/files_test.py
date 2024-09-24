@@ -168,12 +168,12 @@ class TestRestorableFile:
             (
                 True,
                 True,
-                ["Rollback: Restore {orig_path} from backup", "File {orig_path} restored."],
+                ["Restore {orig_path} from backup", "File {orig_path} restored."],
             ),
             (
                 False,
                 True,
-                ["Rollback: Restore {orig_path} from backup", "{orig_path} hasn't been backed up."],
+                ["Restore {orig_path} from backup", "{orig_path} hasn't been backed up."],
             ),
             (True, False, ["Restoring {orig_path} from backup", "File {orig_path} restored."]),
         ),
