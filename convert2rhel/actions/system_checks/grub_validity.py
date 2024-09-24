@@ -15,12 +15,11 @@
 
 __metaclass__ = type
 
-import logging
-
 from convert2rhel import actions, utils
+from convert2rhel.logger import root_logger
 
 
-logger = logging.getLogger(__name__)
+logger = root_logger.getChild(__name__)
 
 
 class GrubValidity(actions.Action):
@@ -39,9 +38,10 @@ class GrubValidity(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="INVALID_GRUB_FILE",
-                title="The grub file on the system is invalid",
-                description="The grub file has been determined to be invalid, therefore the system is in a "
-                "non-clean state and must be fixed before continuing the conversion.",
-                remediations="Check the grub file inside the 'etc/default' directory and remove any "
-                "misconfigurations, then re-run the conversion.",
+                title="Grub boot entry file is invalid",
+                description="The grub file seems to be invalid leaving the system in a" \
+                    " non-clean state and must be fixed before continuing the conversion" \
+                    " to ensure a smooth process.",
+                remediations="Check the grub file inside `/etc/default` directory and remove any "
+                    "misconfigurations, then re-run the conversion.",
             )
