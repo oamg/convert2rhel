@@ -17,7 +17,6 @@
 
 __metaclass__ = type
 
-
 import logging
 import os
 import shutil
@@ -26,6 +25,7 @@ import sys
 from logging.handlers import BufferingHandler
 from time import gmtime, strftime
 
+from convert2rhel.utils.phase import ConversionPhases
 
 """
 Customized logging functionality
@@ -280,8 +280,15 @@ class CustomFormatter(logging.Formatter):
 
         color = self._getLogLevelColor(record, is_task)
         if is_task:
-            asterisks = "*" * (90 - len(record.msg) - 25)
-            fmt_orig = "\n[%(asctime)s] TASK - [%(message)s] " + asterisks
+            log_phase_name = ""
+            if ConversionPhases.current_phase and ConversionPhases.current_phase.log_name:
+                log_phase_name = ConversionPhases.current_phase.log_name
+            asterisks = "*" * (90 - len(log_phase_name) - len(record.msg) - 25)
+
+            fmt_orig = "\n[%(asctime)s] TASK - [{log_phase_name}%(message)s] {asterisks}".format(
+                log_phase_name=log_phase_name, asterisks=asterisks
+            )
+
             self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
         elif record.levelno >= logging.WARNING:
             fmt_orig = "%(levelname)s - %(message)s"
