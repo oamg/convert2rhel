@@ -103,11 +103,12 @@ endif
 	@echo "Building images"
 .build-image%:
 	@$(PODMAN) build -f Containerfiles/centos$*.Containerfile -t $(IMAGE)-centos$* .
+	@$(PODMAN) tag $(IMAGE)-centos$* $(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)-centos:latest
 	touch $@
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
-CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:Z --name pytest-container -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
+CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:z --name pytest-$(1) -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
 
 tests: tests7 tests8 tests9
 
@@ -120,7 +121,7 @@ tests8: image8
 	@$(call CONTAINER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
 
 tests9: image9
-	@echo 'CentOS 9 tests'
+	@echo 'CentOS Stream 9 tests'
 	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
 
 .rpm-clean:
@@ -130,13 +131,12 @@ tests9: image9
 	rm -frv .rpms/*el$**
 
 .rpm%:
-	$(PODMAN) build -f Containerfiles/rpmbuild.centos$*.Containerfile -t $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos$*rpmbuild .
-	$(PODMAN) cp $$($(PODMAN) create $(IMAGE_ORG)/$(IMAGE_PREFIX)-centos$*rpmbuild):/data/.rpms .
+	$(PODMAN) run -v $(shell pwd):/data:z -v $(shell pwd)/.rpms:/.rpms:z,rw --name rpmbuild-centos$* -u root:root $(CONTAINER_RM) $(IMAGE)-centos$* scripts/build_locally.sh
 
-rpms: .rpm-clean .rpm7 .rpm8 .rpm9
-rpm7: .rpm-clean7 .rpm7
-rpm8: .rpm-clean8 .rpm8
-rpm9: .rpm-clean9 .rpm9
+rpms: images .rpm-clean .rpm7 .rpm8 .rpm9
+rpm7: image7 .rpm-clean7 .rpm7
+rpm8: image8 .rpm-clean8 .rpm8
+rpm9: image9 .rpm-clean9 .rpm9
 
 copr-build: rpms
 	mkdir -p .srpms
