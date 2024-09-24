@@ -51,7 +51,7 @@ class ConversionPhases:
     # Phase to exit the Analyze SubCommand early
     ANALYZE_EXIT = ConversionPhase(name="ANALYZE_EXIT")
     POST_PONR_CHANGES = ConversionPhase(name="POST_PONR_CHANGES", log_name="Convert")
-    ROLLBACK = (ConversionPhase(name="ROLLBACK", log_name="Rollback"),)
+    ROLLBACK = ConversionPhase(name="ROLLBACK", log_name="Rollback")
 
     current_phase = None  # type: ConversionPhase|None
 
@@ -79,9 +79,11 @@ class ConversionPhases:
             raise NotImplementedError("The {} phase is not implemented in the {} class".format(phase, cls.__name__))
 
     @classmethod
-    def is_current(cls, phase):  # type: (str|ConversionPhase) -> bool
+    def is_current(cls, phase):  # type: (str|ConversionPhase|list[str|ConversionPhase]) -> bool
         if isinstance(phase, str):
             return cls.current_phase == cls.get(phase)
         elif isinstance(phase, ConversionPhase) and phase.name in cls.__dict__:
             return cls.current_phase == phase
-        raise TypeError("Unexpected type, wanted str or {}".format(ConversionPhase.__name__))
+        elif isinstance(phase, list):
+            return any(cls.is_current(phase_single) for phase_single in phase)
+        raise TypeError("Unexpected type, wanted str, {0}, or a list of str or {0}".format(ConversionPhase.__name__))

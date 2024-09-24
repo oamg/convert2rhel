@@ -261,7 +261,7 @@ def _handle_main_exceptions(results=None):
     no_changes_msg = "No changes were made to the system."
     utils.log_traceback(tool_opts.debug)
 
-    if ConversionPhases.is_current(ConversionPhases.POST_CLI):
+    if ConversionPhases.is_current([ConversionPhases.POST_CLI, ConversionPhases.PREPARE]):
         loggerinst.info(no_changes_msg)
         return ConversionExitCodes.FAILURE
     elif ConversionPhases.is_current(ConversionPhases.PRE_PONR_CHANGES):
