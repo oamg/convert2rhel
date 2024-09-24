@@ -13,8 +13,6 @@ import pytest
 
 from _pytest.warning_types import PytestUnknownMarkWarning
 
-from convert2rhel.logger import root_logger
-
 
 try:
     from pathlib import Path
@@ -35,7 +33,7 @@ from test_helpers.workarounds import workaround_grub_setup
 
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
-logger = root_logger.getChild(__name__)
+logger = logging.getLogger(__name__)
 
 # We use pytest_plugins to allow us to use fixtures we define in other files without the need to explicitly import them
 # inside each test file.
