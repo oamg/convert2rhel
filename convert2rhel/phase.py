@@ -47,7 +47,7 @@ class ConversionPhases:
     POST_CLI = ConversionPhase(name="POST_CLI")
     PREPARE = ConversionPhase(name="PREPARE", log_name="Prepare")
     # PONR means Point Of No Return
-    PRE_PONR_CHANGES = ConversionPhase(name="PRE_PONR_CHANGES", log_name="Analyze")
+    PRE_PONR_CHANGES = ConversionPhase(name="PRE_PONR_CHANGES", log_name="Prepare")
     # Phase to exit the Analyze SubCommand early
     ANALYZE_EXIT = ConversionPhase(name="ANALYZE_EXIT")
     POST_PONR_CHANGES = ConversionPhase(name="POST_PONR_CHANGES", log_name="Convert")
