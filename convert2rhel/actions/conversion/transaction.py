@@ -31,7 +31,7 @@ class ConvertSystemPackages(actions.Action):
         super(ConvertSystemPackages, self).run()
 
         try:
-            logger.task("Convert: Replace system packages")
+            logger.task("Replace system packages")
             transaction_handler = pkgmanager.create_transaction_handler()
             transaction_handler.run_transaction()
         except exceptions.CriticalError as e:
