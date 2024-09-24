@@ -52,6 +52,9 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Registering the system using subscription-manager")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
