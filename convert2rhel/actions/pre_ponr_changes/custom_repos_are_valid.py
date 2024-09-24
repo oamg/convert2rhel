@@ -36,7 +36,7 @@ class CustomReposAreValid(actions.Action):
         - the repository "baseurl" is accessible and contains repository metadata
         """
         super(CustomReposAreValid, self).run()
-        logger.task("Prepare: Check if --enablerepo repositories are accessible")
+        logger.task("Check if --enablerepo repositories are accessible")
 
         if not tool_opts.enablerepo:
             logger.info("Did not perform the check of repositories due to the use of RHSM for the conversion.")

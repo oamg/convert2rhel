@@ -254,6 +254,17 @@ def colorize(message, color="OKGREEN"):
     return "".join((getattr(bcolors, color), message, bcolors.ENDC))
 
 
+class ConversionStage:
+    stages = {"prepare": "Prepare"}
+    current = None  # type: str|None
+
+    @classmethod
+    def set_stage(cls, stage):  # type: (str) -> None
+        if stage == None or stage in cls.stages:
+            cls.current = cls.stages[stage]
+        raise NotImplementedError("The stage {} is not implemented in the ConversionStage class".format(stage))
+
+
 class CustomFormatter(logging.Formatter):
     """
     Custom formatter to handle different logging formats based on logging level.

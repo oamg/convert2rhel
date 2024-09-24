@@ -138,6 +138,7 @@ def main_locked():
     initialize_file_logging("convert2rhel.log", logger_module.LOG_DIR)
 
     try:
+        logger_module.ConversionStage.set_stage("prepare")
         perform_boilerplate()
 
         gather_system_info()
@@ -322,10 +323,10 @@ def _handle_inhibitors_found_exception():
 def perform_boilerplate():
     """Standard interactions with the user prior to doing any conversion work."""
     # license agreement
-    loggerinst.task("Prepare: Show Red Hat software EULA")
+    loggerinst.task("Show Red Hat software EULA")
     show_eula()
 
-    loggerinst.task("Prepare: Inform about data collection")
+    loggerinst.task("Inform about data collection")
     breadcrumbs.breadcrumbs.print_data_collection()
 
 
@@ -349,7 +350,7 @@ def show_eula():
 def gather_system_info():
     """Retrieve information about the system to be converted"""
     # gather system information
-    loggerinst.task("Prepare: Gather system information")
+    loggerinst.task("Gather system information")
     systeminfo.system_info.resolve_system_info()
     systeminfo.system_info.print_system_information()
     breadcrumbs.breadcrumbs.collect_early_data()
@@ -357,10 +358,10 @@ def gather_system_info():
 
 def prepare_system():
     """Setup the environment to do the conversion within"""
-    loggerinst.task("Prepare: Clear YUM/DNF version locks")
+    loggerinst.task("Clear YUM/DNF version locks")
     pkghandler.clear_versionlock()
 
-    loggerinst.task("Prepare: Clean yum cache metadata")
+    loggerinst.task("Clean yum cache metadata")
     pkgmanager.clean_yum_metadata()
 
 
