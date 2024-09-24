@@ -38,10 +38,10 @@ def test_grub_validity_error(grub_validity_instance, monkeypatch):
         grub_validity_instance,
         level="ERROR",
         id="INVALID_GRUB_FILE",
-        title="The grub file on the system is invalid",
-        description="The grub file has been determined to be invalid, therefore the system is in a "
-        "non-clean state and must be fixed before continuing the conversion.",
-        diagnosis=None,
-        remediations="Check the grub file inside the 'etc/default' directory and remove any "
+        title="Grub boot entry file is invalid",
+        description="The grub file seems to be invalid leaving the system in a"
+        " non-clean state and must be fixed before continuing the conversion"
+        " to ensure a smooth process.",
+        remediations="Check the grub file inside `/etc/default` directory and remove any "
         "misconfigurations, then re-run the conversion.",
     )
