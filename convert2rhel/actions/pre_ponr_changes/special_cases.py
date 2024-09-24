@@ -47,7 +47,7 @@ class RemoveIwlax2xxFirmware(actions.Action):
         """
         super(RemoveIwlax2xxFirmware, self).run()
 
-        logger.task("Prepare: Resolve possible edge case")
+        logger.task("Resolve possible edge case")
         iwl7260_firmware = system_info.is_rpm_installed(name="iwl7260-firmware")
         iwlax2xx_firmware = system_info.is_rpm_installed(name="iwlax2xx-firmware")
 

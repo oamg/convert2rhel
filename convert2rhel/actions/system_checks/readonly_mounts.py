@@ -48,7 +48,7 @@ class ReadonlyMountMnt(actions.Action):
 
     def run(self):
         super(ReadonlyMountMnt, self).run()
-        logger.task("Prepare: Check if /mnt is read-write")
+        logger.task("Check if /mnt is read-write")
 
         if readonly_mount_detection("/mnt"):
             self.set_result(
@@ -67,7 +67,7 @@ class ReadonlyMountSys(actions.Action):
 
     def run(self):
         super(ReadonlyMountSys, self).run()
-        logger.task("Prepare: Check if /sys is read-write")
+        logger.task("Check if /sys is read-write")
 
         if readonly_mount_detection("/sys"):
             self.set_result(
