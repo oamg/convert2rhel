@@ -282,7 +282,7 @@ class CustomFormatter(logging.Formatter):
         if is_task:
             log_phase_name = ""
             if ConversionPhases.current_phase and ConversionPhases.current_phase.log_name:
-                log_phase_name = ConversionPhases.current_phase.log_name
+                log_phase_name = "{}: ".format(ConversionPhases.current_phase.log_name)
             asterisks = "*" * (90 - len(log_phase_name) - len(record.msg) - 25)
 
             fmt_orig = "\n[%(asctime)s] TASK - [{log_phase_name}%(message)s] {asterisks}".format(
