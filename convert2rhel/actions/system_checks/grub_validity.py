@@ -39,9 +39,9 @@ class GrubValidity(actions.Action):
                 level="ERROR",
                 id="INVALID_GRUB_FILE",
                 title="Grub boot entry file is invalid",
-                description="The grub file seems to be invalid leaving the system in a" \
-                    " non-clean state and must be fixed before continuing the conversion" \
-                    " to ensure a smooth process.",
+                description="The grub file seems to be invalid leaving the system in a"
+                " non-clean state and must be fixed before continuing the conversion"
+                " to ensure a smooth process.",
                 remediations="Check the grub file inside `/etc/default` directory and remove any "
-                    "misconfigurations, then re-run the conversion.",
+                "misconfigurations, then re-run the conversion.",
             )
