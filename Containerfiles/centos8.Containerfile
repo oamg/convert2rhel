@@ -10,7 +10,11 @@ ENV APP_MAIN_DEPS \
     python3 \
     python3-six \
     python3-dbus \
-    python3-pexpect
+    python3-pexpect \
+    git \
+    rpm-build \
+    rpmlint \
+    python3-devel
 
 WORKDIR /data
 

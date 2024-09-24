@@ -9,7 +9,12 @@ ENV APP_DEV_DEPS "requirements/centos7.requirements.txt"
 ENV APP_MAIN_DEPS \
     python-six \
     dbus-python \
-    pexpect
+    pexpect \
+    git \
+    rpm-build \
+    rpmlint \
+    python-devel \
+    python-setuptools
 
 WORKDIR /data
 
