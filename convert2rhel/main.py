@@ -366,6 +366,7 @@ def rollback_changes():
     """Perform a rollback of changes made during conversion."""
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
+    ConversionPhases.set_current(ConversionPhases.ROLLBACK)
 
     try:
         backup.backup_control.pop_all()
