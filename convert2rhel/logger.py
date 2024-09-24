@@ -25,7 +25,7 @@ import sys
 from logging.handlers import BufferingHandler
 from time import gmtime, strftime
 
-from convert2rhel.utils.phase import ConversionPhases
+from convert2rhel.phase import ConversionPhases
 
 """
 Customized logging functionality
