@@ -137,6 +137,9 @@ def test_custom_kernel(convert2rhel, shell, custom_kernel):
                 c2r.expect("Continue with the system conversion?")
                 c2r.sendline("y")
 
+                c2r.expect("Continue with the system conversion?")
+                c2r.sendline("y")
+
                 c2r.expect(
                     "WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor)
                 )

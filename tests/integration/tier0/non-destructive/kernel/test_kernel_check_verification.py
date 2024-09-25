@@ -40,6 +40,9 @@ def test_verify_latest_kernel_check_passes_with_failed_repoquery(convert2rhel, t
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect(
             "Couldn't fetch the list of the most recent kernels available in the repositories. Did not perform the loaded kernel check.",
             timeout=300,
