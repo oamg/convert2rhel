@@ -26,6 +26,7 @@ from convert2rhel import actions, exceptions, repo, utils
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import parse_pkg_string
 from convert2rhel.systeminfo import system_info
+from convert2rhel.utils import warn_deprecated_env
 
 
 logger = root_logger.getChild(__name__)
@@ -170,7 +171,7 @@ class Convert2rhelLatest(actions.Action):
         formatted_available_version = _format_EVR(*precise_available_version)
 
         if ver_compare < 0:
-            if "CONVERT2RHEL_ALLOW_OLDER_VERSION" in os.environ:
+            if warn_deprecated_env("CONVERT2RHEL_ALLOW_OLDER_VERSION"):
                 diagnosis = (
                     "You are currently running %s and the latest version of convert2rhel is %s.\n"
                     "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion"

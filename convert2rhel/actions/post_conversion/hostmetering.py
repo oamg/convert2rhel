@@ -23,7 +23,7 @@ from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.subscription import get_rhsm_facts
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import run_subprocess
+from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
 
 logger = root_logger.getChild(__name__)
@@ -55,7 +55,7 @@ class ConfigureHostMetering(actions.Action):
 
         super(ConfigureHostMetering, self).run()
 
-        self.env_var = os.environ.get("CONVERT2RHEL_CONFIGURE_HOST_METERING", None)
+        self.env_var = warn_deprecated_env("CONVERT2RHEL_CONFIGURE_HOST_METERING")
         if not self._check_env_var():
             return False
 
