@@ -15,6 +15,8 @@
 
 __metaclass__ = type
 
+import os
+
 import pytest
 import six
 
@@ -272,3 +274,15 @@ def test_remove_packages_unless_from_redhat(pkgs_to_remove, monkeypatch, caplog)
 
     assert "Removing the following {} packages".format(len(pkgs_to_remove)) in caplog.records[-3].message
     assert "Successfully removed {} packages".format(len(pkgs_to_remove)) in caplog.records[-1].message
+
+
+@pytest.mark.parametrize("dir_exists", (True, False))
+def test_fix_repos_directory(monkeypatch, tmpdir, dir_exists):
+    repo_dir = tmpdir.join("repo")
+    if dir_exists:
+        repo_dir.mkdir()
+    monkeypatch.setattr(handle_packages, "DEFAULT_YUM_REPOFILE_DIR", str(repo_dir))
+
+    handle_packages._fix_repos_directory()
+
+    assert os.path.exists(str(repo_dir))
