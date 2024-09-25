@@ -20,7 +20,7 @@ import os
 
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
-from convert2rhel.utils import run_subprocess
+from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
 
 logger = root_logger.getChild(__name__)
@@ -46,7 +46,7 @@ class TaintedKmods(actions.Action):
         logger.task("Prepare: Check if loaded kernel modules are not tainted")
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
-        tainted_kmods_skip = os.environ.get("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP", None)
+        tainted_kmods_skip = warn_deprecated_env("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP")
         diagnosis = (
             "Tainted kernel modules detected:\n  {0}\n"
             "Third-party components are not supported per our "

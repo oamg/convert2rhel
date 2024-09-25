@@ -22,7 +22,7 @@ from convert2rhel import actions, repo
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import compare_package_versions
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import run_subprocess
+from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
 
 logger = root_logger.getChild(__name__)
@@ -67,7 +67,7 @@ class IsLoadedKernelLatest(actions.Action):
         # Repoquery failed to detected any kernel or kernel-core packages in it's repositories
         # we allow the user to provide a environment variable to override the functionality and proceed
         # with the conversion, otherwise, we just throw a critical logging to them.
-        if "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK" in os.environ:
+        if warn_deprecated_env("CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK"):
             logger.warning(
                 "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
                 "the {} comparison.\n"

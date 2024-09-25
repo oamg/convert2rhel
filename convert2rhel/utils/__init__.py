@@ -797,6 +797,7 @@ def report_on_a_download_error(output, pkg):
                 " 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'.".format(pkg, system_info.name)
             )
         else:
+            warn_deprecated_env("CONVERT2RHEL_INCOMPLETE_ROLLBACK")
             logger.warning(
                 "Couldn't download the {} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
@@ -1117,3 +1118,24 @@ def write_json_object_to_file(path, data, mode=0o600):
     with open(path, mode="w") as handler:
         os.chmod(path, mode)
         json.dump(data, handler, indent=4)
+
+
+def warn_deprecated_env(env_name):
+    """Warn the user that the environment variable is deprecated.
+
+    .. note::
+        This will be removed after we finalize switching all env vars to toolopts.
+
+    :param env_name: The name of the environment variable that is deprecated.
+    :type env_name: str
+    """
+    if env_name not in os.environ:
+        # Nothing to do here.
+        return
+
+    root_logger.warning(
+        "The environment variable {} is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
+        "Please, use the configuration file instead."
+    )
+
+    return os.getenv(env_name, None)
