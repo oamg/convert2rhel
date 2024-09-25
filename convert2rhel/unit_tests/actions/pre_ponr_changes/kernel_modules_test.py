@@ -104,6 +104,7 @@ def test_ensure_compatibility_of_kmods(
     caplog,
     host_kmods,
     should_be_in_logs,
+    global_tool_opts,
 ):
     monkeypatch.setattr(
         ensure_kernel_modules_compatibility_instance, "_get_loaded_kmods", mock.Mock(return_value=host_kmods)
@@ -121,6 +122,7 @@ def test_ensure_compatibility_of_kmods(
         "run_subprocess",
         value=run_subprocess_mock,
     )
+    monkeypatch.setattr(kernel_modules, "tool_opts", global_tool_opts)
 
     ensure_kernel_modules_compatibility_instance.run()
     assert_actions_result(ensure_kernel_modules_compatibility_instance, level="SUCCESS")
@@ -172,12 +174,12 @@ def test_ensure_compatibility_of_kmods_failure(
     ensure_kernel_modules_compatibility_instance,
     monkeypatch,
     pretend_os,
-    caplog,
     host_kmods,
     repo_kmod_pkgs,
     makecache_output,
     error_id,
     level,
+    global_tool_opts,
 ):
     monkeypatch.setattr(
         ensure_kernel_modules_compatibility_instance, "_get_loaded_kmods", mock.Mock(return_value=host_kmods)
@@ -195,6 +197,7 @@ def test_ensure_compatibility_of_kmods_failure(
         "run_subprocess",
         value=run_subprocess_mock,
     )
+    monkeypatch.setattr(kernel_modules, "tool_opts", global_tool_opts)
 
     ensure_kernel_modules_compatibility_instance.run()
     assert_actions_result(ensure_kernel_modules_compatibility_instance, level=level, id=error_id)
@@ -273,6 +276,7 @@ def test_ensure_compatibility_of_kmods_excluded(
     msg_in_logs,
     msg_not_in_logs,
     exception,
+    global_tool_opts,
 ):
     monkeypatch.setattr(
         ensure_kernel_modules_compatibility_instance,
@@ -300,6 +304,7 @@ def test_ensure_compatibility_of_kmods_excluded(
         "_get_unsupported_kmods",
         value=get_unsupported_kmods_mocked,
     )
+    monkeypatch.setattr(kernel_modules, "tool_opts", global_tool_opts)
 
     if exception:
         ensure_kernel_modules_compatibility_instance.run()

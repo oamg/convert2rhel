@@ -54,13 +54,15 @@ def tainted_kmods_action():
         ),
     ),
 )
-def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmods_action):
+def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmods_action, global_tool_opts):
     run_subprocess_mock = mock.Mock(return_value=command_return)
     monkeypatch.setattr(
         tainted_kmods,
         "run_subprocess",
         value=run_subprocess_mock,
     )
+    monkeypatch.setattr(tainted_kmods, "tool_opts", global_tool_opts)
+
     tainted_kmods_action.run()
 
     if is_error:
@@ -151,7 +153,5 @@ def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted
                 ),
             )
         )
-        print(expected)
-        print(tainted_kmods_action.messages)
         assert expected.issuperset(tainted_kmods_action.messages)
         assert expected.issubset(tainted_kmods_action.messages)

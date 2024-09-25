@@ -22,7 +22,7 @@ import os
 import pytest
 import six
 
-from convert2rhel import unit_tests
+from convert2rhel import toolopts, unit_tests
 from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
@@ -220,31 +220,29 @@ class TestBackupSystem:
         else:
             assert "" == caplog.text
 
-    @pytest.mark.parametrize(
-        ("env_var", "message"),
-        (
-            (True, "Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected."),
-            (False, "Missing file {rpm_va_output} in it's location"),
-        ),
-    )
-    def test_get_changed_package_files_missing(self, caplog, message, env_var, tmpdir, monkeypatch):
+    def test_get_changed_package_files_missing(
+        self, caplog, tmpdir, monkeypatch, backup_package_files_action, global_tool_opts
+    ):
+        message = "Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected."
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
+        monkeypatch.setenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "1")
+        monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
 
-        if env_var:
-            os.environ["CONVERT2RHEL_INCOMPLETE_ROLLBACK"] = "1"
-        else:
-            # Unset the variable
-            os.environ.pop("CONVERT2RHEL_INCOMPLETE_ROLLBACK", None)
+        backup_package_files_action._get_changed_package_files()
+        assert caplog.records[-1].message == message
 
-        backup_package_file = backup_system.BackupPackageFiles()
+    def test_get_changed_package_file_system_exit(
+        self, monkeypatch, tmpdir, backup_package_files_action, global_tool_opts
+    ):
+        tmp_path = str(tmpdir)
+        monkeypatch.setattr(backup_system, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(backup_system, "LOG_DIR", str(tmp_path))
 
-        try:
-            backup_package_file._get_changed_package_files()
-        except SystemExit:
-            path = os.path.join(str(tmpdir), PRE_RPM_VA_LOG_FILENAME)
-            assert caplog.records[-1].message == message.format(rpm_va_output=path)
-        else:
-            assert caplog.records[-1].message == message
+        rpm_va_path = os.path.join(tmp_path, PRE_RPM_VA_LOG_FILENAME)
+        message = "Missing file {} in it's location".format(rpm_va_path)
+
+        with pytest.raises(SystemExit, match=message):
+            backup_package_files_action._get_changed_package_files()
 
     @pytest.mark.parametrize(
         ("rpm_va_output", "message"),

@@ -138,10 +138,31 @@ class CliConfigMock:
         pass
 
 
+class FileConfigMock:
+    SOURCE = "configuration file"
+
+    def __init__(self):
+        self.configure_host_metering = None
+        self.incomplete_rollback = None
+        self.tainted_kernel_module_check_skip = None
+        self.outdated_package_check_skip = None
+        self.allow_older_version = None
+        self.allow_unavailable_kmods = None
+        self.skip_kernel_currency_check = None
+
+        self.username = None
+        self.password = None
+        self.org = None
+        self.activation_key = None
+
+    def run(self):
+        pass
+
+
 @pytest.fixture
 def global_tool_opts(monkeypatch):
     local_tool_opts = toolopts.ToolOpts()
-    local_tool_opts.initialize(config_sources=[CliConfigMock()])
+    local_tool_opts.initialize(config_sources=[CliConfigMock(), FileConfigMock()])
     monkeypatch.setattr(toolopts, "tool_opts", local_tool_opts)
     return local_tool_opts
 
