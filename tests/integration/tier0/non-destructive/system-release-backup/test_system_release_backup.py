@@ -92,14 +92,6 @@ def test_override_inhibitor_os_release_restored(
 
         c2r.expect("'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.")
 
-        # Apparently the whole "/etc/yum.repos.d" dir is missing when the *-release package gets erased
-        # re-create it, so sub-man is able to refresh the redhat.repo file
-        # TODO remove this part when/if https://issues.redhat.com/browse/RHELC-1677 gets fixed
-        c2r.expect("Ensure kernel modules compatibility with RHEL")
-        missing_dir = "/etc/yum.repos.d"
-        if not os.path.exists(missing_dir):
-            os.mkdir(missing_dir)
-
         c2r.expect("Continue with the system conversion")
         c2r.sendline("n")
     assert c2r.exitstatus == 1

@@ -15,11 +15,13 @@
 
 __metaclass__ = type
 
+import os
 
 from convert2rhel import actions, pkghandler, repo, utils
 from convert2rhel.backup import backup_control, get_backedup_system_repos
 from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.logger import root_logger
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
 
 
@@ -132,6 +134,13 @@ class RemoveSpecialPackages(actions.Action):
             # There is needed for avoid reaching out RHEL repositories while requesting info about pkgs.
             disable_repos = repo.get_rhel_repos_to_disable()
             pkgs_removed = _remove_packages_unless_from_redhat(pkgs_list=all_pkgs, disable_repos=disable_repos)
+
+            # https://issues.redhat.com/browse/RHELC-1677
+            # In some cases the {system}-release package takes ownership of the /etc/yum.repos.d/ directory,
+            # when the package gets forcefully removed, the directory gets removed as well. Subscription-manager
+            # doesn't expect this and without the directory the redhat.repo isn't re-created. This results in an inability
+            # to access any repositories as the repository directory doesn't exist.
+            _fix_repos_directory()
         except SystemExit as e:
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
@@ -193,3 +202,11 @@ def _remove_packages_unless_from_redhat(pkgs_list, disable_repos=None):
     logger.debug("Successfully removed {} packages".format(len(pkgs_list)))
 
     return pkgs_removed
+
+
+def _fix_repos_directory():
+    """Check if repository directory is present. If the directory is missing, create it."""
+    repo_dir = DEFAULT_YUM_REPOFILE_DIR
+    if not os.path.exists(repo_dir):
+        os.mkdir(repo_dir)
+        logger.debug("Recreated repository directory {} as it was removed with some special package.".format(repo_dir))
