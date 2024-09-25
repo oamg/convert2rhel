@@ -128,6 +128,9 @@ def test_c2r_version_latest_inhibitor(convert2rhel, c2r_version, version):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert (
             c2r.expect_exact(
                 "(OVERRIDABLE) CONVERT2RHEL_LATEST_VERSION::OUT_OF_DATE - Outdated convert2rhel version detected",
@@ -182,6 +185,9 @@ def test_clean_cache(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
         assert c2r.expect("Cached repositories metadata cleaned successfully.", timeout=300) == 0
 
@@ -199,6 +205,9 @@ def test_rhsm_error_logged(convert2rhel):
     """
     with convert2rhel("--debug -k key -o org") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
