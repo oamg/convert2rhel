@@ -74,8 +74,6 @@ class Breadcrumbs:
         self.run_id = "null"
         # The convert2rhel package object from the yum/dnf python API for further information extraction.
         self._pkg_object = None
-        #
-        self.non_default_channel = "null"
 
     def collect_early_data(self):
         """Set data which is accessible before the conversion"""
