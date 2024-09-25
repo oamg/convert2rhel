@@ -46,9 +46,6 @@ def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
     the latest version. The c2r has to display a warning message
     about that. Also, not updated package has its version locked.
     Display a warning about used version lock.
-    Since the introduction of overridables, we need to use
-    CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP to override out of date
-    packages.
     """
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
@@ -63,10 +60,6 @@ def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
 
     assert c2r.exitstatus == 2
 
-    # We need to set envar to override the out of date packages check
-    # to perform the full conversion
-    os.environ["CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP"] = "1"
-
     # Run utility until the reboot
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
@@ -76,6 +69,5 @@ def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
         )
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
-        c2r.expect_exact("Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
     assert c2r.exitstatus == 0

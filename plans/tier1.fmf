@@ -142,11 +142,6 @@ adjust+:
                 # Bypass the kernel check, since the installed kernel is an older version
                 CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
 
-                # We need to set envar to override the out of date packages check
-                # to perform the full conversion
-                # The packages are outdated because the repoquery check is done
-                # against the rhel-7-server-rpms repository, not CentOS'.
-                CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP: 1
 
                 # Since we are removing all the repositories other than rhel-7-server-rpms
                 # we need pass CONVERT2RHEL_INCOMPLETE_ROLLBACK due to the inability
