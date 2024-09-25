@@ -23,6 +23,7 @@ from functools import cmp_to_key
 from convert2rhel import actions, pkghandler
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
 
@@ -248,7 +249,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
 
             # Check if we have the environment variable set, if we do, send a
             # warning and return.
-            if warn_deprecated_env("CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS"):
+            warn_deprecated_env("CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS")
+            if tool_opts.allow_unavailable_kmods:
                 logger.warning(
                     "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
                     " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"

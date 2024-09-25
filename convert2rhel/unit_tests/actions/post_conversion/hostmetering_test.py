@@ -20,7 +20,7 @@ __metaclass__ = type
 import pytest
 import six
 
-from convert2rhel import actions, systeminfo
+from convert2rhel import actions, systeminfo, toolopts
 from convert2rhel.actions.post_conversion import hostmetering
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import RunSubprocessMocked, assert_actions_result, run_subprocess_side_effect
@@ -41,7 +41,7 @@ def hostmetering_instance():
         (
             {},
             Version(7, 9),
-            False,  # not on hyperscaler
+            False,  # not on hyperscalershould_configure_metering
             "auto",
             False,
         ),
@@ -125,11 +125,17 @@ def hostmetering_instance():
     ),
 )
 def test_configure_host_metering(
-    monkeypatch, rhsm_facts, os_version, should_configure_metering, envvar, hostmetering_instance, managed_service
+    monkeypatch,
+    rhsm_facts,
+    os_version,
+    should_configure_metering,
+    envvar,
+    hostmetering_instance,
+    managed_service,
+    global_tool_opts,
 ):
-    if envvar:
-        monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", envvar)
-
+    monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
+    monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", envvar)
     monkeypatch.setattr(system_info, "version", os_version)
     monkeypatch.setattr(hostmetering, "get_rhsm_facts", mock.Mock(return_value=rhsm_facts))
     yum_mock = mock.Mock(return_value=(0, ""))
@@ -152,7 +158,7 @@ def test_configure_host_metering(
         subprocess_mock.assert_any_call(["systemctl", "enable", "host-metering.service"])
         subprocess_mock.assert_any_call(["systemctl", "start", "host-metering.service"])
     else:
-        assert ret is False, "Should not configure host-metering."
+        assert not ret, "Should not configure host-metering."
         assert yum_mock.call_count == 0, "Should not install anything."
         assert subprocess_mock.call_count == 0, "Should not configure anything."
 
@@ -352,11 +358,11 @@ def test_configure_host_metering_messages_and_results(
     service_running,
     action_message,
     action_result,
+    global_tool_opts,
 ):
     """Test outputted report/message in each part of the action."""
     if env_var:
         monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", env_var)
-
     monkeypatch.setattr(system_info, "version", os_version)
     # The facts aren't used during the test run
     monkeypatch.setattr(hostmetering, "get_rhsm_facts", mock.Mock(return_value=None))
@@ -368,12 +374,32 @@ def test_configure_host_metering_messages_and_results(
         hostmetering_instance, "_enable_host_metering_service", mock.Mock(return_value=enable_host_metering_service)
     )
     monkeypatch.setattr(systeminfo, "is_systemd_managed_service_running", mock.Mock(return_value=service_running))
-
+    monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
     hostmetering_instance.run()
 
     assert action_message.issuperset(hostmetering_instance.messages)
     assert action_message.issubset(hostmetering_instance.messages)
     assert action_result == hostmetering_instance.result
+
+
+def test_configure_host_metering_no_env_var(monkeypatch, hostmetering_instance, global_tool_opts):
+    expected = set(
+        (
+            actions.ActionMessage(
+                level="INFO",
+                id="CONFIGURE_HOST_METERING_SKIP",
+                title="Did not perform host metering configuration.",
+                description="CONVERT2RHEL_CONFIGURE_HOST_METERING was not set.",
+            ),
+        ),
+    )
+    monkeypatch.setattr(hostmetering, "tool_opts", global_tool_opts)
+
+    hostmetering_instance.run()
+
+    assert expected.issuperset(hostmetering_instance.messages)
+    assert expected.issubset(hostmetering_instance.messages)
+    assert actions.ActionResult(level="SUCCESS", id="SUCCESS") == hostmetering_instance.result
 
 
 @pytest.mark.parametrize(
