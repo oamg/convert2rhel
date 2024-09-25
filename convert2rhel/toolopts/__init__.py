@@ -17,6 +17,7 @@
 __metaclass__ = type
 
 import logging
+import os
 
 from convert2rhel.utils.subscription import setup_rhsm_parts
 
@@ -115,6 +116,17 @@ class ToolOpts:
         current_attribute_value = getattr(self, key)
 
         if value and not current_attribute_value:
+            setattr(self, key, value)
+
+    def update_opts(self, key, value):
+        """Update a given option in toolopts.
+
+        :param key:
+        :type key: str
+        :param value:
+        :type value: str
+        """
+        if key and value:
             setattr(self, key, value)
 
     def _handle_rhsm_parts(self):
