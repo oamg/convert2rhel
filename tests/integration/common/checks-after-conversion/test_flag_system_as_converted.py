@@ -1,6 +1,6 @@
 import jsonschema
 
-from conftest import load_json_schema
+from test_helpers.common_functions import load_json_schema
 
 
 C2R_MIGRATION_RESULTS_SCHEMA = load_json_schema(path="artifacts/c2r_migration_results_schema.json")

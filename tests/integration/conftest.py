@@ -1,30 +1,41 @@
 import configparser
-import dataclasses
 import json
 import logging
 import os
-import re
-import shutil
-import subprocess
 import sys
 import warnings
 
-from collections import namedtuple
 from contextlib import contextmanager
 from typing import ContextManager
 
-import click
 import pexpect
 import pytest
 
 from _pytest.warning_types import PytestUnknownMarkWarning
-from dotenv import dotenv_values
 
 
 try:
     from pathlib import Path
 except ImportError:
     from pathlib2 import Path
+
+# Pytest will rewrite assertions in test modules, but not elsewhere.
+# This tells pytest to also rewrite assertions in utils/helpers.py.
+#
+pytest.register_assert_rewrite("test_helpers")
+
+from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
+from test_helpers.satellite import Satellite
+from test_helpers.shell import live_shell
+from test_helpers.subscription_manager import SubscriptionManager
+from test_helpers.vars import SYSTEM_RELEASE_ENV, TEST_VARS
+from test_helpers.workarounds import (
+    workaround_grub_setup,
+    workaround_hybrid_rocky_image,
+    workaround_keep_centos_pointed_to_vault,
+    workaround_missing_os_release_package,
+    workaround_remove_uek,
+)
 
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
@@ -47,195 +58,12 @@ def pytest_collection_modifyitems(items):
         item.add_marker(marker)
 
 
-TEST_VARS = dotenv_values("/var/tmp/.env")
-SAT_REG_FILE = dotenv_values("/var/tmp/.env_sat_reg")
-
-
-SYSTEM_RELEASE_ENV = os.environ["SYSTEM_RELEASE_ENV"]
-
-
-def live_shell():
-    """
-    Live shell.
-    Callable directly.
-    """
-
-    def factory(command, silent=False, hide_command=False):
-        if silent:
-            click.echo("This shell call is set to silent=True, therefore no output will be printed.")
-        if hide_command:
-            click.echo("This shell call is set to hide_command=True, so it won't show the called command.")
-        if not silent and not hide_command:
-            click.echo(
-                "\nExecuting a command:\n{}\n\n".format(command),
-                color="green",
-            )
-        # pylint: disable=consider-using-with
-        # Popen is a context-manager in python-3.2+
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = ""
-        for line in iter(process.stdout.readline, b""):
-            output += line.decode()
-            if not silent:
-                click.echo(line.decode().rstrip("\n"))
-        returncode = process.wait()
-        return namedtuple("Result", ["returncode", "output"])(returncode, output)
-
-    return factory
-
-
 @pytest.fixture(name="shell")
 def shell_fixture(tmp_path):
     """
     Live shell fixture.
     """
     return live_shell()
-
-
-class SubscriptionManager:
-    def __init__(self):
-        self.shell = live_shell()
-
-    def add_keys_and_certificates(self):
-        """
-        Add the SSL certificate for accessing the CDN and the redhat RPM GPG key.
-        """
-        self.shell(
-            "curl --create-dirs -ko /etc/rhsm/ca/redhat-uep.pem https://cdn-public.redhat.com/content/public/repofiles/redhat-uep.pem"
-        )
-        self.shell(
-            "curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://security.access.redhat.com/data/fd431d51.txt"
-        )
-
-    def add_client_tools_repo(self):
-        """
-        Add the client tools repository to install subscription manager from.
-        """
-        version = "7-server" if SystemInformationRelease.version.major == 7 else SystemInformationRelease.version.major
-        repo_url = f"https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-{version}.repo"
-
-        self.shell(f"yum-config-manager --add-repo {repo_url}")
-
-        # On CentOS 8.5 we need to replace the $releasever in the url to 8.5,
-        # otherwise the dnf will complain with dependency issues.
-        if "centos-8" in SYSTEM_RELEASE_ENV:
-            self.shell(r"sed -i 's#\$releasever#8.5#' /etc/yum.repos.d/client-tools-for-rhel-8.repo")
-
-    def install_package(self, package_name="subscription-manager"):
-        """
-        Install a package.
-        :param package_name: The package to be installed. Default is subscription-manager.
-        :type package_name: str
-        """
-        command = f"yum install -y {package_name}"
-        # rhn-client-tools package obsoletes subscription-manager on Oracle Linux
-        # set the obsoletes option to 0 to be able to install the package
-        if SystemInformationRelease.distribution == "oracle":
-            command += " --setopt=obsoletes=0"
-
-        return self.shell(command)
-
-    def remove_package(self, package_name="subscription-manager*"):
-        """
-        Removes a package.
-        :param package_name: The package to be installed. Default is subscription-manager*.
-        :type package_name: str
-        """
-        command = f"yum remove -y {package_name}"
-        return self.shell(command)
-
-    def remove_client_tools_repo(self):
-        """
-        Remove the client tools repository file.
-        """
-        command = "rm -f /etc/yum.repos.d/client-tools-for-rhel*.repo"
-
-        return self.shell(command)
-
-    def remove_keys_and_certificates(self):
-        """
-        Remove the SSL certificate for accessing the CDN and the redhat RPM GPG key.
-        """
-        self.shell("rm -f /etc/rhsm/ca/redhat-uep.pem")
-        self.shell("rm -f /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release")
-
-    def unregister(self):
-        """
-        Remove potential leftover subscription, unregister the system.
-        """
-        # Remove potential leftover subscription
-        self.shell("subscription-manager remove --all")
-        # Remove potential leftover registration
-        command = "subscription-manager unregister"
-
-        return self.shell(command)
-
-    def set_up_requirements(self, use_staging_cdn=False):
-        """
-        Usual full preparation workflow.
-        Calls, where applicable:
-            self.remove_package(package_name="rhn-client-tools") # only on Oracle Linux
-            self.add_keys_and_certificates()
-            self.add_client_tools_repo()
-            self.install_package()
-            self.set_up_to_stagecdn() # only when use_staging_cdn is True
-        """
-        if SystemInformationRelease.distribution == "oracle":
-            self.remove_package(package_name="rhn-client-tools")
-        self.add_keys_and_certificates()
-        self.add_client_tools_repo()
-        self.install_package()
-        if use_staging_cdn:
-            self.set_up_to_stagecdn()
-
-    def set_up_to_stagecdn(self):
-        # Point the server hostname to the staging environment,
-        # so we don't need to pass it to convert2rhel explicitly
-        # RHSM baseurl gets pointed to a stage cdn
-        self.shell(
-            "subscription-manager config --rhsm.baseurl=https://{0} --server.hostname={1}".format(
-                TEST_VARS["RHSM_STAGECDN"], TEST_VARS["RHSM_SERVER_URL"]
-            ),
-            silent=True,
-        )
-
-    def clean_up(self):
-        """
-        Usual full teardown workflow.
-        Calls where applicable:
-            self.unregister()
-            self.remove_package()
-            self.remove_client_tools_repo()
-            self.remove_keys_and_certificates()
-        """
-        self.unregister()
-        self.remove_package()
-        self.remove_client_tools_repo()
-        self.remove_keys_and_certificates()
-
-
-@pytest.fixture()
-def fixture_subman():
-    """
-    Fixture.
-    Set up the subscription manager on the system. Wrapper around SubscriptionManager class and its methods.
-    By default sets the subscription manager to the stagecdn (needed for SCA Enabled accounts). If you want
-    to disable it, please edit this fixture to utilize parametrization.
-    """
-    subman = SubscriptionManager()
-
-    subman.set_up_requirements(use_staging_cdn=True)
-
-    yield
-
-    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
-    # so the check "enabled repositories" after the conversion can be executed.
-    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
-        subman.unregister()
-
-    # We do not need to spend time on performing the cleanup for some test cases (destructive)
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        subman.clean_up()
 
 
 @pytest.fixture()
@@ -381,66 +209,50 @@ def convert2rhel(shell):
     return factory
 
 
-class SystemInformationRelease:
+@pytest.fixture()
+def fixture_subman():
     """
-    Helper class.
-    Assign a namedtuple with major and minor elements, both of an int type
-    Assign a distribution (e.g. centos, oracle, rocky, alma)
-    Assign a system release (e.g. redhat-8.8)
-
-    Examples:
-    Oracle Linux Server release 7.8
-    CentOS Linux release 7.6.1810 (Core)
-    CentOS Linux release 8.1.1911 (Core)
+    Fixture.
+    Set up the subscription manager on the system. Wrapper around SubscriptionManager class and its methods.
+    By default sets the subscription manager to the stagecdn (needed for SCA Enabled accounts). If you want
+    to disable it, please edit this fixture to utilize parametrization.
     """
+    subman = SubscriptionManager()
 
-    with open("/etc/system-release", "r") as file:
-        system_release_content = file.read()
-        # Evaluate if we're looking at CentOS Stream
-        is_stream = re.match("stream", system_release_content.split()[1].lower())
-        distribution = system_release_content.split()[0].lower()
-        if distribution == "ol":
-            distribution = "oracle"
-        elif distribution == "red":
-            distribution = "redhat"
+    subman.set_up_requirements(use_staging_cdn=True)
 
-        match_version = re.search(r".+?(\d+)\.?(\d+)?\D?", system_release_content)
-        if not match_version:
-            pytest.fail("Something is wrong with the /etc/system-release, cowardly refusing to continue.")
+    yield
 
-        if is_stream:
-            distribution = "stream"
-            version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), "latest")
-            system_release = "{}-{}-{}".format(distribution, version.major, version.minor)
-        else:
-            version = namedtuple("Version", ["major", "minor"])(
-                int(match_version.group(1)), int(match_version.group(2))
-            )
-            system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
+    # The "pre_registered system" test requires to remain registered even after the conversion is completed,
+    # so the check "enabled repositories" after the conversion can be executed.
+    if "C2R_TESTS_SUBMAN_REMAIN_REGISTERED" not in os.environ:
+        subman.unregister()
 
-        # Check if the release is a EUS candidate
-        is_eus = False
-        if (
-            version.major in (8, 9)
-            and version.minor in (2, 4, 6, 8)
-            and distribution != "oracle"
-            and "latest" not in SYSTEM_RELEASE_ENV
-        ):
-            is_eus = True
+    # We do not need to spend time on performing the cleanup for some test cases (destructive)
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        subman.clean_up()
 
 
 @pytest.fixture()
-def log_file_data():
+def fixture_satellite(request):
     """
-    This fixture reads and returns data from the convert2rhel.log file.
-    Mainly used for after conversion checks, where we match required strings to the log output.
+    Fixture.
+    Register the system to the Satellite server. Wrapper around satellite class and its methods.
+    Can be parametrized with requesting a different key from the ("/var/tmp/.env_sat_reg"):
+    @pytest.mark.parametrize("fixture_satellite", ["DIFFERENT_KEY"], indirect=True)
     """
-    convert2rhel_log_file = "/var/log/convert2rhel/convert2rhel.log"
+    sat_curl_command_key = SYSTEM_RELEASE_ENV
+    if hasattr(request, "param"):
+        sat_curl_command_key = request.param
+        print(">>> Using parametrized curl command requested in the fixture.")
+    satellite = Satellite(key=sat_curl_command_key)
 
-    with open(convert2rhel_log_file, "r") as logfile:
-        log_data = logfile.read()
+    satellite.register()
 
-        return log_data
+    yield
+
+    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
+        satellite.unregister()
 
 
 @pytest.fixture(scope="function")
@@ -517,24 +329,6 @@ def pre_registered(shell, request, fixture_subman):
 
 
 @pytest.fixture()
-def hybrid_rocky_image(shell):
-    """
-    Fixture to detect a hybrid Rocky Linux cloud image.
-    Removes symlink from /boot/grub2/grubenv -> ../efi/EFI/rocky/grubenv
-    The symlink prevents grub to read the grubenv and boot to a different
-    kernel than the last selected.
-    """
-    grubenv_file = "/boot/grub2/grubenv"
-    is_efi = shell("efibootmgr", silent=True).returncode
-    if "rocky" in SystemInformationRelease.distribution and is_efi not in (None, 0):
-        if os.path.islink(grubenv_file):
-            target_grubenv_file = os.path.realpath(grubenv_file)
-
-            os.remove(grubenv_file)
-            shutil.copy2(target_grubenv_file, grubenv_file)
-
-
-@pytest.fixture()
 def environment_variables(request):
     """
     Fixture.
@@ -560,7 +354,7 @@ def environment_variables(request):
 
 
 @pytest.fixture(scope="function")
-def outdated_kernel(shell, hybrid_rocky_image):
+def outdated_kernel(shell, workaround_hybrid_rocky_image):
     """
     Install an older version of kernel and let the system boot to it.
     """
@@ -750,240 +544,3 @@ def backup_directory(shell, request):
     yield backup_path
 
     shell(f"rm -rf {backup_path}")
-
-
-class Satellite:
-    def __init__(self, key=SYSTEM_RELEASE_ENV):
-        self.shell = live_shell()
-        # Key on which upon the command is selected
-        self.key = key
-        # File containing registration commands
-        self._sat_reg_commands = dotenv_values("/var/tmp/.env_sat_reg")
-        self._sat_script_location = "/var/tmp/register_to_satellite.sh"
-        self.subman = SubscriptionManager()
-
-    def get_satellite_curl_command(self):
-        """
-        Get the Satellite registration command for the respective system.
-        """
-        if not self._sat_reg_commands:
-            pytest.fail(
-                f"The {self._sat_reg_file} either not found or empty.\
-                It is required for the satellite conversion to work."
-            )
-
-        return self._sat_reg_commands.get(self.key)
-
-    def _curl_the_satellite_script(self, curl_command):
-        assert (
-            self.shell(f"{curl_command} -o {self._sat_script_location}", silent=True).returncode == 0
-        ), "Failed to curl the satellite script to the machine."
-
-        # [danmyway] This is just a mitigation of rhn-client-tools pkg obsoleting subscription-manager during upgrade
-        # TODO remove when https://github.com/theforeman/foreman/pull/10280 gets merged and or foreman 3.12 is out
-        # Should be around November 2024
-        if "oracle-7.9" in SystemInformationRelease.system_release:
-            self.shell(
-                fr"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {self._sat_script_location}"
-            )
-
-    def _run_satellite_reg_script(self):
-        assert (
-            self.shell(f"chmod +x {self._sat_script_location} && /bin/bash {self._sat_script_location}").returncode == 0
-        ), "Falied to run the satellite registration script."
-
-    def register(self):
-        curl_command = self.get_satellite_curl_command()
-
-        # Subscription-manager is not in Oracle repositories so we have to add
-        # our own client-tools-repo with subscription-manager package.
-        if "oracle" in SYSTEM_RELEASE_ENV:
-            self.subman.add_keys_and_certificates()
-            self.subman.add_client_tools_repo()
-
-        # Make sure it returned some value, otherwise it will fail.
-        assert curl_command, "The registration command is empty."
-
-        # Curl the Satellite registration script silently
-        self._curl_the_satellite_script(curl_command)
-
-        # Make the script executable and run the registration
-        self._run_satellite_reg_script()
-
-        ### This is a workaround which might be removed, when we enable the Satellite repositories by default
-        repos_to_enable = self.shell(
-            "subscription-manager repos --list | grep '^Repo ID:' | awk '{print $3}'"
-        ).output.split()
-        for repo in repos_to_enable:
-            self.shell(f"subscription-manager repos --enable {repo}")
-
-    def unregister(self):
-        """
-        Remove the subman packages installed by the registration script
-        """
-        self.subman.clean_up()
-
-
-@pytest.fixture()
-def fixture_satellite(request):
-    """
-    Fixture.
-    Register the system to the Satellite server. Wrapper around satellite class and its methods.
-    Can be parametrized with requesting a different key from the SAT_REG_FILE("/var/tmp/.env_sat_reg"):
-    @pytest.mark.parametrize("fixture_satellite", ["DIFFERENT_KEY"], indirect=True)
-    """
-    sat_curl_command_key = SYSTEM_RELEASE_ENV
-    if hasattr(request, "param"):
-        sat_curl_command_key = request.param
-        print(">>> Using parametrized curl command requested in the fixture.")
-    satellite = Satellite(key=sat_curl_command_key)
-
-    satellite.register()
-
-    yield
-
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        satellite.unregister()
-
-
-#### Common functions ####
-def load_json_schema(path):
-    """Load the JSON schema from the system."""
-    assert os.path.exists(path)
-
-    with open(path, mode="r") as handler:
-        return json.load(handler)
-
-
-def get_full_kernel_title(shell, kernel=None):
-    """
-    Helper function.
-    Get the full kernel boot entry title.
-    :param kernel: kernel pacakge VRA (version-release.architecture)
-    :type kernel: str
-    :param shell: Live shell fixture
-
-    :return: The full boot entry title for the given kernel.
-    :rtype: str
-    """
-    if not kernel:
-        raise ValueError("The kernel argument is probably empty")
-    # Get the full name of the kernel (ignore rescue kernels)
-    full_title = shell(
-        f'grubby --info ALL | grep "title=.*{kernel}" | grep -vi "rescue" | tr -d \'"\' | sed \'s/title=//\''
-    ).output.strip()
-
-    return full_title
-
-
-def get_custom_repos_names():
-    """
-    Helper function.
-    Returns a list of correct repo names used on RHEL respecting major/eus system version.
-    """
-    system_version = SystemInformationRelease.version
-
-    # Default RHEL-7 repositories
-    repos = ["rhel-7-server-rpms", "rhel-7-server-optional-rpms", "rhel-7-server-extras-rpms"]
-
-    if system_version.major >= 8:
-        if SystemInformationRelease.is_eus:
-            repos = [
-                f"rhel-{system_version.major}-for-x86_64-baseos-eus-rpms",
-                f"rhel-{system_version.major}-for-x86_64-appstream-eus-rpms",
-            ]
-        else:
-            repos = [
-                f"rhel-{system_version.major}-for-x86_64-baseos-rpms",
-                f"rhel-{system_version.major}-for-x86_64-appstream-rpms",
-            ]
-    return repos
-
-
-#### Workaround fixtures ####
-@pytest.fixture(autouse=True)
-def workaround_missing_os_release_package(shell):
-    # TODO(danmyway) remove when/if the issue gets fixed
-    """
-    Fixture to workaround issues with missing `*-linux-release`
-    package, after incomplete rollback.
-    """
-    # run only after the test finishes
-    yield
-
-    os_to_pkg_mapping = {
-        "centos-7": ["centos-release"],
-        "centos-8": ["centos-linux-release"],
-        "almalinux": ["almalinux-release"],
-        "rocky": ["rocky-release"],
-        "oracle": ["oraclelinux-release"],
-        "stream": ["centos-stream-release"],
-    }
-
-    # Run only for non-destructive tests.
-    # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
-        os_name = SystemInformationRelease.distribution
-        os_ver = SystemInformationRelease.version.major
-        if "centos" in os_name:
-            os_key = f"{os_name}-{os_ver}"
-        else:
-            os_key = os_name
-
-        system_release_pkgs = os_to_pkg_mapping.get(os_key)
-
-        if os_key == "oracle":
-            system_release_pkgs.append(f"oraclelinux-release-el{SystemInformationRelease.version.major}")
-
-        for pkg in system_release_pkgs:
-            installed = shell(f"rpm -q {pkg}").returncode
-            if installed == 1:
-                shell(f"yum install -y --releasever={os_ver} {pkg}")
-
-        # Since we try to mitigate any damage caused by the incomplete rollback
-        # try to update the system, in case anything got downgraded
-        print("TESTS >>> Updating the system.")
-        shell("yum update -y", silent=True)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def workaround_remove_uek():
-    """
-    Fixture to remove the Unbreakable Enterprise Kernel package.
-    The package might cause dependency issues.
-    Reference issue https://issues.redhat.com/browse/RHELC-1544
-    """
-    if SystemInformationRelease.distribution == "oracle":
-        subprocess.run(
-            ["yum", "remove", "-y", "kernel-uek"], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-
-    yield
-
-
-def workaround_grub_setup(shell):
-    """
-    Workaround.
-    /usr/lib/kernel/install.d/99-grub-mkconfig.install sets DISABLE_BLS=true when the hypervisor is xen
-    Due to all AWS images having xen type hypervisor, GRUB_ENABLE_BLSCFG is set to false as well
-    as a consequence. We need GRUB_ENABLE_BLSCFG set to true to be able to boot into different kernel
-    than the latest.
-    """
-    if SystemInformationRelease.version.major == 9:
-        print("TESTS >>> Setting grub default to correct values.")
-        shell(r"sed -i 's/^\s*GRUB_ENABLE_BLSCFG\s*=.*/GRUB_ENABLE_BLSCFG=true/g' /etc/default/grub")
-
-
-@pytest.fixture(autouse=True)
-def workaround_keep_centos_pointed_to_vault(shell):
-    """
-    Fixture.
-    In some rare cases we (re)install the centos-release package.
-    This overwrites the repofiles to its default state using mirrorlist instead of vault
-    which won't work since the EOL.
-    Make sure the repositories are pointed to the vault to keep the system usable.
-    """
-    if "C2R_TESTS_NONDESTRUCTIVE" in os.environ and "centos" in SystemInformationRelease.distribution:
-        sed_repos_to_vault = r'sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
-        print("TESTS >>> Resetting the repos to vault")
-        shell(sed_repos_to_vault, silent=True)
