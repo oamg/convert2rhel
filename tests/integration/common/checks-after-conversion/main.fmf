@@ -37,7 +37,9 @@ order: 52
         adjust+:
           enabled: false
           when: distro == stream-9-latest
-          because: The versions of latest RHEL kernel < latest Stream kernel, which is not handled very well in the code.
+          because: |
+            The versions of latest RHEL kernel < latest Stream kernel, which is not handled very well in the code.
+            Related issue: https://issues.redhat.com/browse/RHELC-1717
         summary+: |
             Grub default
         description+: |
