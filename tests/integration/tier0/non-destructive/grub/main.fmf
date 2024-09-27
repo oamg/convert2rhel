@@ -1,0 +1,20 @@
+summary: |
+    Change the grub file
+
+description: |
+    Modify the /etc/default/grub file and verify correct output and successful conversion.
+
+tag+:
+    - sanity
+    - grub
+    - grub-mkfile
+
+/invalid_changes_to_grub_file:
+    summary+: |
+        Introduce invalid changes
+    description+: |
+        Invalid changes, e.g. removing the `=` should cause the 'grub2-mkfile' call to fail.
+        Verify that an error is raised in such scenario.
+    tag+:
+        - grub-change-invalid
+    test: pytest -m test_invalid_changes_to_grub_file

@@ -18,13 +18,3 @@ tag+:
     tag+:
         - grub-change-valid
     test: pytest -m test_valid_changes_to_grub_file
-
-/invalid_changes_to_grub_file:
-    summary+: |
-        Introduce invalid changes
-    description+: |
-        Invalid changes, e.g. removing the `=` should cause the 'grub2-mkfile' call to fail.
-        Verify a successful conversion.
-    tag+:
-        - grub-change-invalid
-    test: pytest -m test_invalid_changes_to_grub_file
