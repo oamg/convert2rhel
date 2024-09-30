@@ -108,21 +108,21 @@ endif
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
-CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:z --name convert2rhel-$(1) -u root:root $(CONTAINER_RM) $(IMAGE):$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
+CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:z --name convert2rhel-centos$(1) -u root:root $(CONTAINER_RM) $(IMAGE)-centos:$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
 
 tests: tests7 tests8 tests9
 
 tests7: image7
 	@echo 'CentOS Linux 7 tests'
-	@$(call CONTAINER_TEST_FUNC,centos7,--show-capture=$(SHOW_CAPTURE))
+	@$(call CONTAINER_TEST_FUNC,7,--show-capture=$(SHOW_CAPTURE))
 
 tests8: image8
 	@echo 'CentOS Linux 8 tests'
-	@$(call CONTAINER_TEST_FUNC,centos8,--show-capture=$(SHOW_CAPTURE))
+	@$(call CONTAINER_TEST_FUNC,8,--show-capture=$(SHOW_CAPTURE))
 
 tests9: image9
 	@echo 'CentOS Stream 9 tests'
-	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
+	@$(call CONTAINER_TEST_FUNC,9,--show-capture=$(SHOW_CAPTURE))
 
 .srpm-clean:
 	rm -frv .srpms/*el*
