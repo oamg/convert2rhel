@@ -1,0 +1,8 @@
+[tool.ruff]
+# Extend the `pyproject.toml` file in the parent directory...
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+ignore = [
+  "E402", # ignore import not at top level, we need this for the mocking
+]
