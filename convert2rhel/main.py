@@ -150,11 +150,11 @@ def main_locked():
         process_phase = ConversionPhase.PRE_PONR_CHANGES
         pre_conversion_results = actions.run_pre_actions()
 
+        _raise_for_skipped_failures(pre_conversion_results)
+
         if tool_opts.activity == "analysis":
             process_phase = ConversionPhase.ANALYZE_EXIT
             raise _AnalyzeExit()
-
-        _raise_for_skipped_failures(pre_conversion_results)
 
         # Print the assessment just before we ask the user whether to continue past the PONR
         report.pre_conversion_report(
