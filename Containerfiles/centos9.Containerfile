@@ -16,7 +16,8 @@ ENV APP_MAIN_DEPS \
     git \
     rpm-build \
     rpmlint \
-    python3-devel
+    python3-devel \
+    rpmdevtools
 
 WORKDIR /data
 

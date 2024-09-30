@@ -14,7 +14,8 @@ ENV APP_MAIN_DEPS \
     rpm-build \
     rpmlint \
     python-devel \
-    python-setuptools
+    python-setuptools \
+    rpmdevtools
 
 WORKDIR /data
 
