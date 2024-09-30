@@ -24,16 +24,21 @@ except ImportError:
 #
 pytest.register_assert_rewrite("test_helpers")
 
-from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title  # noqa: E402
-from test_helpers.satellite import Satellite  # noqa: E402
-from test_helpers.shell import live_shell  # noqa: E402
-from test_helpers.subscription_manager import SubscriptionManager  # noqa: E402
-from test_helpers.vars import SYSTEM_RELEASE_ENV, TEST_VARS  # noqa: E402
-from test_helpers.workarounds import workaround_grub_setup  # noqa: E402
+from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
+from test_helpers.satellite import Satellite
+from test_helpers.shell import live_shell
+from test_helpers.subscription_manager import SubscriptionManager
+from test_helpers.vars import SYSTEM_RELEASE_ENV, TEST_VARS
+from test_helpers.workarounds import workaround_grub_setup
 
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
+
+# We use pytest_plugins to allow us to use fixtures we define in other files without the need to explicitly import them
+# inside each test file.
+# LINK - https://docs.pytest.org/en/7.0.x/reference/reference.html#globalvar-pytest_plugins
+pytest_plugins = ("test_helpers.common_functions",)
 
 
 def pytest_collection_modifyitems(items):
