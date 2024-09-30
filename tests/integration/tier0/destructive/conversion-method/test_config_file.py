@@ -32,8 +32,8 @@ def test_conversion_with_config_file(convert2rhel):
     create_files(config)
 
     with convert2rhel("-y --serverurl {} --debug".format(TEST_VARS["RHSM_SERVER_URL"])) as c2r:
-        c2r.expect("DEBUG - Found activation_key in /root/.convert2rhel.ini")
-        c2r.expect("DEBUG - Found org in /root/.convert2rhel.ini")
+        c2r.expect("DEBUG - Found activation_key in subscription_manager")
+        c2r.expect("DEBUG - Found org in subscription_manager")
         c2r.expect("Conversion successful!")
 
     assert c2r.exitstatus == 0
