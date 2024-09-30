@@ -12,14 +12,21 @@ else
   echo "Error: Can't find python interpreter."
   exit 1
 fi
-mkdir -p ~/rpmbuild/SOURCES
+echo "Setting up RPM tree in \$HOME"
+rpmdev-setuptree
 cp -v dist/* ~/rpmbuild/SOURCES
 echo "Building the RPM ..."
-rpmbuild -ba packaging/convert2rhel.spec --define "debug_package %{nil}"
+if [ $container == "podman" ]; then
+  echo "Detected running in podman, will not clean up"
+  rpmbuild -ba packaging/convert2rhel.spec --define "debug_package %{nil}"
+else
+  echo "Detected running locally, cleaning up afterwards"
+  rpmbuild -ba packaging/convert2rhel.spec --define "debug_package %{nil}" --clean
+fi
 echo "RPM was built successfully"
 echo "Cleaning up the target directory..."
-mkdir -p /.rpms
-mkdir -p /.srpms
-mv -vf ~/rpmbuild/RPMS/noarch/* /.rpms/
-mv -vf ~/rpmbuild/SRPMS/* /.srpms/
+mkdir -p .rpms
+mkdir -p .srpms
+mv -vf ~/rpmbuild/RPMS/noarch/convert2rhel* .rpms/
+mv -vf ~/rpmbuild/SRPMS/convert2rhel* .srpms/
 echo "RPM was moved to the target directory."

@@ -96,19 +96,19 @@ endif
 	@echo "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry"
 	@echo
 .fetch-image%:
-	@echo "Pulling $(IMAGE)-centos$*"
-	@$(PODMAN) pull $(IMAGE)-centos$*
+	@echo "Pulling $(IMAGE)-centos:$*"
+	@$(PODMAN) pull $(IMAGE)-centos:$*
 
 .build-image-message:
 	@echo "Building images"
 .build-image%:
 	@$(PODMAN) build -f Containerfiles/centos$*.Containerfile -t $(IMAGE)-centos$* .
-	@$(PODMAN) tag $(IMAGE)-centos$* $(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)-centos:latest
+	@$(PODMAN) tag $(IMAGE)-centos$* $(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)-centos:$*
 	touch $@
 
 # These files need to be made writable for pytest to run
 WRITABLE_FILES=. .coverage coverage.xml
-CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:z --name pytest-$(1) -u root:root $(CONTAINER_RM) $(IMAGE)-$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
+CONTAINER_TEST_FUNC=echo $(CONTAINER_TEST_WARNING) ; $(PODMAN) run -v $(shell pwd):/data:z --name convert2rhel-$(1) -u root:root $(CONTAINER_RM) $(IMAGE):$(1) /bin/sh -c 'touch $(WRITABLE_FILES) ; chown app:app $(WRITABLE_FILES) ; su app -c "pytest $(2) $(PYTEST_ARGS)"' ; CONTAINER_RETURN=$${?} ; $(CONTAINER_CLEANUP) ; exit $${CONTAINER_RETURN}
 
 tests: tests7 tests8 tests9
 
@@ -124,6 +124,12 @@ tests9: image9
 	@echo 'CentOS Stream 9 tests'
 	@$(call CONTAINER_TEST_FUNC,centos9,--show-capture=$(SHOW_CAPTURE))
 
+.srpm-clean:
+	rm -frv .srpms/*el*
+
+.srpm-clean%:
+	rm -frv .srpms/*el$**
+
 .rpm-clean:
 	rm -frv .rpms/*el*
 
@@ -131,12 +137,12 @@ tests9: image9
 	rm -frv .rpms/*el$**
 
 .rpm%:
-	$(PODMAN) run -v $(shell pwd):/data:z -v $(shell pwd)/.rpms:/.rpms:z,rw --name rpmbuild-centos$* -u root:root $(CONTAINER_RM) $(IMAGE)-centos$* scripts/build_locally.sh
+	$(PODMAN) run -v $(shell pwd):/data:z,rw --name convert2rhel-centos$* -u root:root $(CONTAINER_RM) $(IMAGE)-centos:$* scripts/build_locally.sh
 
-rpms: images .rpm-clean .rpm7 .rpm8 .rpm9
-rpm7: image7 .rpm-clean7 .rpm7
-rpm8: image8 .rpm-clean8 .rpm8
-rpm9: image9 .rpm-clean9 .rpm9
+rpms: images .rpm-clean .srpm-clean .rpm7 .rpm8 .rpm9
+rpm7: image7 .rpm-clean7 .srpm-clean7 .rpm7
+rpm8: image8 .rpm-clean8 .srpm-clean8 .rpm8
+rpm9: image9 .rpm-clean9 .srpm-clean9 .rpm9
 
 copr-build: rpms
 	mkdir -p .srpms
