@@ -17,7 +17,6 @@
 __metaclass__ = type
 
 import logging
-import os
 
 from convert2rhel.utils.subscription import setup_rhsm_parts
 
@@ -27,7 +26,10 @@ loggerinst = logging.getLogger(__name__)
 
 class ToolOpts:
     def _handle_config_conflict(self, config_sources):
-        file_config = next((config for config in config_sources if config.SOURCE == "configuration file"), None)
+        file_config = next(
+            (config for config in config_sources if config.SOURCE == "configuration file"),
+            None,
+        )
         # No file config detected, let's just bail out.
         if not file_config:
             return
