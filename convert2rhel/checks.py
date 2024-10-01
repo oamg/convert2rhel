@@ -51,10 +51,14 @@ def is_initramfs_file_valid(filepath):
         return False
 
     logger.debug("Checking if the '%s' file is not corrupted.", filepath)
-    out, return_code = run_subprocess(
-        cmd=["/usr/bin/lsinitrd", filepath],
-        print_output=False,
-    )
+    try:
+        out, return_code = run_subprocess(
+            cmd=["/usr/bin/lsinitrd", filepath],
+            print_output=False,
+        )
+    except UnicodeDecodeError as e:
+        out = e
+        return_code = 99  # Having this a high number to not mess with the actual process return codes.
 
     if return_code != 0:
         logger.info("Couldn't verify initramfs file. It may be corrupted.")
