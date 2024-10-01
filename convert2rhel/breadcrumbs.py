@@ -74,6 +74,8 @@ class Breadcrumbs:
         self.run_id = "null"
         # The convert2rhel package object from the yum/dnf python API for further information extraction.
         self._pkg_object = None
+        # The conversion was run with EUS/ELS
+        self.non_default_channel = "null"
 
     def collect_early_data(self):
         """Set data which is accessible before the conversion"""
@@ -85,6 +87,7 @@ class Breadcrumbs:
         self._set_source_os()
         self._set_started()
         self._set_env()
+        self._set_non_default_channel()
 
     def finish_collection(self, success=False):
         """Set the final data for breadcrumbs after the conversion ends.
@@ -149,6 +152,13 @@ class Breadcrumbs:
                 env_c2r[env] = env_list[env]
 
         self.env = env_c2r
+
+    def _set_non_default_channel(self):
+        """Set whether the conversion was run with EUS/ELS"""
+        if tool_opts.eus:
+            self.non_default_channel = "EUS"
+        if tool_opts.els:
+            self.non_default_channel = "ELS"
 
     def _set_source_os(self):
         """Set the source os release information."""
