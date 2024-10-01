@@ -96,6 +96,6 @@ class PackageUpdates(actions.Action):
                 diagnosis=package_not_up_to_date_error_message,
                 remediations="Run yum update to update all the packages on the system.",
             )
+            return
 
-        else:
-            logger.info("System is up-to-date.")
+        logger.info("System is up-to-date.")
