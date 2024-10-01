@@ -12,13 +12,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          el:
-            - distro: centos
-              ver: 7
-            - distro: centos
-              ver: 8
-            - distro: centos
-              ver: 9
+        el:
+          - distro: centos
+            ver: 7
+          - distro: centos
+            ver: 8
+          - distro: centos
+            ver: 9
 
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +40,7 @@ jobs:
       - name: Run pytest coverage
         run: |
           make tests${{ matrix.el.ver }} PYTEST_ARGS="--override-ini=addopts= --cov --cov-report xml --cov-report term" KEEP_TEST_CONTAINER=1 BUILD_IMAGES=0
-          podman cp pytest-container:/data/coverage.xml .
+          podman cp convert2rhel-centos${{ matrix.el.ver }}:/data/coverage.xml .
 
       - name: Upload coverage to Codecov - First Attempt
         id: UploadFirstAttempt
