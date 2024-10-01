@@ -152,7 +152,7 @@ class ConfigureHostMetering(actions.Action):
             return False
 
         if tool_opts.configure_host_metering not in ("force", "auto"):
-            logger.debug("Value for environment variable not recognized: %s" % tool_opts.configure_host_metering)
+            logger.debug("Value for environment variable not recognized: {}".format(tool_opts.configure_host_metering))
             self.add_message(
                 level="WARNING",
                 id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",

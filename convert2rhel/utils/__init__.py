@@ -1144,9 +1144,9 @@ def warn_deprecated_env(env_name):
         return None
 
     root_logger.warning(
-        "The environment variable {} is deprecated in favor of using a configuration file and will be removed in version Convert2RHEL 2.4.0."
+        "The environment variable {} is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
+        "Please, use the configuration file instead.".format(env_name)
     )
     key = env_var_to_toolopts_map[env_name]
     value = os.getenv(env_name, None)
-    print(vars(tool_opts))
     tool_opts.update_opts(key, value)
