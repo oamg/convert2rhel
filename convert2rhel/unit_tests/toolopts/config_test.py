@@ -134,7 +134,6 @@ incomplete_rollback = false
 [inhibitor_overrides]
 incomplete_rollback = false
 tainted_kernel_module_check_skip = false
-outdated_package_check_skip = false
 allow_older_version = false
 allow_unavailable_kmods = false
 configure_host_metering = false
@@ -143,7 +142,6 @@ skip_kernel_currency_check = false
                 {
                     "incomplete_rollback": False,
                     "tainted_kernel_module_check_skip": False,
-                    "outdated_package_check_skip": False,
                     "allow_older_version": False,
                     "allow_unavailable_kmods": False,
                     "configure_host_metering": False,

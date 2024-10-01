@@ -45,7 +45,6 @@ CONFIG_FILE_MAPPING_OPTIONS = {
     "inhibitor_overrides": [
         "incomplete_rollback",
         "tainted_kernel_module_check_skip",
-        "outdated_package_check_skip",
         "allow_older_version",
         "allow_unavailable_kmods",
         "configure_host_metering",
