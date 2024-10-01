@@ -31,7 +31,7 @@ logger = root_logger.getChild(__name__)
 try:
     # this is used in pkghandler.py to parse version strings in the _parse_pkg_with_yum function
     from rpmUtils.miscutils import splitFilename  # type: ignore  # noqa: F401
-    from yu import *  # type: ignore # noqa: F403
+    from yum import *  # type: ignore # noqa: F403
     from yum.callbacks import DownloadBaseCallback as DownloadProgress  # type: ignore
 
     # This is added here to prevent a generic try-except in the
