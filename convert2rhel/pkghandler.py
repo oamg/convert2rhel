@@ -212,7 +212,7 @@ def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
 def _get_installed_pkg_objects_yum(name=None, version=None, release=None, arch=None):
     yum_base = pkgmanager.YumBase()
     # Disable plugins (when kept enabled yum outputs useless text every call)
-    yum_base.doConfigSetup(init_plugins=False)
+    yum_base.disablePlugins()
 
     if name:
         pattern = name
