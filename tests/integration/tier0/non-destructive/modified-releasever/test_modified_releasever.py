@@ -38,9 +38,9 @@ def test_releasever_modified_in_c2r_config(backup_files, convert2rhel, shell):
     """
     Verify that releasever changes in /usr/share/convert2rhel/configs/ take precedence.
     """
-    config_file_name = f"{SystemInformationRelease.distribution}-{SystemInformationRelease.version.major}-x86_64.cfg"
-    if SystemInformationRelease.is_stream and SystemInformationRelease.version.major == 8:
-        config_file_name = "centos-8-x86_64.cfg"
+    # CentOS Stream shares the config file with CentOS
+    distribution = "centos" if SystemInformationRelease.is_stream else SystemInformationRelease.distribution
+    config_file_name = f"{distribution}-{SystemInformationRelease.version.major}-x86_64.cfg"
     shell(f"sed -i 's/releasever=.*/releasever=420/g' /usr/share/convert2rhel/configs/{config_file_name}")
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug".format(
@@ -62,12 +62,16 @@ def test_inhibitor_releasever_noexistent_release(backup_files, convert2rhel, she
     Verify that running not allowed OS release inhibits the conversion.
     Modify the /etc/system-release file to set the releasever to an unsupported version (e.g. x.11.1111)
     """
-    if SystemInformationRelease.is_stream and SystemInformationRelease.version.major == 8:
-        shell(f"sed -i 's/release 8/release 8.11.11111/' /etc/system-release")
-    else:
-        shell(
-            f"sed -i 's/release {SystemInformationRelease.version.major}.{SystemInformationRelease.version.minor}/release {SystemInformationRelease.version.major}.11.11111/' /etc/system-release"
-        )
+    # CentOS Stream release value yields only a major version mention, there is no minor version,
+    # whereas other systems we test come in format major.minor
+    orig_release = (
+        SystemInformationRelease.version.major
+        if SystemInformationRelease.is_stream
+        else f"{SystemInformationRelease.version.major}.{SystemInformationRelease.version.minor}"
+    )
+    shell(
+        f"sed -i 's/release {orig_release}/release {SystemInformationRelease.version.major}.11.11111/' /etc/system-release"
+    )
     with convert2rhel(
         "analyze -y --serverurl {} --username {} --password {} --debug".format(
             TEST_VARS["RHSM_SERVER_URL"],

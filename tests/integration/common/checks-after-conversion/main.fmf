@@ -34,6 +34,12 @@ order: 52
         test: pytest -m test_correct_distro
 
     /grub_default:
+        adjust+:
+          enabled: false
+          when: distro == stream-9-latest
+          because: |
+            The versions of latest RHEL kernel < latest Stream kernel, which is not handled very well in the code.
+            Related issue: https://issues.redhat.com/browse/RHELC-1717
         summary+: |
             Grub default
         description+: |
@@ -160,6 +166,8 @@ order: 52
             - verifies: https://issues.redhat.com/browse/RHELC-774
 
 /yum_check:
+    # This needs to run before the system gets unregistered
+    order: 51
     summary+: |
         Run yum check
     description+: |

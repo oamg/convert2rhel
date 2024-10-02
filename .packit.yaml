@@ -179,6 +179,42 @@ jobs:
       - sanity
       - el9
 
+  - &tests-stream-9
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-9-x86_64:
+        distros: [CentOS-Stream-9]
+    trigger: pull_request
+    identifier: "stream-9"
+    tmt_plan: "stream"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "stream-9-latest"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - stream
+      - stream-9
+      - el9
+
   - &tests-stream-8
     job: tests
     # Run tests on-demand
@@ -211,6 +247,7 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - stream
       - stream-8
 
   - &tests-tier0-centos
@@ -698,5 +735,13 @@ jobs:
     manual_trigger: false
     identifier: "tier1-ol9"
     tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-stream-9
+    <<: *tests-stream-9
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "stream9"
     trigger: commit
     branch: main

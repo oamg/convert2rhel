@@ -43,7 +43,6 @@ adjust+:
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-9-latest
       when: distro == rocky-9-latest
-    # NOT A PART OF THE CI YET
     - environment+:
         SYSTEM_RELEASE_ENV: stream-9-latest
       when: distro == stream-9-latest

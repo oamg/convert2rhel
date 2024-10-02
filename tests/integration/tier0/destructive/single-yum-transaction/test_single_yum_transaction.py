@@ -1,6 +1,6 @@
 import re
 
-from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
+from conftest import TEST_VARS, SystemInformationRelease
 
 
 def test_single_yum_transaction(convert2rhel, shell):
@@ -9,10 +9,10 @@ def test_single_yum_transaction(convert2rhel, shell):
     This will run the conversion up until the point of the single yum
     transaction package replacements.
     """
-    pkgmanager = "yum"
+    pkgmanager = "dnf"
 
-    if re.match(r"^(centos|oracle|alma|rocky|stream)-8", SYSTEM_RELEASE_ENV):
-        pkgmanager = "dnf"
+    if SystemInformationRelease.version.major == 7:
+        pkgmanager = "yum"
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(

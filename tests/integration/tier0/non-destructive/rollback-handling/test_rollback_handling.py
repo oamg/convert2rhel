@@ -131,7 +131,7 @@ def immutable_os_release_file(shell):
     # Because on CentOS7 the /etc/os-release is a symlink and
     # after the failed rollback the symlink is not restored.
     # Yum is not able to handle this (on dnf systems it is not an issue).
-    if "centos-7" in SYSTEM_RELEASE_ENV:
+    if SYSTEM_RELEASE_ENV in ("centos-7", "stream-9-latest"):
         shell("chattr -i /usr/lib/os-release")
         shell("rm -f /etc/os-release")
     else:

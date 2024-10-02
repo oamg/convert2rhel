@@ -8,7 +8,7 @@ enabled: false
 
 adjust+:
   - enabled: true
-    when: distro == stream-8-latest
+    when: distro == stream-8-latest, stream-9-latest
 
 /sanity:
     /non-destructive:
