@@ -113,9 +113,16 @@ class DummyPopen:
 
 
 @pytest.fixture
-def dummy_popen(request):
+def dummy_popen_py3(request):
     output = unit_tests.get_pytest_marker(request, "popen_output")
-    DummyPopen._output = (line for line in output.args[0])
+    DummyPopen._output = (line.encode(encoding="utf-8") for line in output.args[0])
+    return DummyPopen
+
+
+@pytest.fixture
+def dummy_popen_py2(request):
+    output = unit_tests.get_pytest_marker(request, "popen_output")
+    DummyPopen._output = (line.decode("utf-8").encode(encoding="utf-8") for line in output.args[0])
     return DummyPopen
 
 
@@ -908,12 +915,22 @@ class TestRunSubprocess:
 
         assert (output, code) == expected
 
-    @pytest.mark.popen_output(["test of nonascii output: café".encode("utf-8")])
-    def test_run_subprocess_env(self, dummy_popen, monkeypatch):
-        monkeypatch.setattr(utils.subprocess, "Popen", dummy_popen)
+    @pytest.mark.skipif(sys.version_info < (3,), reason="python3 sets utf-8 by default")
+    @pytest.mark.popen_output(["test of nonascii output: café"])
+    def test_run_subprocess_env_utf8(self, dummy_popen_py3, monkeypatch):
+        monkeypatch.setattr(utils.subprocess, "Popen", dummy_popen_py3)
 
         output, rc = utils.run_subprocess(["echo", "foobar"])
         assert "test of nonascii output: café" == output
+        assert 0 == rc
+
+    @pytest.mark.skipif(sys.version_info > (3,), reason="python2 sets ascii by default")
+    @pytest.mark.popen_output(["test of nonascii output: café"])
+    def test_run_subprocess_env_ascii(self, dummy_popen_py2, monkeypatch):
+        monkeypatch.setattr(utils.subprocess, "Popen", dummy_popen_py2)
+
+        output, rc = utils.run_subprocess(["echo", "foobar"])
+        assert "test of nonascii output: café" == output.encode("utf-8")
         assert 0 == rc
 
 

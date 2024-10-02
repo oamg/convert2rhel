@@ -230,7 +230,7 @@ class TestRestorableFile:
         file_backup.backup_path = backedup_file_path
 
         # Check if the exception is raised when the file is missing in the backup folder
-        with pytest.raises(OSError):
+        with pytest.raises(IOError):
             file_backup.restore()
 
     @centos8
