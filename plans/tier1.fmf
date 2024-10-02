@@ -302,10 +302,11 @@ adjust+:
                 - proxy-conversion/proxy_conversion
 
     /error-after-ponr:
+        enabled: false
         adjust+:
-          - enabled: false
-            when: distro == centos-8
-            because: On CentOS-8 the test doesn't behave well. The conversion does not report failure.
+          - enabled: true
+            when: distro == alma-9, rocky-9, oracle-9
+            because: It will behave the same anywhere. Too expensive to run it on more hosts.
         discover+:
             # Disregarding inheritance in the test discovery.
             # As the conversion fails and the system is left in an undetermined state,
