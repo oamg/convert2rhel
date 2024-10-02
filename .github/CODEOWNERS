@@ -18,8 +18,4 @@ tests/                    @oamg/conversions-qe
 plans/                    @oamg/conversions-qe
 
 # Packaging
-packaging/                @Venefilyn @bocekm @pr-watson @r0x0d @bookwar
-
-# Containers
-.devcontainer/            @Venefilyn @r0x0d
-*.Containerfile           @Venefilyn @r0x0d
+packaging/                @Venefilyn @bocekm
