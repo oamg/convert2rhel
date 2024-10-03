@@ -33,6 +33,7 @@ logger = root_logger.getChild(__name__)
 C2R_REPOFILE_URLS = {
     7: "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel/server/7/7Server/x86_64/files/repofile.repo",
     8: "https://cdn-public.redhat.com/content/public/addon/dist/convert2rhel8/8/x86_64/files/repofile.repo",
+    9: "https://cdn-public.redhat.com/content/public/repofiles/convert2rhel-for-rhel-9-x86_64.repo",
 }
 
 

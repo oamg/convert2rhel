@@ -129,7 +129,8 @@ def download_repofile(repofile_url):
         raise exceptions.CriticalError(
             id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
             title="Failed to download a repository file",
-            description="Failed to download a repository file from {}.\n" "Reason: {}".format(repofile_url, err.reason),
+            description="Failed to download a repository file from {}.".format(repofile_url),
+            diagnosis="Reason: {}.".format(err.reason),
         )
 
 
