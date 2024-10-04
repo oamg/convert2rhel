@@ -20,7 +20,7 @@ __metaclass__ = type
 import pytest
 
 from convert2rhel import unit_tests
-from convert2rhel.actions.system_checks import custom_repos_are_valid
+from convert2rhel.actions.pre_ponr_changes import custom_repos_are_valid
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_custom_repos_are_valid(custom_repos_are_valid_action, monkeypatch, capl
         "call_yum_cmd",
         unit_tests.CallYumCmdMocked(return_code=0, return_string="Abcdef"),
     )
-    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", True)
+    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "enablerepo", ["rhel-7-server-optional-rpms"])
 
     custom_repos_are_valid_action.run()
 
@@ -52,7 +52,7 @@ def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
         "call_yum_cmd",
         unit_tests.CallYumCmdMocked(return_code=1, return_string="YUM/DNF failed"),
     )
-    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", True)
+    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "enablerepo", ["rhel-7-server-optional-rpms"])
 
     custom_repos_are_valid_action.run()
 
@@ -68,7 +68,7 @@ def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
 
 
 def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch, caplog):
-    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "no_rhsm", False)
+    monkeypatch.setattr(custom_repos_are_valid.tool_opts, "enablerepo", [])
 
     custom_repos_are_valid_action.run()
 

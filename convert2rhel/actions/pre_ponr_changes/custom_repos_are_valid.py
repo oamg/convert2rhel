@@ -27,6 +27,7 @@ logger = root_logger.getChild(__name__)
 
 class CustomReposAreValid(actions.Action):
     id = "CUSTOM_REPOSITORIES_ARE_VALID"
+    dependencies = ("SUBSCRIBE_SYSTEM",)
 
     def run(self):
         """To prevent failures past the PONR, make sure that the enabled custom repositories are valid.
@@ -37,7 +38,7 @@ class CustomReposAreValid(actions.Action):
         super(CustomReposAreValid, self).run()
         logger.task("Prepare: Check if --enablerepo repositories are accessible")
 
-        if not tool_opts.no_rhsm:
+        if not tool_opts.enablerepo:
             logger.info("Did not perform the check of repositories due to the use of RHSM for the conversion.")
             return
 
