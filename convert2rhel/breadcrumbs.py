@@ -157,7 +157,7 @@ class Breadcrumbs:
         """Set whether the conversion was run with EUS/ELS"""
         if tool_opts.eus:
             self.non_default_channel = "EUS"
-        if tool_opts.els:
+        elif tool_opts.els:
             self.non_default_channel = "ELS"
 
     def _set_source_os(self):
