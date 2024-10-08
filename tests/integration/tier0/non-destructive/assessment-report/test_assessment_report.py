@@ -153,6 +153,9 @@ def test_convert_method_successful_report(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         # Refuse the full conversion at PONR
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
