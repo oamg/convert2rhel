@@ -20,7 +20,6 @@ from convert2rhel import actions, pkgmanager, utils
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.systeminfo import system_info
-from convert2rhel.utils import warn_deprecated_env
 
 
 logger = root_logger.getChild(__name__)
@@ -78,7 +77,6 @@ class PackageUpdates(actions.Action):
             return
 
         if len(packages_to_update) > 0:
-
             package_not_up_to_date_error_message = (
                 "The system has {} package(s) not updated based on repositories defined in the system repositories.\n"
                 "List of packages to update: {}.\n\n"
