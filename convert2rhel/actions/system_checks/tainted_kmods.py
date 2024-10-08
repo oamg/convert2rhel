@@ -16,8 +16,6 @@
 __metaclass__ = type
 
 
-import os
-
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.utils import run_subprocess, warn_deprecated_env

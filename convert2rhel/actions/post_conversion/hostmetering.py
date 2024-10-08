@@ -16,8 +16,6 @@
 __metaclass__ = type
 
 
-import os
-
 from convert2rhel import actions, systeminfo
 from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
