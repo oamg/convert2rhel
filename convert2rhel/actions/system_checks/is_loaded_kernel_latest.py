@@ -16,8 +16,6 @@
 __metaclass__ = type
 
 
-import os
-
 from convert2rhel import actions, repo
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import compare_package_versions

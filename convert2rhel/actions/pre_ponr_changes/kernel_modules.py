@@ -16,7 +16,6 @@
 __metaclass__ = type
 
 import itertools
-import os
 import re
 
 from functools import cmp_to_key
