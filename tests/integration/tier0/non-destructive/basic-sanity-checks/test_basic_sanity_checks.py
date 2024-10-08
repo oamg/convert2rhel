@@ -275,6 +275,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
     with convert2rhel("analyze --debug") as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
+        c2r.sendline("y")
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
@@ -290,6 +291,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement
+        c2r.sendline("y")
         c2r.sendline("y")
         assert (
             c2r.expect(
