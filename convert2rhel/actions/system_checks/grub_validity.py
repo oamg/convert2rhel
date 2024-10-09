@@ -31,7 +31,7 @@ class GrubValidity(actions.Action):
         is invalid.
         """
         super(GrubValidity, self).run()
-        logger.task("Prepare: Check if the grub file is valid")
+        logger.task("Check if the grub file is valid")
         output, ret_code = utils.run_subprocess(["grub2-mkconfig"], print_output=False)
 
         if ret_code != 0:
