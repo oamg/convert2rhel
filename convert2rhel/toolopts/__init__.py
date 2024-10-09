@@ -17,7 +17,6 @@
 __metaclass__ = type
 
 import logging
-import os
 
 from convert2rhel.utils.subscription import setup_rhsm_parts
 
