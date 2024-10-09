@@ -4,4 +4,7 @@ def test_pre_registered_system_conversion(convert2rhel, pre_registered):
 
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
+
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
     assert c2r.exitstatus == 0
