@@ -35,12 +35,12 @@ repos:
       - id: check-rebase
         args:
           - https://github.com/oamg/convert2rhel.git
-        stages: [manual, Nonepre-pushNone]
+        stages: [manual, pre-push]
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.20.0
     hooks:
       - id: gitleaks
-        stages: [manual, Nonepre-pushNone]
+        stages: [manual, pre-push]
   - repo: https://github.com/jendrikseipp/vulture
     rev: v2.13
     hooks:
