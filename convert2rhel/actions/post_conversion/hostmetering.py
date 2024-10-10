@@ -49,7 +49,7 @@ class ConfigureHostMetering(actions.Action):
         :return: True if host-metering is configured successfully, False otherwise.
         :rtype: bool
         """
-        logger.task("Final: Configure host-metering")
+        logger.task("Configure host-metering")
 
         super(ConfigureHostMetering, self).run()
 

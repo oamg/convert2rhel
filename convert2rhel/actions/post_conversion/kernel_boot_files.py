@@ -39,7 +39,7 @@ class KernelBootFiles(actions.Action):
         """Check if the required kernel files exist and are valid under the boot partition."""
         super(KernelBootFiles, self).run()
 
-        logger.task("Final: Check kernel boot files")
+        logger.task("Check kernel boot files")
 
         # For Oracle/CentOS Linux 8 the `kernel` is just a meta package, instead,
         # we check for `kernel-core`. This is not true regarding the 7.* releases.

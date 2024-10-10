@@ -52,7 +52,7 @@ class InstallRedHatCertForYumRepositories(actions.Action):
         # The subscription-manager-rhsm-certificates package contains this cert but for
         # example on CentOS Linux 7 this package is missing the cert due to intentional
         # debranding. Thus we need to ensure the cert is in place even when the pkg is installed.
-        logger.task("Prepare: Install cdn.redhat.com SSL CA certificate")
+        logger.task("Install cdn.redhat.com SSL CA certificate")
         repo_cert = RestorablePEMCert(_REDHAT_CDN_CACERT_SOURCE_DIR, _REDHAT_CDN_CACERT_TARGET_DIR)
         backup.backup_control.push(repo_cert)
 
@@ -65,7 +65,7 @@ class InstallRedHatGpgKeyForRpm(actions.Action):
 
         # Import the Red Hat GPG Keys for installing Subscription-manager
         # and for later.
-        logger.task("Prepare: Import Red Hat GPG keys")
+        logger.task("Import Red Hat GPG keys")
         pkghandler.install_gpg_keys()
 
 
@@ -97,18 +97,18 @@ class PreSubscription(actions.Action):
             return
 
         try:
-            logger.task("Prepare: Subscription Manager - Check for installed packages")
+            logger.task("Subscription Manager - Check for installed packages")
             subscription_manager_pkgs = subscription.needed_subscription_manager_pkgs()
             if not subscription_manager_pkgs:
                 logger.info("Subscription Manager is already present")
             else:
-                logger.task("Prepare: Subscription Manager - Install packages")
+                logger.task("Subscription Manager - Install packages")
                 subscription.install_rhel_subscription_manager(subscription_manager_pkgs)
 
-            logger.task("Prepare: Subscription Manager - Verify installation")
+            logger.task("Subscription Manager - Verify installation")
             subscription.verify_rhsm_installed()
 
-            logger.task("Prepare: Install a RHEL product certificate for RHSM")
+            logger.task("Install a RHEL product certificate for RHSM")
             product_cert = RestorablePEMCert(_RHSM_PRODUCT_CERT_SOURCE_DIR, _RHSM_PRODUCT_CERT_TARGET_DIR)
             backup.backup_control.push(product_cert)
         except SystemExit as e:
@@ -165,7 +165,7 @@ class SubscribeSystem(actions.Action):
                 )
                 return
 
-            logger.task("Prepare: Subscription Manager - Reload configuration")
+            logger.task("Subscription Manager - Reload configuration")
             # We will use subscription-manager later to enable the RHEL repos so we need to make
             # sure subscription-manager knows about the product certificate. Refreshing
             # subscription info will do that.
@@ -205,19 +205,19 @@ class SubscribeSystem(actions.Action):
             # condition or a separate Action.  Not doing it now because we
             # have to disentangle the exception handling when we do that.
             if subscription.should_subscribe():
-                logger.task("Prepare: Subscription Manager - Subscribe system")
+                logger.task("Subscription Manager - Subscribe system")
                 restorable_subscription = RestorableSystemSubscription()
                 backup.backup_control.push(restorable_subscription)
 
-            logger.task("Prepare: Subscription Manager - Disable all repositories")
+            logger.task("Subscription Manager - Disable all repositories")
             backup.backup_control.push(RestorableDisableRepositories())
 
-            logger.task("Prepare: Get RHEL repository IDs")
+            logger.task("Get RHEL repository IDs")
             rhel_repoids = repo.get_rhel_repoids()
 
             # we need to enable repos after removing repofile pkgs, otherwise
             # we don't get backups to restore from on a rollback
-            logger.task("Prepare: Subscription Manager - Enable RHEL repositories")
+            logger.task("Subscription Manager - Enable RHEL repositories")
             subscription.enable_repos(rhel_repoids)
         except OSError as e:
             # This should not occur anymore as all the relevant OSError has been changed to a CriticalError

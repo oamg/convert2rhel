@@ -34,7 +34,7 @@ class NewDefaultEfiBin(actions.Action):
         """Check that the expected RHEL UEFI binaries exist."""
         super(NewDefaultEfiBin, self).run()
 
-        logger.task("Convert: Configure the bootloader")
+        logger.task("Configure the bootloader")
 
         if not grub.is_efi():
             logger.info(
