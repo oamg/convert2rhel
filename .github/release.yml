@@ -1,26 +1,32 @@
 changelog:
   exclude:
     labels:
-      - no-changelog
+      - skip/changelog
     authors:
       - dependabot
       - pre-commit-ci
+      - renovate
   categories:
     - title: Breaking Changes 🛠
       labels:
+        - kind/breaking
         - breaking-change
     - title: Enhancements 🎉
       labels:
+        - kind/feature
         - enhancement
     - title: Security Hardening 🔒
       labels:
+        - kind/security
         - security-hardening
     - title: Bug Fixes 🐛
       labels:
+        - kind/bug-fix
         - bug-fix
     - title: Test Coverage Enhancements 🔧
       labels:
+        - kind/tests
         - test-coverage-enhancement
     - title: Other Changes
       labels:
-        - "*"
+        - "kind/*"
