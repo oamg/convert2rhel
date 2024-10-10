@@ -24,6 +24,7 @@ class ConversionPhase:
     def __init__(self, name, log_name=None):  # type: (str, str|None) -> None
         self.name = name
         self.log_name = log_name
+        self.last_stage = None  # type: ConversionPhase|None
 
     def __str__(self):
         return self.log_name if self.log_name else self.name
@@ -69,6 +70,7 @@ class ConversionPhases:
 
     @classmethod
     def set_current(cls, phase):  # type: (str|ConversionPhase|None) -> None
+        previous_phase = cls.current_phase
         if phase is None:
             cls.current_phase = None
         elif isinstance(phase, str) and cls.has(phase):
@@ -77,6 +79,9 @@ class ConversionPhases:
             cls.current_phase = phase
         else:
             raise NotImplementedError("The {} phase is not implemented in the {} class".format(phase, cls.__name__))
+
+        if cls.current_phase:
+            cls.current_phase.last_stage = previous_phase
 
     @classmethod
     def is_current(cls, phase):  # type: (str|ConversionPhase|list[str|ConversionPhase]) -> bool

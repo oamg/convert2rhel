@@ -24,9 +24,8 @@ from convert2rhel import actions, applock, backup, breadcrumbs, cli, exceptions
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, utils
 from convert2rhel.actions import level_for_raw_action_data, report
-from convert2rhel.phase import ConversionPhases
+from convert2rhel.phase import ConversionPhase, ConversionPhases  # noqa: F401 ignoring due to type comments
 from convert2rhel.toolopts import tool_opts
-
 
 loggerinst = logger_module.root_logger.getChild(__name__)
 
@@ -197,16 +196,16 @@ def main_locked():
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
         results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
-        _handle_main_exceptions(results)
+        _handle_main_exceptions(current_phase=ConversionPhases.current_phase, results=results)
 
         return _handle_inhibitors_found_exception()
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
         results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
-        return _handle_main_exceptions(results)
+        return _handle_main_exceptions(current_phase=ConversionPhases.current_phase, results=results)
     except (Exception, SystemExit, KeyboardInterrupt):
         results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
-        return _handle_main_exceptions(results)
+        return _handle_main_exceptions(current_phase=ConversionPhases.current_phase, results=results)
     finally:
         if not backup.backup_control.rollback_failed:
             # Write the assessment to a file as json data so that other tools can
@@ -254,17 +253,24 @@ def _pick_conversion_results(pre_conversion, post_conversion):
     return pre_conversion
 
 
-def _handle_main_exceptions(results=None):
+def _handle_main_exceptions(current_phase, results=None):  # type: (ConversionPhase|None, dict|None) -> int
     """Common steps to handle graceful exit due to several different Exception types."""
     breadcrumbs.breadcrumbs.finish_collection()
 
     no_changes_msg = "No changes were made to the system."
     utils.log_traceback(tool_opts.debug)
 
-    if ConversionPhases.is_current([ConversionPhases.POST_CLI, ConversionPhases.PREPARE]):
+    execution_phase = current_phase  # type: ConversionPhase|None
+
+    if current_phase and current_phase == ConversionPhases.ROLLBACK:
+        # Rollback is an indication of what we are doing, but here we want to know what we were doing before the
+        # rollback so that we can make assertions. Hence fetching the previous stage
+        execution_phase = current_phase.last_stage
+
+    if execution_phase in [ConversionPhases.POST_CLI, ConversionPhases.PREPARE]:
         loggerinst.info(no_changes_msg)
         return ConversionExitCodes.FAILURE
-    elif ConversionPhases.is_current(ConversionPhases.PRE_PONR_CHANGES):
+    elif execution_phase == ConversionPhases.PRE_PONR_CHANGES:
         # Update RHSM custom facts only when this returns False. Otherwise,
         # sub-man get uninstalled and the data is removed from the RHSM server.
         if not subscription.should_subscribe():
@@ -275,7 +281,7 @@ def _handle_main_exceptions(results=None):
             pre_conversion_results=results,
             include_all_reports=True,
         )
-    elif ConversionPhases.is_current(ConversionPhases.POST_PONR_CHANGES):
+    elif execution_phase == ConversionPhases.POST_PONR_CHANGES:
         # After the process of subscription is done and the mass update of
         # packages is started convert2rhel will not be able to guarantee a
         # system rollback without user intervention. If a proper rollback
