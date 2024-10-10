@@ -1,0 +1,73 @@
+---
+name: Build release RPMs
+
+on:
+  push:
+    tags:
+      - "v*"
+  release:
+    types: [published]
+
+jobs:
+  setup_version:
+    name: "Setup Convert2RHEL version"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get tag
+        if: ${{ github.event_name != 'release' }}
+        id: tag
+        uses: devops-actions/action-get-tag@v1.0.3
+        with:
+          strip_v: true # Optional: Remove 'v' character from version
+          default: v0.0.0 # Optional: Default version when tag not found
+
+      - name: Update specfile to match tag
+        if: ${{ github.event_name != 'release' }}
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: "packaging/convert2rhel.spec"
+          search-text: "/(Version: +).*/gi"
+          replacement-text: "$1${{steps.tag.outputs.tag}}"
+
+      - name: Update convert2rhel version to match tag
+        if: ${{ github.event_name != 'release' }}
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: "convert2rhel/__init__.py"
+          search-text: "/(__version__ += +).*/gi"
+          replacement-text: '$1"${{steps.tag.outputs.tag}}"'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: github-repo
+          path: ""
+          retention-days: 1
+
+  build_rpms:
+    needs:
+      - setup_version
+    name: Build EL${{ matrix.el.ver }} RPM
+    strategy:
+      fail-fast: false
+      matrix:
+        el:
+          - ver: 7
+          - ver: 8
+          - ver: 9
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-repo
+
+      - name: Build RPM package for EL${{ matrix.el.ver }}
+        run: |
+          make rpm${{ matrix.el.ver }}
+
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: .rpms/*el${{ matrix.el.ver }}*
