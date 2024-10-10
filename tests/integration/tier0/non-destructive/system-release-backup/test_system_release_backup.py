@@ -57,6 +57,9 @@ def test_inhibitor_os_release_restored(shell, convert2rhel, fixture_satellite, r
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect_exact("set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK", timeout=600)
     # We expect the return code to be 2, given an error is raised
     assert c2r.exitstatus == 2
@@ -87,6 +90,9 @@ def test_override_inhibitor_os_release_restored(
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
