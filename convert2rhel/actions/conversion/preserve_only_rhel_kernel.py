@@ -55,6 +55,46 @@ class InstallRhelKernel(actions.Action):
             )
             return
 
+        ## new code
+
+        # installed_kernel, available_kernel = pkghandler.get_kernel_availability()
+
+        # TODO check statement bellow
+        # at this moment we should have access only to rhel content, any original vendor repos available at this moment
+        # this should return latest available kernel installed
+        cmd = ["repoquery", "kernel"]
+        target_kernel = utils.run_subprocess(cmd)
+
+        # Get list of kernel pkgs not signed by Red Hat
+        non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel")
+        # Extract the NEVRA from the package object to a list
+        non_rhel_kernels = [pkghandler.get_pkg_nevra(kernel) for kernel in non_rhel_kernels_pkg_info]
+
+        latest_installed_non_rhel_kernel = pkghandler.get_highest_package_version(("NON-RHEL kernel", non_rhel_kernels))
+        is_target_kernel_higher = pkghandler.compare_package_versions(target_kernel, latest_installed_non_rhel_kernel)
+
+        # Get the latest installed rhel kernel
+        already_installed = re.findall(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
+        rhel_kernels = [kernel for kernel in already_installed if kernel not in non_rhel_kernels]
+        latest_installed_rhel_kernel = pkghandler.get_highest_package_version(("RHEL kernel", rhel_kernels))
+
+        if is_target_kernel_higher == 1:
+            # target rhel kernel is higher
+            # update the kernel, if not installed
+            return
+        elif is_target_kernel_higher == 0:
+            # versions are the same
+            if pkghandler.compare_package_versions(latest_installed_rhel_kernel, latest_installed_non_rhel_kernel) == 0:
+                # the latest # TODO problemo - maybe I should rather compare target and all installed
+                return
+            # replace the rhel kernel, if not installed
+            pkghandler.handle_no_newer_rhel_kernel_available()
+        elif is_target_kernel_higher == -1:
+            # rhel kernel is installed in older version than the one from original vendor
+            pass
+
+        ## end of new code
+
         # Check which of the kernel versions are already installed.
         # Example output from yum and dnf:
         #  "Package kernel-4.18.0-193.el8.x86_64 is already installed."
