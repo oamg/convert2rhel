@@ -50,7 +50,7 @@ class ConversionPhases:
     PRE_PONR_CHANGES = ConversionPhase(name="PRE_PONR_CHANGES", log_name="Prepare")
     # Phase to exit the Analyze SubCommand early
     ANALYZE_EXIT = ConversionPhase(name="ANALYZE_EXIT", log_name="Analyzing")
-    POST_PONR_CHANGES = ConversionPhase(name="POST_PONR_CHANGES", log_name="Convert")
+    POST_PONR_CHANGES = ConversionPhase(name="POST_PONR_CHANGES", log_name="Final")
     ROLLBACK = ConversionPhase(name="ROLLBACK", log_name="Rollback")
 
     current_phase = None  # type: ConversionPhase|None
