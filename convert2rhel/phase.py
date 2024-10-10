@@ -49,7 +49,7 @@ class ConversionPhases:
     # PONR means Point Of No Return
     PRE_PONR_CHANGES = ConversionPhase(name="PRE_PONR_CHANGES", log_name="Prepare")
     # Phase to exit the Analyze SubCommand early
-    ANALYZE_EXIT = ConversionPhase(name="ANALYZE_EXIT")
+    ANALYZE_EXIT = ConversionPhase(name="ANALYZE_EXIT", log_name="Analyzing")
     POST_PONR_CHANGES = ConversionPhase(name="POST_PONR_CHANGES", log_name="Convert")
     ROLLBACK = ConversionPhase(name="ROLLBACK", log_name="Rollback")
 
