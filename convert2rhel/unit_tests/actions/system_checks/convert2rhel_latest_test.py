@@ -144,9 +144,10 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_convert2rhel_latest_outdated_version_inhibitor(
-        self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action
+        self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action, monkeypatch, global_tool_opts
     ):
         """When runnnig on a supported major version, we issue an error = inhibitor."""
+        monkeypatch.setattr(convert2rhel_latest, "tool_opts", global_tool_opts)
         convert2rhel_latest_action_instance.run()
 
         running_version, latest_version = prepare_convert2rhel_latest_action
@@ -231,9 +232,10 @@ class TestCheckConvert2rhelLatest:
         indirect=True,
     )
     def test_convert2rhel_latest_outdated_version_warning(
-        self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action
+        self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action, monkeypatch, global_tool_opts
     ):
         """When runnnig on an older unsupported major version, we issue just a warning instead of an inhibitor."""
+        monkeypatch.setattr(convert2rhel_latest, "tool_opts", global_tool_opts)
         convert2rhel_latest_action_instance.run()
 
         running_version, latest_version = prepare_convert2rhel_latest_action
@@ -738,10 +740,12 @@ class TestCheckConvert2rhelLatest:
         ),
         indirect=True,
     )
-    def test_convert2rhel_latest_bad_NEVRA_to_parse_pkg_string(
+    def test_convert2rhel_latest_bad_nevra_to_parse_pkg_string(
         self,
+        monkeypatch,
         convert2rhel_latest_action_instance,
         prepare_convert2rhel_latest_action,
+        global_tool_opts,
     ):
         generator = extract_convert2rhel_versions_generator()
 
@@ -750,6 +754,7 @@ class TestCheckConvert2rhelLatest:
             "convert2rhel_latest._extract_convert2rhel_versions",
             side_effect=generator,
         )
+        monkeypatch.setattr(convert2rhel_latest, "tool_opts", global_tool_opts)
         convert2rhel_latest_action_instance.run()
 
         running_version, latest_version = prepare_convert2rhel_latest_action

@@ -40,7 +40,7 @@ from six.moves import mock
 
 from convert2rhel import exceptions, systeminfo, toolopts, unit_tests, utils  # Imports unit_tests/__init__.py
 from convert2rhel.systeminfo import system_info
-from convert2rhel.unit_tests import RunCmdInPtyMocked, RunSubprocessMocked, is_rpm_based_os
+from convert2rhel.unit_tests import RunCmdInPtyMocked, RunSubprocessMocked, conftest, is_rpm_based_os
 
 
 DOWNLOADED_RPM_NVRA = "kernel-4.18.0-193.28.1.el8_2.x86_64"
@@ -1134,3 +1134,40 @@ class TestRemovePkgs:
 )
 def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
     assert utils._remove_epoch_from_yum_nevra_notation(pkg_nevra) == nvra_without_epoch
+
+
+@pytest.mark.parametrize(
+    ("env_name", "env_value", "tool_opts_name", "message"),
+    (
+        (
+            "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK",
+            True,
+            "skip_kernel_currency_check",
+            "The environment variable CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
+            "Please, use the configuration file instead.",
+        ),
+    ),
+)
+def test_warn_deprecated_env(global_tool_opts, monkeypatch, env_name, env_value, tool_opts_name, message, caplog):
+    """Test setting the value based on env variable and it's logging."""
+    monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
+    monkeypatch.setenv(env_name, env_value)
+
+    utils.warn_deprecated_env(env_name)
+    assert getattr(global_tool_opts, tool_opts_name) == str(env_value)
+    assert caplog.records[-1].message == message
+
+
+def test_warn_deprecated_env_wrong_name(global_tool_opts, monkeypatch, caplog):
+    """Test when unsupported env variable is used, nothing is set."""
+    monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
+
+    utils.warn_deprecated_env("UNSUPPORTED_ENV_VAR")
+
+    # Get tool_opts with default values
+    default_tool_opts = toolopts.ToolOpts()
+    default_tool_opts.initialize(config_sources=[conftest.CliConfigMock(), conftest.FileConfigMock()])
+
+    for item, value in global_tool_opts.__dict__.items():
+        assert default_tool_opts.__dict__[item] == value
+    assert not caplog.text

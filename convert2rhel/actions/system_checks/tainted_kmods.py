@@ -15,9 +15,9 @@
 
 __metaclass__ = type
 
-
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
 
@@ -44,7 +44,7 @@ class TaintedKmods(actions.Action):
         logger.task("Prepare: Check if loaded kernel modules are not tainted")
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
-        tainted_kmods_skip = warn_deprecated_env("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP")
+        warn_deprecated_env("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP")
         diagnosis = (
             "Tainted kernel modules detected:\n  {0}\n"
             "Third-party components are not supported per our "
@@ -52,7 +52,7 @@ class TaintedKmods(actions.Action):
         )
 
         if unsigned_modules:
-            if not tainted_kmods_skip:
+            if not tool_opts.tainted_kernel_module_check_skip:
                 self.set_result(
                     level="OVERRIDABLE",
                     id="TAINTED_KMODS_DETECTED",

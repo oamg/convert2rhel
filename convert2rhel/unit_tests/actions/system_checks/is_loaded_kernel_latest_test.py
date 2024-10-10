@@ -83,6 +83,7 @@ class TestIsLoadedKernelLatest:
         package_name,
         monkeypatch,
         is_loaded_kernel_latest_action,
+        global_tool_opts,
     ):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -110,7 +111,7 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
-
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
         is_loaded_kernel_latest_action.run()
 
         unit_tests.assert_actions_result(
@@ -172,6 +173,7 @@ class TestIsLoadedKernelLatest:
         remediations,
         monkeypatch,
         is_loaded_kernel_latest_action,
+        global_tool_opts,
     ):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -200,6 +202,7 @@ class TestIsLoadedKernelLatest:
             value=run_subprocess_mocked,
         )
 
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
         is_loaded_kernel_latest_action.run()
         expected = set(
             (
@@ -266,6 +269,7 @@ class TestIsLoadedKernelLatest:
         remediations,
         monkeypatch,
         is_loaded_kernel_latest_action,
+        global_tool_opts,
     ):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -293,7 +297,7 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
-
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
         is_loaded_kernel_latest_action.run()
 
         expected = set(
@@ -313,7 +317,9 @@ class TestIsLoadedKernelLatest:
         assert expected.issubset(is_loaded_kernel_latest_action.messages)
 
     @centos8
-    def test_is_loaded_kernel_latest_eus_system(self, pretend_os, monkeypatch, caplog, is_loaded_kernel_latest_action):
+    def test_is_loaded_kernel_latest_eus_system(
+        self, pretend_os, monkeypatch, caplog, is_loaded_kernel_latest_action, global_tool_opts
+    ):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
             side_effect=run_subprocess_side_effect(
@@ -341,6 +347,7 @@ class TestIsLoadedKernelLatest:
             value=run_subprocess_mocked,
         )
 
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
         is_loaded_kernel_latest_action.run()
         assert "The currently loaded kernel is at the latest version." in caplog.records[-1].message
 
@@ -481,6 +488,7 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
+        global_tool_opts,
     ):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -507,6 +515,7 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
 
         expected_set = set(
             (
@@ -565,6 +574,7 @@ class TestIsLoadedKernelLatest:
         diagnosis,
         monkeypatch,
         is_loaded_kernel_latest_action,
+        global_tool_opts,
     ):
         run_subprocess_mocked = mock.Mock(
             spec=run_subprocess,
@@ -591,6 +601,7 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
         is_loaded_kernel_latest_action.run()
         diagnosis = diagnosis.format(package_name)
         unit_tests.assert_actions_result(
@@ -671,6 +682,7 @@ class TestIsLoadedKernelLatest:
         monkeypatch,
         caplog,
         is_loaded_kernel_latest_action,
+        global_tool_opts,
     ):
         # Using the minor version as 99, so the tests should never fail because of a
         # constraint in the code, since we don't mind the minor version number (for
@@ -705,6 +717,7 @@ class TestIsLoadedKernelLatest:
                 (("uname", "-r"), (uname_version, return_code)),
             ),
         )
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
         monkeypatch.setattr(
             is_loaded_kernel_latest,
             "run_subprocess",
@@ -714,7 +727,7 @@ class TestIsLoadedKernelLatest:
         is_loaded_kernel_latest_action.run()
         assert expected_message in caplog.records[-1].message
 
-    def test_is_loaded_kernel_latest_system_exit(self, monkeypatch, is_loaded_kernel_latest_action, tmpdir):
+    def test_is_loaded_kernel_latest_system_exit(self, monkeypatch, is_loaded_kernel_latest_action, global_tool_opts):
         repoquery_version = "C2R\t1634146676\t3.10.0-1160.45.1.el7\tbaseos"
         uname_version = "3.10.0-1160.42.2.el7.x86_64"
 
@@ -756,6 +769,7 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             value=run_subprocess_mocked,
         )
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
 
         is_loaded_kernel_latest_action.run()
         unit_tests.assert_actions_result(
@@ -799,7 +813,13 @@ class TestIsLoadedKernelLatest:
         ),
     )
     def test_is_loaded_kernel_latest_disable_repos(
-        self, monkeypatch, enablerepos, expected_cmd, is_loaded_kernel_latest_action, pretend_os
+        self,
+        monkeypatch,
+        enablerepos,
+        expected_cmd,
+        is_loaded_kernel_latest_action,
+        pretend_os,
+        global_tool_opts,
     ):
         """Test if the --disablerepo part of the command is built propertly."""
         run_subprocess = mock.Mock(return_value=[None, None])
@@ -808,8 +828,9 @@ class TestIsLoadedKernelLatest:
             "run_subprocess",
             run_subprocess,
         )
-
-        monkeypatch.setattr(repo.tool_opts, "enablerepo", enablerepos)
+        global_tool_opts.enablerepos = enablerepos
+        monkeypatch.setattr(is_loaded_kernel_latest, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
 
         is_loaded_kernel_latest_action.run()
 
