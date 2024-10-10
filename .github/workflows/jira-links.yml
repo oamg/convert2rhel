@@ -2,35 +2,10 @@
 name: Build release RPMs & Handle release
 
 on:
-  push:
-    tags: "*"
   release:
     types: [published]
 
 jobs:
-  build_rpms:
-    name: Build EL${{ matrix.el.ver }} RPM
-    strategy:
-      fail-fast: false
-      matrix:
-        el:
-          - ver: 7
-          - ver: 8
-          - ver: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build RPM package for EL${{ matrix.el.ver }}
-        run: |
-          make rpm${{ matrix.el.ver }}
-
-      - uses: shogo82148/actions-upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: .rpms/*el${{ matrix.el.ver }}*
-
   update_jira_links:
     name: Update Jira links
     if: ${{ github.event_name == 'release' }}
