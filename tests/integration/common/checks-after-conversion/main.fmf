@@ -34,12 +34,6 @@ order: 52
         test: pytest -m test_correct_distro
 
     /grub_default:
-        adjust+:
-          enabled: false
-          when: distro == stream-9-latest
-          because: |
-            The versions of latest RHEL kernel < latest Stream kernel, which is not handled very well in the code.
-            Related issue: https://issues.redhat.com/browse/RHELC-1717
         summary+: |
             Grub default
         description+: |
