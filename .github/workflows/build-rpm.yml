@@ -4,9 +4,15 @@ name: Build release RPMs
 on:
   push:
     tags:
-      - "v*"
+      - v*
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Custom tag for release, e.g. v1.2.3-1234"
+        required: false
+        default: ""
 
 jobs:
   setup_version:
@@ -22,28 +28,28 @@ jobs:
         uses: devops-actions/action-get-tag@v1.0.3
         with:
           strip_v: true # Optional: Remove 'v' character from version
-          default: v0.0.0 # Optional: Default version when tag not found
+          default: ${{ github.event.inputs.tag }} # Optional: Default version when tag not found
 
       - name: Update specfile to match tag
-        if: ${{ github.event_name != 'release' }}
-        uses: richardrigutins/replace-in-files@v2
+        if: ${{ github.event_name != 'release' || steps.tag.outputs.tag != '' }}
+        uses: jacobtomlinson/gha-find-replace@v3
         with:
-          files: "packaging/convert2rhel.spec"
-          search-text: "/(Version: +).*/gi"
-          replacement-text: "$1${{steps.tag.outputs.tag}}"
+          include: "packaging/convert2rhel.spec"
+          find: "(Version: +).*"
+          replace: "${1}${{steps.tag.outputs.tag}}"
 
       - name: Update convert2rhel version to match tag
-        if: ${{ github.event_name != 'release' }}
-        uses: richardrigutins/replace-in-files@v2
+        if: ${{ github.event_name != 'release' || steps.tag.outputs.tag != '' }}
+        uses: jacobtomlinson/gha-find-replace@v3
         with:
-          files: "convert2rhel/__init__.py"
-          search-text: "/(__version__ += +).*/gi"
-          replacement-text: '$1"${{steps.tag.outputs.tag}}"'
+          include: "convert2rhel/__init__.py"
+          find: "(__version__ += +).*"
+          replace: '${1}\"${{steps.tag.outputs.tag}}\"'
 
       - uses: actions/upload-artifact@v4
         with:
           name: github-repo
-          path: ""
+          path: "."
           retention-days: 1
 
   build_rpms:
@@ -64,6 +70,8 @@ jobs:
           name: github-repo
 
       - name: Build RPM package for EL${{ matrix.el.ver }}
+        env:
+          BUILD_IMAGES: false # Building an image is unnecessary
         run: |
           make rpm${{ matrix.el.ver }}
 

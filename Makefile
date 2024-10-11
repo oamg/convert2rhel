@@ -102,8 +102,8 @@ endif
 .build-image-message:
 	@echo "Building images"
 .build-image%:
-	@$(PODMAN) build -f Containerfiles/centos$*.Containerfile -t $(IMAGE)-centos$* .
-	@$(PODMAN) tag $(IMAGE)-centos$* $(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)-centos:$*
+	@$(PODMAN) build -f Containerfiles/centos$*.Containerfile -t $(IMAGE)-centos:$* .
+	@$(PODMAN) tag $(IMAGE)-centos:$* $(IMAGE_REPOSITORY)/$(IMAGE_ORG)/$(IMAGE_PREFIX)-centos:$*
 	touch $@
 
 # These files need to be made writable for pytest to run
