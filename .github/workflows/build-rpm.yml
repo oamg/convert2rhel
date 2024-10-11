@@ -14,6 +14,11 @@ on:
         required: false
         default: ""
 
+env:
+  REGISTRY_USER: ${{ github.actor }}
+  REGISTRY_PASSWORD: ${{ github.token }}
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
 jobs:
   setup_version:
     name: "Setup Convert2RHEL version"
@@ -68,6 +73,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: github-repo
+
+      - name: Login to ghcr.io
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+          registry: ${{ env.IMAGE_REGISTRY }}
 
       - name: Build RPM package for EL${{ matrix.el.ver }}
         env:
