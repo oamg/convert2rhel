@@ -12,11 +12,11 @@ on:
       tag:
         description: "Custom tag for release, e.g. v1.2.3-1234"
         required: false
-        default: ""
+        default: "v0.0.0"
 
 env:
-  REGISTRY_USER: ${{ github.actor }}
-  REGISTRY_PASSWORD: ${{ github.token }}
+  REGISTRY_USER: ${{ github.repository_owner }}
+  REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
           default: ${{ github.event.inputs.tag }} # Optional: Default version when tag not found
 
       - name: Update specfile to match tag
-        if: ${{ github.event_name != 'release' || steps.tag.outputs.tag != '' }}
+        if: ${{ github.event_name != 'release' && steps.tag.outputs.tag != '0.0.0' }}
         uses: jacobtomlinson/gha-find-replace@v3
         with:
           include: "packaging/convert2rhel.spec"
@@ -44,23 +44,26 @@ jobs:
           replace: "${1}${{steps.tag.outputs.tag}}"
 
       - name: Update convert2rhel version to match tag
-        if: ${{ github.event_name != 'release' || steps.tag.outputs.tag != '' }}
+        if: ${{ github.event_name != 'release' && steps.tag.outputs.tag != '0.0.0' }}
         uses: jacobtomlinson/gha-find-replace@v3
         with:
           include: "convert2rhel/__init__.py"
           find: "(__version__ += +).*"
-          replace: '${1}\"${{steps.tag.outputs.tag}}\"'
+          replace: '${1}"${{steps.tag.outputs.tag}}"'
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload changed files
+        uses: actions/upload-artifact@v4
         with:
           name: github-repo
-          path: "."
+          path: |
+            packaging/convert2rhel.spec
+            convert2rhel/__init__.py
           retention-days: 1
 
   build_rpms:
     needs:
       - setup_version
-    name: Build EL${{ matrix.el.ver }} RPM
+    name: Build RPM
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +73,11 @@ jobs:
           - ver: 9
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download changed files
+        uses: actions/download-artifact@v4
         with:
           name: github-repo
 
@@ -88,6 +95,7 @@ jobs:
           make rpm${{ matrix.el.ver }}
 
       - uses: shogo82148/actions-upload-release-asset@v1
+        if: ${{ github.event.release.upload_url }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: .rpms/*el${{ matrix.el.ver }}*
