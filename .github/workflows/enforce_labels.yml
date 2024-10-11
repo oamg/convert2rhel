@@ -5,7 +5,7 @@ on:
     types: [opened, labeled, unlabeled, synchronize]
 jobs:
   require-type-label:
-    if: ${{ contains(fromJson('["dependabot", "pre-commit-ci", "renovate"]'), github.actor ) }}
+    if: ${{ !contains(fromJson('["dependabot", "pre-commit-ci", "renovate"]'), github.actor ) }}
     runs-on: ubuntu-latest
     steps:
       - uses: mheap/github-action-required-labels@v5
@@ -15,7 +15,7 @@ jobs:
           labels: "kind/.*"
           use_regex: true
   require-verification-label:
-    if: ${{ contains(fromJson('["dependabot", "pre-commit-ci", "renovate"]'), github.actor ) }}
+    if: ${{ !contains(fromJson('["dependabot", "pre-commit-ci", "renovate"]'), github.actor ) }}
     runs-on: ubuntu-latest
     steps:
       - uses: mheap/github-action-required-labels@v5
