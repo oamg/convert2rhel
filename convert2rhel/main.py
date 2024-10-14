@@ -192,6 +192,9 @@ def main_locked():
         if backup.backup_control.rollback_failed:
             return ConversionExitCodes.FAILURE
 
+        if _get_failed_actions(pre_conversion_results):
+            return ConversionExitCodes.INHIBITORS_FOUND
+
         return ConversionExitCodes.SUCCESSFUL
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
@@ -229,6 +232,10 @@ def main_locked():
     return ConversionExitCodes.SUCCESSFUL
 
 
+def _get_failed_actions(results):
+    return actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
+
+
 def _raise_for_skipped_failures(results):
     """Analyze the action results for failures
 
@@ -237,7 +244,7 @@ def _raise_for_skipped_failures(results):
     :raises SystemExit: In case we detect any actions that has level of `SKIP`
         or above.
     """
-    failures = actions.find_actions_of_severity(results, "SKIP", level_for_raw_action_data)
+    failures = _get_failed_actions(results)
     if failures:
         # The report will be handled in the error handler, after rollback.
         message = (
