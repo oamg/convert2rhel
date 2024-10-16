@@ -4,7 +4,6 @@ description: |
     Verify that the conversion emits a warning if there are packages which are not updated to the latest.
     Verify that the conversion emits a warning if the yum versionlock plugin is being used.
     Verify the conversion succeeds anyway.
-    Verify that CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP overrides the out of date pkg check.
 
 /system_not_updated:
     test: pytest -m test_system_not_updated
