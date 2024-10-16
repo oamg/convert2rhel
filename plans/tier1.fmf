@@ -7,7 +7,7 @@ description+: |
 
 adjust+:
   - enabled: false
-    when: distro == stream-8-latest
+    when: distro == stream-8-latest, stream-9-latest
     because: We have a separate plan for CentOS Stream
 
 /non-destructive:
