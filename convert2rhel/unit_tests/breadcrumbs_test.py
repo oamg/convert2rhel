@@ -330,3 +330,17 @@ def test_set_target_os(pretend_os):
         "name": "CentOS Linux",
         "version": "7.9",
     } == breadcrumbs.breadcrumbs.target_os
+
+
+def test_set_non_default_channel_eus(global_tool_opts, monkeypatch):
+    global_tool_opts.eus = True
+    monkeypatch.setattr(breadcrumbs, "tool_opts", global_tool_opts)
+    breadcrumbs.breadcrumbs._set_non_default_channel()
+    assert breadcrumbs.breadcrumbs.non_default_channel == "EUS"
+
+
+def test_set_non_default_channel_els(global_tool_opts, monkeypatch):
+    global_tool_opts.els = True
+    monkeypatch.setattr(breadcrumbs, "tool_opts", global_tool_opts)
+    breadcrumbs.breadcrumbs._set_non_default_channel()
+    assert breadcrumbs.breadcrumbs.non_default_channel == "ELS"
