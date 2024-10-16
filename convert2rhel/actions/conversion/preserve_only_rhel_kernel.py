@@ -17,7 +17,6 @@ __metaclass__ = type
 
 import glob
 import os
-import re
 
 from convert2rhel import actions, logger, pkghandler, pkgmanager, utils
 from convert2rhel.systeminfo import system_info
@@ -37,6 +36,14 @@ class InstallRhelKernel(actions.Action):
         super(InstallRhelKernel, self).run()
         loggerinst.task("Convert: Prepare kernel")
 
+        rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
+
+        if not rhel_kernels:
+            # install the rhel kernel when any isn't installed
+            loggerinst.debug("handle_no_newer_rhel_kernel_available")
+            pkghandler.handle_no_newer_rhel_kernel_available()
+
+        """
         # Solution for RHELC-1707
         # Update is needed in the UpdateKernel action
         global _kernel_update_needed
@@ -54,6 +61,56 @@ class InstallRhelKernel(actions.Action):
                 remediations="Please check that you can access the repositories that provide the RHEL kernel.",
             )
             return
+
+        ## new code
+
+        # installed_kernel, available_kernel = pkghandler.get_kernel_availability()
+
+        # TODO check statement bellow
+        # at this moment we should have access only to rhel content, any original vendor repos available at this moment
+        # this should return latest available kernel installed
+        cmd = ["repoquery", "kernel"]
+        target_kernel = utils.run_subprocess(cmd)
+
+        # Get list of kernel pkgs not signed by Red Hat
+        non_rhel_kernels_pkg_info = pkghandler.get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel")
+        non_rhel_kernels = [pkghandler.get_pkg_nevra(kernel) for kernel in non_rhel_kernels_pkg_info]
+
+        # Get the latest installed rhel kernel
+        #already_installed = re.findall(r" (.*?)(?: is)? already installed", output, re.MULTILINE)
+        rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
+
+        if not rhel_kernels:
+            # install the rhel kernel if any unavailable
+            pkghandler.handle_no_newer_rhel_kernel_available()
+            # get installed rhel kernel again
+            rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
+        elif not non_rhel_kernels:
+            return
+
+        latest_installed_rhel_kernel = pkghandler.get_highest_package_version(("RHEL kernel", rhel_kernels))
+        is_target_higher_than_rhel = pkghandler.compare_package_versions(target_kernel, latest_installed_rhel_kernel)
+
+        if is_target_higher_than_rhel == 0:
+            # latest rhel kernel is already installed, any other action needed
+            return
+
+        latest_installed_non_rhel_kernel = pkghandler.get_highest_package_version(("NON-RHEL kernel", non_rhel_kernels))
+        is_target_higher_than_nonrhel = pkghandler.compare_package_versions(target_kernel, latest_installed_non_rhel_kernel)
+
+
+        if is_target_higher_than_nonrhel == 1:
+            # target rhel kernel is higher then the original
+            return
+        elif is_target_higher_than_nonrhel == 0:
+            # versions are the same
+            # replace the rhel kernel
+            pkghandler.handle_no_newer_rhel_kernel_available()
+        elif is_target_higher_than_nonrhel == -1:
+            # target kernel is older then the kernel from original vendor
+            pkghandler.handle_no_newer_rhel_kernel_available()
+
+        ## end of new code
 
         # Check which of the kernel versions are already installed.
         # Example output from yum and dnf:
@@ -121,6 +178,7 @@ class InstallRhelKernel(actions.Action):
             # with a higher release number.
             pkghandler.handle_no_newer_rhel_kernel_available()
             _kernel_update_needed = True
+        """
 
 
 class VerifyRhelKernelInstalled(actions.Action):
@@ -302,8 +360,25 @@ class UpdateKernel(actions.Action):
         # This variable is set in the InstallRhelKernel action
         global _kernel_update_needed
 
-        if _kernel_update_needed:
-            # Note: Info message is in the function
+        pkghandler.update_rhel_kernel()
+        """
+        cmd = ["repoquery", "kernel", "--envra"]
+        # extract the nvra from the envra, format epoch:name-version-release.architecture
+        target_kernel, _ = utils.run_subprocess(cmd)
+
+        target_kernel = target_kernel.split(":")[1]
+
+        rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
+
+        loggerinst.debug("RHEL Kernels: {}".format(rhel_kernels))
+
+        latest_installed_rhel_kernel = pkghandler.get_highest_package_version(("RHEL kernel", rhel_kernels))
+
+        loggerinst.debug("Latest RHEL Kernel: {}".format(latest_installed_rhel_kernel))
+        is_target_higher_than_rhel = pkghandler.compare_package_versions(target_kernel, latest_installed_rhel_kernel)
+
+        if is_target_higher_than_rhel == 1:
             pkghandler.update_rhel_kernel()
         else:
             loggerinst.info("RHEL kernel already present in latest version. Update not needed.\n")
+        """
