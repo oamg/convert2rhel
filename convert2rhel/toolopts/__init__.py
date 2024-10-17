@@ -26,7 +26,10 @@ loggerinst = logging.getLogger(__name__)
 
 class ToolOpts:
     def _handle_config_conflict(self, config_sources):
-        file_config = next((config for config in config_sources if config.SOURCE == "configuration file"), None)
+        file_config = next(
+            (config for config in config_sources if config.SOURCE == "configuration file"),
+            None,
+        )
         # No file config detected, let's just bail out.
         if not file_config:
             return
@@ -115,6 +118,17 @@ class ToolOpts:
         current_attribute_value = getattr(self, key)
 
         if value and not current_attribute_value:
+            setattr(self, key, value)
+
+    def update_opts(self, key, value):
+        """Update a given option in toolopts.
+
+        :param key:
+        :type key: str
+        :param value:
+        :type value: str
+        """
+        if key and value:
             setattr(self, key, value)
 
     def _handle_rhsm_parts(self):

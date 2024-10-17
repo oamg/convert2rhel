@@ -64,7 +64,8 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
 
 
 @centos8
-def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_action):
+def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_action, global_tool_opts):
+    monkeypatch.setattr(package_updates, "tool_opts", global_tool_opts)
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: [])
 
     package_updates_action.run()
@@ -72,7 +73,10 @@ def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_
 
 
 @centos8
-def test_check_package_updates_not_up_to_date(pretend_os, monkeypatch, package_updates_action, caplog):
+def test_check_package_updates_not_up_to_date(
+    pretend_os, monkeypatch, package_updates_action, caplog, global_tool_opts
+):
+    monkeypatch.setattr(package_updates, "tool_opts", global_tool_opts)
     packages = ["package-2", "package-1"]
     diagnosis = (
         "The system has 2 package(s) not updated based on repositories defined in the system repositories.\n"

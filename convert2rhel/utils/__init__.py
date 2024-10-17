@@ -1129,12 +1129,24 @@ def warn_deprecated_env(env_name):
     :param env_name: The name of the environment variable that is deprecated.
     :type env_name: str
     """
+    env_var_to_toolopts_map = {
+        "CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP": "outdated_package_check_skip",
+        "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK": "skip_kernel_currency_check",
+        "CONVERT2RHEL_INCOMPLETE_ROLLBACK": "incomplete_rollback",
+        "CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS": "allow_unavailable_kmods",
+        "CONVERT2RHEL_ALLOW_OLDER_VERSION": "allow_older_version",
+        "CONVERT2RHEL_CONFIGURE_HOST_METERING": "configure_host_metering",
+        "CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP": "tainted_kernel_module_check_skip",
+    }
+
     if env_name not in os.environ:
         # Nothing to do here.
         return None
 
     root_logger.warning(
-        "The environment variable {} is deprecated in favor of using a configuration file and will be removed in version Convert2RHEL 2.4.0."
+        "The environment variable {} is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
+        "Please, use the configuration file instead.".format(env_name)
     )
-
-    return os.getenv(env_name, None)
+    key = env_var_to_toolopts_map[env_name]
+    value = os.getenv(env_name, None)
+    tool_opts.update_opts(key, value)
