@@ -83,7 +83,7 @@ def test_failures_and_skips_in_report(convert2rhel):
         c2r.expect("SUBSCRIBE_SYSTEM::FAILED_TO_SUBSCRIBE_SYSTEM")
         c2r.expect("Diagnosis: System registration failed with error")
 
-    assert c2r.exitstatus == 0
+    assert c2r.exitstatus == 2
 
     _validate_report()
 
