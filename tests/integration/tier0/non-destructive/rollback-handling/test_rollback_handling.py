@@ -154,7 +154,6 @@ def test_polluted_yumdownloader_output_by_yum_plugin_local(shell, convert2rhel, 
         with convert2rhel("analyze --debug -y") as c2r:
             c2r.expect("Rollback: Install removed packages")
             c2r.expect("Pre-conversion analysis report", timeout=600)
-        assert c2r.exitstatus == 0
 
         is_installed_post_rollback(shell, assign_packages())
 

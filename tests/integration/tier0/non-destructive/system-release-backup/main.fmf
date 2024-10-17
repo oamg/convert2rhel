@@ -25,7 +25,7 @@ tag+:
             os-release restored without CONVERT2RHEL_INCOMPLETE_ROLLBACK
         description+: |
             In this scenario the variable `CONVERT2RHEL_INCOMPLETE_ROLLBACK` is not set, therefore
-            using analyze we expect convert2rhel to raise an error and return code 1.
+            using analyze we expect convert2rhel to raise an error and return code 2.
         environment+:
             CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
         tag+:
