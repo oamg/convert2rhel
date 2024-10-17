@@ -58,7 +58,7 @@ class RhelCompatibleKernel(actions.Action):
         original system.
         """
         super(RhelCompatibleKernel, self).run()
-        logger.task("Prepare: Check kernel compatibility with RHEL")
+        logger.task("Check kernel compatibility with RHEL")
         for check_function in (_bad_kernel_version, _bad_kernel_package_signature, _bad_kernel_substring):
             try:
                 check_function(system_info.booted_kernel)

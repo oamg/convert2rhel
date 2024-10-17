@@ -125,7 +125,7 @@ class RestorablePackage(RestorableChange):
 
         utils.remove_orphan_folders()
 
-        logger.task("Rollback: Install removed packages")
+        logger.task("Install removed packages")
         if not self._backedup_pkgs_paths:
             logger.warning("Couldn't find a backup for {} package.".format(",".join(self.pkgs)))
             raise exceptions.CriticalError(
@@ -300,7 +300,7 @@ class RestorablePackageSet(RestorableChange):
         if not self.enabled:
             return
 
-        logger.task("Rollback: Remove installed packages")
+        logger.task("Remove installed packages")
         logger.info("Removing set of installed pkgs: {}".format(utils.format_sequence_as_message(self.installed_pkgs)))
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 
