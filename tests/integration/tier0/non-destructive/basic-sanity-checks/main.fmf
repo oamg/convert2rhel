@@ -61,10 +61,6 @@ tag+:
 
 
 /convert2rhel_version:
-    adjust+:
-        result: xfail
-        when: distro == alma-9, oracle-9, rocky-9, stream-9
-        because: We're unable to validate the version of convert2rhel, as there is no build GA for EL9 yet
     summary+: |
         convert2rhel version check
     /c2r_is_latest_with_mocked_newer_version:
