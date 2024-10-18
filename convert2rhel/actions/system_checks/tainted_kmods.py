@@ -41,7 +41,7 @@ class TaintedKmods(actions.Action):
         """
         super(TaintedKmods, self).run()
 
-        logger.task("Prepare: Check if loaded kernel modules are not tainted")
+        logger.task("Check if loaded kernel modules are not tainted")
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
         warn_deprecated_env("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP")

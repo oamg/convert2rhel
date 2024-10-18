@@ -36,7 +36,7 @@ class ModifiedRPMFilesDiff(actions.Action):
         """
         super(ModifiedRPMFilesDiff, self).run()
 
-        logger.task("Final: Show RPM files modified by the conversion")
+        logger.task("Show RPM files modified by the conversion")
 
         system_info.generate_rpm_va(log_filename=utils.rpm.POST_RPM_VA_LOG_FILENAME)
 

@@ -35,7 +35,7 @@ class IsLoadedKernelLatest(actions.Action):
     def run(self):
         """Check if the loaded kernel is behind or of the same version as in yum repos."""
         super(IsLoadedKernelLatest, self).run()
-        logger.task("Prepare: Check if the loaded kernel version is the most recent")
+        logger.task("Check if the loaded kernel version is the most recent")
 
         if system_info.id == "oracle" and system_info.eus_system:
             logger.info(

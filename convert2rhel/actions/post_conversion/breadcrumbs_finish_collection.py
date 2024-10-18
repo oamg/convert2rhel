@@ -33,5 +33,5 @@ class BreadcumbsFinishCollection(actions.Action):
     def run(self):
         super(BreadcumbsFinishCollection, self).run()
 
-        logger.task("Final: Update breadcrumbs")
+        logger.task("Update breadcrumbs")
         breadcrumbs.breadcrumbs.finish_collection(success=True)

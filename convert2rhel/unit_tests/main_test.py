@@ -353,8 +353,8 @@ class TestRollbackFromMain:
         assert main.rollback_changes.call_count == 0
         assert main.provide_status_after_rollback.call_count == 0
 
-        assert caplog.records[-2].levelname == "INFO"
         assert caplog.records[-2].message.strip() == "No changes were made to the system."
+        assert caplog.records[-2].levelname == "INFO"
 
         critical_logs = [log for log in caplog.records if log.levelname == "CRITICAL"]
         assert len(critical_logs) == 1
