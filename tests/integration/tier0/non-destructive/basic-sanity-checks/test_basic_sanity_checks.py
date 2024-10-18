@@ -105,6 +105,9 @@ def test_c2r_version_latest_with_mocked_newer_version(convert2rhel, c2r_version,
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Latest available convert2rhel version is installed.", timeout=300) == 0
 
         c2r.sendcontrol("c")
@@ -122,6 +125,9 @@ def test_c2r_version_latest_inhibitor(convert2rhel, c2r_version, version):
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
@@ -153,6 +159,9 @@ def test_c2r_version_latest_override_inhibitor(convert2rhel, c2r_version, versio
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("You are currently running 0.01.0", timeout=300) == 0
         assert (
             c2r.expect(
@@ -176,6 +185,9 @@ def test_clean_cache(convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("Prepare: Clean yum cache metadata", timeout=300) == 0
         assert c2r.expect("Cached repositories metadata cleaned successfully.", timeout=300) == 0
 
@@ -193,6 +205,9 @@ def test_rhsm_error_logged(convert2rhel):
     """
     with convert2rhel("--debug -k key -o org") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
@@ -260,6 +275,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
     with convert2rhel("analyze --debug") as c2r:
         # We need to get past the data collection acknowledgement
         c2r.sendline("y")
+        c2r.sendline("y")
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
@@ -275,6 +291,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement
+        c2r.sendline("y")
         c2r.sendline("y")
         assert (
             c2r.expect(

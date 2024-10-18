@@ -22,9 +22,12 @@ import json
 import pytest
 import six
 
-from convert2rhel import breadcrumbs, pkghandler, pkgmanager
+import sys
+
+from convert2rhel import breadcrumbs, pkghandler, pkgmanager, toolopts
 from convert2rhel.unit_tests import create_pkg_information, create_pkg_obj
 from convert2rhel.unit_tests.conftest import centos7
+from convert2rhel.unit_tests.cli_test import mock_cli_arguments
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -344,3 +347,28 @@ def test_set_non_default_channel_els(global_tool_opts, monkeypatch):
     monkeypatch.setattr(breadcrumbs, "tool_opts", global_tool_opts)
     breadcrumbs.breadcrumbs._set_non_default_channel()
     assert breadcrumbs.breadcrumbs.non_default_channel == "ELS"
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected", "message"),
+    (
+        (
+            ["analyze"],
+            False,
+            "Convert2RHEL modifies the systems during the analysis and then rolls back these "
+            "changes when the analysis is complete. In rare cases, this rollback can fail. "
+            "By continuing, you confirm that you have made a system backup and verified that "
+            "you can restore from the backup.",
+        ),
+    ),
+)
+def test_confirm_user_backup(argv, expected, message, monkeypatch, global_tool_opts, caplog):
+    monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
+    try:
+        toolopts.CLI()
+    except SystemExit:
+        pass
+
+    # assert global_tool_opts.no_rpm_va == expected
+    if message:
+        assert message in caplog.text
