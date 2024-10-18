@@ -211,9 +211,17 @@ def main_locked():
             # Write the assessment to a file as json data so that other tools can
             # parse and act upon it.
             results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
-            current_phase = ConversionPhases.current_phase
-            if results and current_phase and current_phase.name in _REPORT_MAPPING:
-                json_report, txt_report = _REPORT_MAPPING[current_phase.name]
+            current_phase = ConversionPhases.current_phase  # type: ConversionPhase|None
+
+            execution_phase = current_phase
+
+            if current_phase and current_phase == ConversionPhases.ROLLBACK:
+                # Rollback is an indication of what we are doing, but here we want to know what we were doing before the
+                # rollback so that we can make assertions. Hence fetching the previous stage
+                execution_phase = current_phase.last_stage
+
+            if results and execution_phase and execution_phase.name in _REPORT_MAPPING:
+                json_report, txt_report = _REPORT_MAPPING[execution_phase.name]
 
                 report.summary_as_json(results, json_report)
                 report.summary_as_txt(results, txt_report)
