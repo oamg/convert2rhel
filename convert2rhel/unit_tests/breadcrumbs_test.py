@@ -22,9 +22,12 @@ import json
 import pytest
 import six
 
+import sys
+
 from convert2rhel import breadcrumbs, pkghandler, pkgmanager
 from convert2rhel.unit_tests import create_pkg_information, create_pkg_obj
 from convert2rhel.unit_tests.conftest import centos7
+from convert2rhel.unit_tests.cli_test import mock_cli_arguments
 
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
@@ -330,7 +333,6 @@ def test_set_target_os(pretend_os):
         "name": "CentOS Linux",
         "version": "7.9",
     } == breadcrumbs.breadcrumbs.target_os
-<<<<<<< HEAD
 
 
 def test_set_non_default_channel_eus(global_tool_opts, monkeypatch):
@@ -345,6 +347,8 @@ def test_set_non_default_channel_els(global_tool_opts, monkeypatch):
     monkeypatch.setattr(breadcrumbs, "tool_opts", global_tool_opts)
     breadcrumbs.breadcrumbs._set_non_default_channel()
     assert breadcrumbs.breadcrumbs.non_default_channel == "ELS"
+
+
 @pytest.mark.parametrize(
     ("argv", "expected", "message"),
     (
@@ -368,5 +372,3 @@ def test_confirm_user_backup(argv, expected, message, monkeypatch, global_tool_o
     # assert global_tool_opts.no_rpm_va == expected
     if message:
         assert message in caplog.text
-=======
->>>>>>> 05fa47ff (Moved the confirm_user_backup() to main.py)
