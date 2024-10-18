@@ -315,7 +315,6 @@ def _handle_inhibitors_found_exception():
 
 
 def confirm_user_backup():
-    # Add in the warning about the system back up here!
     loggerinst.warning(
         "Convert2RHEL modifies the systems during the analysis and then rolls back these "
         "changes when the analysis is complete. In rare cases, this rollback can fail. "
