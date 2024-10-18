@@ -15,12 +15,12 @@
 
 __metaclass__ = type
 
-
 from convert2rhel import actions, systeminfo
 from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.subscription import get_rhsm_facts
 from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
 
@@ -35,7 +35,6 @@ class ConfigureHostMetering(actions.Action):
     """
 
     id = "CONFIGURE_HOST_METERING_IF_NEEDED"
-    env_var = None  # type: str|None
 
     def run(self):
         """
@@ -53,11 +52,11 @@ class ConfigureHostMetering(actions.Action):
 
         super(ConfigureHostMetering, self).run()
 
-        self.env_var = warn_deprecated_env("CONVERT2RHEL_CONFIGURE_HOST_METERING")
+        warn_deprecated_env("CONVERT2RHEL_CONFIGURE_HOST_METERING")
         if not self._check_env_var():
             return False
 
-        if system_info.version.major != 7 and self.env_var == "auto":
+        if system_info.version.major != 7 and tool_opts.configure_host_metering == "auto":
             logger.info("Did not perform host metering configuration. Only supported for RHEL 7.")
             self.add_message(
                 level="INFO",
@@ -69,7 +68,7 @@ class ConfigureHostMetering(actions.Action):
 
         is_hyperscaler = self.is_running_on_hyperscaler()
 
-        if not is_hyperscaler and self.env_var == "auto":
+        if not is_hyperscaler and tool_opts.configure_host_metering == "auto":
             logger.info("Did not perform host-metering configuration.")
             self.add_message(
                 level="INFO",
@@ -142,7 +141,7 @@ class ConfigureHostMetering(actions.Action):
         :return: Return True if the value is equal to auto|force, otherwise False
         :rtype: bool
         """
-        if self.env_var is None:
+        if tool_opts.configure_host_metering is None:
             logger.debug("CONVERT2RHEL_CONFIGURE_HOST_METERING was not set. Skipping it.")
             self.add_message(
                 level="INFO",
@@ -152,18 +151,20 @@ class ConfigureHostMetering(actions.Action):
             )
             return False
 
-        if self.env_var not in ("force", "auto"):
-            logger.debug("Value for environment variable not recognized: {}".format(self.env_var))
+        if tool_opts.configure_host_metering not in ("force", "auto"):
+            logger.debug("Value for environment variable not recognized: {}".format(tool_opts.configure_host_metering))
             self.add_message(
                 level="WARNING",
                 id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",
                 title="Unrecognized option in CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
-                description="Environment variable {env_var} not recognized.".format(env_var=self.env_var),
+                description="Environment variable {env_var} not recognized.".format(
+                    env_var=tool_opts.configure_host_metering
+                ),
                 remediations="Set the option to `auto` value if you want to configure host metering.",
             )
             return False
 
-        if self.env_var == "force":
+        if tool_opts.configure_host_metering == "force":
             logger.warning(
                 "The `force' option has been used for the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable."
                 " Please note that this option is mainly used for testing and will configure host-metering unconditionally. "
@@ -177,7 +178,7 @@ class ConfigureHostMetering(actions.Action):
                 " will configure host-metering unconditionally."
                 " For generic usage please use the 'auto' option.",
             )
-        elif self.env_var == "auto":
+        elif tool_opts.configure_host_metering == "auto":
             logger.debug("Automatic detection of host hyperscaler and configuration.")
 
         return True
