@@ -24,7 +24,7 @@ import six
 
 import sys
 
-from convert2rhel import breadcrumbs, pkghandler, pkgmanager, toolopts
+from convert2rhel import breadcrumbs, pkghandler, pkgmanager, cli
 from convert2rhel.unit_tests import create_pkg_information, create_pkg_obj
 from convert2rhel.unit_tests.conftest import centos7
 from convert2rhel.unit_tests.cli_test import mock_cli_arguments
@@ -365,7 +365,7 @@ def test_set_non_default_channel_els(global_tool_opts, monkeypatch):
 def test_confirm_user_backup(argv, expected, message, monkeypatch, global_tool_opts, caplog):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(argv))
     try:
-        toolopts.CLI()
+        cli.CLI()
     except SystemExit:
         pass
 
