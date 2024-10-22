@@ -94,7 +94,7 @@ def test_override_inhibitor_os_release_restored(
         c2r.sendline("y")
 
         # c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
+        # c2r.sendline("y")
 
         c2r.expect("'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.")
 
