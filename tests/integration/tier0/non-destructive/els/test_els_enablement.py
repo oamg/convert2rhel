@@ -110,4 +110,4 @@ def test_rhsm_non_els_account(convert2rhel):
         c2r.expect_exact(ELS_REPOID_MSG)
         c2r.expect_exact("Error: 'rhel-7-server-els-rpms' does not match a valid repository ID.")
         c2r.expect_exact("SUBSCRIBE_SYSTEM::FAILED_TO_ENABLE_RHSM_REPOSITORIES")
-    assert c2r.exitstatus == 0
+    assert c2r.exitstatus == 2

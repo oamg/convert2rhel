@@ -76,4 +76,5 @@ def test_httpd_package_transaction_error(shell, convert2rhel, handle_packages):
         assert index == 0, "The analysis found an error. Probably related to the transaction check."
         assert c2r.expect_exact("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded") == 0
 
-    assert c2r.exitstatus == 2
+    # Correct handling of the httpd package dependencies is expected
+    assert c2r.exitstatus == 0

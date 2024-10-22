@@ -53,7 +53,8 @@ def test_releasever_modified_in_c2r_config(backup_files, convert2rhel, shell):
         c2r.expect("--releasever=420")
         c2r.expect_exact("ERROR - (ERROR) ENSURE_KERNEL_MODULES_COMPATIBILITY::PROBLEM_WITH_PACKAGE_REPO")
 
-    assert c2r.exitstatus == 0
+    # Inhibitor expected
+    assert c2r.exitstatus == 2
 
 
 @pytest.mark.parametrize("backup_files", ["/etc/system-release"], indirect=True)
