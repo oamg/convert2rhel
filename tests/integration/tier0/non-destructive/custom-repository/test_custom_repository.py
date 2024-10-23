@@ -31,12 +31,6 @@ def test_custom_valid_repo_without_rhsm(convert2rhel, set_custom_repository_file
     enable_repo_opt = " ".join(f"--enablerepo {repo}" for repo in get_custom_repos_names())
 
     with convert2rhel(f"-y --no-rhsm {enable_repo_opt} --debug", unregister=True) as c2r:
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-
-        # c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-
         c2r.expect("The repositories passed through the --enablerepo option are all accessible.")
         c2r.sendcontrol("c")
 
