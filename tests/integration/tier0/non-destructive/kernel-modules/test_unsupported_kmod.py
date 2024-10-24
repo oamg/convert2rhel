@@ -67,6 +67,9 @@ def test_override_inhibitor_with_unavailable_kmod_loaded(
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
         c2r.expect("We will continue the conversion with the following kernel modules")
 
@@ -101,6 +104,9 @@ def test_inhibitor_with_force_loaded_tainted_kmod(shell, convert2rhel, forced_km
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         assert c2r.expect("TAINTED_KMODS::TAINTED_KMODS_DETECTED - Tainted kernel modules detected") == 0
         c2r.sendcontrol("c")
 
@@ -125,6 +131,8 @@ def test_override_inhibitor_with_tainted_kmod(shell, convert2rhel, forced_kmods,
         unregister=True,
     ) as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
         # Validate that with the envar the conversion is not inhibited with an error,

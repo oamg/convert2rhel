@@ -321,6 +321,17 @@ def _handle_inhibitors_found_exception():
     return ConversionExitCodes.INHIBITORS_FOUND
 
 
+def confirm_user_backup():
+    loggerinst.warning(
+        "Convert2RHEL modifies the systems during the analysis and then rolls back these "
+        "changes when the analysis is complete. In rare cases, this rollback can fail. "
+        "By continuing, you confirm that you have made a system backup and verified that "
+        "you can restore from the backup."
+    )
+
+    utils.ask_to_continue()
+
+
 #
 # Boilerplate Tasks
 #
@@ -334,6 +345,7 @@ def perform_boilerplate():
 
     loggerinst.task("Inform about data collection")
     breadcrumbs.breadcrumbs.print_data_collection()
+    confirm_user_backup()
 
 
 def show_eula():
