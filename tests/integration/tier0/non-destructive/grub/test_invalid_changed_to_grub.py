@@ -56,4 +56,4 @@ def test_invalid_changes_to_grub_file(convert2rhel, grub_file_invalid):
             c2r.expect_exact("ERROR - (ERROR) GRUB_VALIDITY::INVALID_GRUB_FILE - Grub boot entry file is invalid") == 0
         )
 
-    assert c2r.exitstatus == 0
+    assert c2r.exitstatus == 2

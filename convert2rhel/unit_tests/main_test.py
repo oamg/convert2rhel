@@ -516,6 +516,7 @@ class TestRollbackFromMain:
             (main, "rollback_changes", mock.Mock()),
             (report, "summary_as_json", mock.Mock()),
             (report, "summary_as_txt", mock.Mock()),
+            (actions, "find_actions_of_severity", mock.Mock(return_value=[])),
         )
         global_tool_opts.activity = "analysis"
         for module, function, value in mocks:
@@ -555,6 +556,7 @@ class TestRollbackFromMain:
         clear_versionlock_mock = mock.Mock()
         summary_as_json_mock = mock.Mock()
         summary_as_txt_mock = mock.Mock()
+        find_actions_of_severity = mock.Mock(return_value=[])
 
         # Mock the rollback calls
         finish_collection_mock = mock.Mock()
@@ -581,6 +583,7 @@ class TestRollbackFromMain:
         monkeypatch.setattr(main, "rollback_changes", rollback_changes_mock)
         monkeypatch.setattr(report, "summary_as_json", summary_as_json_mock)
         monkeypatch.setattr(report, "summary_as_txt", summary_as_txt_mock)
+        monkeypatch.setattr(actions, "find_actions_of_severity", find_actions_of_severity)
         global_tool_opts.activity = "analysis"
 
         assert main.main() == 0
@@ -667,6 +670,47 @@ class TestRollbackFromMain:
         assert summary_as_txt_mock.call_count == 1
         assert "The system is left in an undetermined state that Convert2RHEL cannot fix." in caplog.records[-3].message
         assert update_rhsm_custom_facts_mock.call_count == 1
+
+    @pytest.mark.parametrize(
+        ("activity", "inhibitor", "rc"),
+        (
+            ("analysis", True, 2),
+            ("analysis", False, 0),
+            ("convert", True, 2),
+            ("convert", False, 0),
+        ),
+    )
+    def test_main_inhibitor_return_code(self, monkeypatch, activity, inhibitor, rc, tmp_path, global_tool_opts):
+        mocks = (
+            (applock, "_DEFAULT_LOCK_DIR", str(tmp_path)),
+            (utils, "require_root", mock.Mock()),
+            (main, "initialize_file_logging", mock.Mock()),
+            (cli, "CLI", mock.Mock()),
+            (main, "show_eula", mock.Mock()),
+            (breadcrumbs, "print_data_collection", mock.Mock()),
+            (system_info, "resolve_system_info", mock.Mock()),
+            (system_info, "print_system_information", mock.Mock()),
+            (breadcrumbs, "collect_early_data", mock.Mock()),
+            (pkghandler, "clear_versionlock", mock.Mock()),
+            (pkgmanager, "clean_yum_metadata", mock.Mock()),
+            (actions, "run_pre_actions", mock.Mock()),
+            (actions, "find_actions_of_severity", mock.Mock(return_value=inhibitor)),
+            (report, "_summary", mock.Mock()),
+            (breadcrumbs, "finish_collection", mock.Mock()),
+            (subscription, "should_subscribe", mock.Mock(side_effect=lambda: True)),
+            (subscription, "update_rhsm_custom_facts", mock.Mock()),
+            (main, "rollback_changes", mock.Mock()),
+            (report, "summary_as_json", mock.Mock()),
+            (report, "summary_as_txt", mock.Mock()),
+            (utils, "ask_to_continue", mock.Mock()),
+            (actions, "run_post_actions", mock.Mock()),
+            (utils, "restart_system", mock.Mock()),
+        )
+        global_tool_opts.activity = activity
+        for module, function, value in mocks:
+            monkeypatch.setattr(module, function, value)
+
+        assert main.main() == rc
 
 
 @pytest.mark.parametrize(

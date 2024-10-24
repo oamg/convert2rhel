@@ -62,5 +62,5 @@ def test_duplicate_packages_installed(convert2rhel, install_duplicate_pkg):
         c2r.expect("Pre-conversion analysis report", timeout=600)
         c2r.expect_exact("(ERROR) DUPLICATE_PACKAGES::DUPLICATE_PACKAGES_FOUND")
 
-    # The analysis should exit with 0, if it finishes successfully
-    assert c2r.exitstatus == 0
+    # The analysis should exit with 2, if inhibitor is found
+    assert c2r.exitstatus == 2
