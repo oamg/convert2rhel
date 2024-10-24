@@ -87,7 +87,7 @@ def test_handling_corrupted_initramfs_file(convert2rhel, shell):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        c2r.expect("Prepare: Final modifications to the system")
+        c2r.expect("Convert: Final modifications to the system")
 
         kernel_version = get_latest_installed_kernel_version(kernel_name)
 

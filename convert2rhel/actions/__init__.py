@@ -520,7 +520,7 @@ class Stage:
             running is WARNING or better (WARNING or SUCCESS) and
             failure as worse than WARNING (OVERRIDABLE, ERROR)
         """
-        logger.task("Prepare: {}".format(self.task_header))
+        logger.task("{}".format(self.task_header))
 
         if self._has_run:
             raise ActionError("Stage {} has already run.".format(self.stage_name))

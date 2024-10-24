@@ -52,7 +52,7 @@ class RestorableSystemSubscription(RestorableChange):
         if not self.enabled:
             return
 
-        logger.task("Rollback: RHSM-related actions")
+        logger.task("RHSM-related actions")
 
         try:
             subscription.unregister_system()
@@ -82,7 +82,7 @@ class RestorableAutoAttachmentSubscription(RestorableChange):
 
     def restore(self):
         if self._is_attached:
-            logger.task("Rollback: Removing auto-attached subscription")
+            logger.task("Removing auto-attached subscription")
             subscription.remove_subscription()
             super(RestorableAutoAttachmentSubscription, self).restore()
 
@@ -135,7 +135,7 @@ class RestorableDisableRepositories(RestorableChange):
         if not self.enabled:
             return
 
-        logger.task("Rollback: Restoring state of the repositories")
+        logger.task("Restoring state of the repositories")
 
         if self._repos_to_enable:
             logger.debug("Repositories to enable: {}".format(",".join(self._repos_to_enable)))

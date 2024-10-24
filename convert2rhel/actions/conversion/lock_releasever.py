@@ -39,7 +39,8 @@ class LockReleaseverInRHELRepositories(actions.Action):
         default.
         """
         super(LockReleaseverInRHELRepositories, self).run()
-        loggerinst.task("Convert: Lock releasever in RHEL repositories")
+        loggerinst.task("Lock releasever in RHEL repositories")
+
         # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
         # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be
         # available.

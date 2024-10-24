@@ -24,8 +24,8 @@ from convert2rhel import actions, applock, backup, breadcrumbs, cli, exceptions
 from convert2rhel import logger as logger_module
 from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, utils
 from convert2rhel.actions import level_for_raw_action_data, report
+from convert2rhel.phase import ConversionPhase, ConversionPhases  # noqa: F401 ignoring due to type comments
 from convert2rhel.toolopts import tool_opts
-
 
 loggerinst = logger_module.root_logger.getChild(__name__)
 
@@ -41,25 +41,16 @@ class _InhibitorsFound(Exception):
     pass
 
 
-class ConversionPhase:
-    POST_CLI = 1
-    # PONR means Point Of No Return
-    PRE_PONR_CHANGES = 2
-    # Phase to exit the Analyze SubCommand early
-    ANALYZE_EXIT = 3
-    POST_PONR_CHANGES = 4
-
-
 _REPORT_MAPPING = {
-    ConversionPhase.ANALYZE_EXIT: (
+    ConversionPhases.ANALYZE_EXIT.name: (
         report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS,
         report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS,
     ),
-    ConversionPhase.PRE_PONR_CHANGES: (
+    ConversionPhases.PRE_PONR_CHANGES.name: (
         report.CONVERT2RHEL_PRE_CONVERSION_JSON_RESULTS,
         report.CONVERT2RHEL_PRE_CONVERSION_TXT_RESULTS,
     ),
-    ConversionPhase.POST_PONR_CHANGES: (
+    ConversionPhases.POST_PONR_CHANGES.name: (
         report.CONVERT2RHEL_POST_CONVERSION_JSON_RESULTS,
         report.CONVERT2RHEL_POST_CONVERSION_TXT_RESULTS,
     ),
@@ -131,13 +122,14 @@ def main_locked():
 
     pre_conversion_results = None
     post_conversion_results = None
-    process_phase = ConversionPhase.POST_CLI
+    ConversionPhases.set_current(ConversionPhases.POST_CLI)
 
     # since we now have root, we can add the FileLogging
     # and also archive previous logs
     initialize_file_logging("convert2rhel.log", logger_module.LOG_DIR)
 
     try:
+        ConversionPhases.set_current(ConversionPhases.PREPARE)
         perform_boilerplate()
 
         gather_system_info()
@@ -147,11 +139,11 @@ def main_locked():
         # we don't fail in case rollback is triggered during
         # actions.run_pre_actions() (either from a bug or from the user hitting
         # Ctrl-C)
-        process_phase = ConversionPhase.PRE_PONR_CHANGES
+        ConversionPhases.set_current(ConversionPhases.PRE_PONR_CHANGES)
         pre_conversion_results = actions.run_pre_actions()
 
         if tool_opts.activity == "analysis":
-            process_phase = ConversionPhase.ANALYZE_EXIT
+            ConversionPhases.set_current(ConversionPhases.ANALYZE_EXIT)
             raise _AnalyzeExit()
 
         _raise_for_skipped_failures(pre_conversion_results)
@@ -173,7 +165,7 @@ def main_locked():
         loggerinst.warning("********************************************************")
         utils.ask_to_continue()
 
-        process_phase = ConversionPhase.POST_PONR_CHANGES
+        ConversionPhases.set_current(ConversionPhases.POST_PONR_CHANGES)
         post_conversion_results = actions.run_post_actions()
 
         _raise_for_skipped_failures(post_conversion_results)
@@ -203,25 +195,33 @@ def main_locked():
         return ConversionExitCodes.SUCCESSFUL
     except _InhibitorsFound as err:
         loggerinst.critical_no_exit(str(err))
-        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
-        _handle_main_exceptions(process_phase, results)
+        results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
+        _handle_main_exceptions(current_phase=ConversionPhases.current_phase, results=results)
 
         return _handle_inhibitors_found_exception()
     except exceptions.CriticalError as err:
         loggerinst.critical_no_exit(err.diagnosis)
-        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
-        return _handle_main_exceptions(process_phase, results)
+        results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
+        return _handle_main_exceptions(current_phase=ConversionPhases.current_phase, results=results)
     except (Exception, SystemExit, KeyboardInterrupt):
-        results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
-        return _handle_main_exceptions(process_phase, results)
+        results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
+        return _handle_main_exceptions(current_phase=ConversionPhases.current_phase, results=results)
     finally:
         if not backup.backup_control.rollback_failed:
             # Write the assessment to a file as json data so that other tools can
             # parse and act upon it.
-            results = _pick_conversion_results(process_phase, pre_conversion_results, post_conversion_results)
+            results = _pick_conversion_results(pre_conversion_results, post_conversion_results)
+            current_phase = ConversionPhases.current_phase  # type: ConversionPhase|None
 
-            if results and process_phase in _REPORT_MAPPING:
-                json_report, txt_report = _REPORT_MAPPING[process_phase]
+            execution_phase = current_phase
+
+            if current_phase and current_phase == ConversionPhases.ROLLBACK:
+                # Rollback is an indication of what we are doing, but here we want to know what we were doing before the
+                # rollback so that we can make assertions. Hence fetching the previous stage
+                execution_phase = current_phase.last_stage
+
+            if results and execution_phase and execution_phase.name in _REPORT_MAPPING:
+                json_report, txt_report = _REPORT_MAPPING[execution_phase.name]
 
                 report.summary_as_json(results, json_report)
                 report.summary_as_txt(results, txt_report)
@@ -249,29 +249,36 @@ def _raise_for_skipped_failures(results):
 
 
 # TODO(r0x0d): Better function name
-def _pick_conversion_results(process_phase, pre_conversion, post_conversion):
+def _pick_conversion_results(pre_conversion, post_conversion):
     """Utilitary function to define which action results to use
 
     Maybe not be necessary (or even correct), but it is the best approximation
     idea for now.
     """
-    if process_phase == ConversionPhase.POST_PONR_CHANGES:
+    if ConversionPhases.current_phase == ConversionPhases.POST_PONR_CHANGES:
         return post_conversion
 
     return pre_conversion
 
 
-def _handle_main_exceptions(process_phase, results=None):
+def _handle_main_exceptions(current_phase, results=None):  # type: (ConversionPhase|None, dict|None) -> int
     """Common steps to handle graceful exit due to several different Exception types."""
     breadcrumbs.breadcrumbs.finish_collection()
 
     no_changes_msg = "No changes were made to the system."
     utils.log_traceback(tool_opts.debug)
 
-    if process_phase == ConversionPhase.POST_CLI:
+    execution_phase = current_phase  # type: ConversionPhase|None
+
+    if current_phase and current_phase == ConversionPhases.ROLLBACK:
+        # Rollback is an indication of what we are doing, but here we want to know what we were doing before the
+        # rollback so that we can make assertions. Hence fetching the previous stage
+        execution_phase = current_phase.last_stage
+
+    if execution_phase in [ConversionPhases.POST_CLI, ConversionPhases.PREPARE]:
         loggerinst.info(no_changes_msg)
         return ConversionExitCodes.FAILURE
-    elif process_phase == ConversionPhase.PRE_PONR_CHANGES:
+    elif execution_phase == ConversionPhases.PRE_PONR_CHANGES:
         # Update RHSM custom facts only when this returns False. Otherwise,
         # sub-man get uninstalled and the data is removed from the RHSM server.
         if not subscription.should_subscribe():
@@ -282,7 +289,7 @@ def _handle_main_exceptions(process_phase, results=None):
             pre_conversion_results=results,
             include_all_reports=True,
         )
-    elif process_phase == ConversionPhase.POST_PONR_CHANGES:
+    elif execution_phase == ConversionPhases.POST_PONR_CHANGES:
         # After the process of subscription is done and the mass update of
         # packages is started convert2rhel will not be able to guarantee a
         # system rollback without user intervention. If a proper rollback
@@ -322,10 +329,10 @@ def _handle_inhibitors_found_exception():
 def perform_boilerplate():
     """Standard interactions with the user prior to doing any conversion work."""
     # license agreement
-    loggerinst.task("Prepare: Show Red Hat software EULA")
+    loggerinst.task("Show Red Hat software EULA")
     show_eula()
 
-    loggerinst.task("Prepare: Inform about data collection")
+    loggerinst.task("Inform about data collection")
     breadcrumbs.breadcrumbs.print_data_collection()
 
 
@@ -349,7 +356,7 @@ def show_eula():
 def gather_system_info():
     """Retrieve information about the system to be converted"""
     # gather system information
-    loggerinst.task("Prepare: Gather system information")
+    loggerinst.task("Gather system information")
     systeminfo.system_info.resolve_system_info()
     systeminfo.system_info.print_system_information()
     breadcrumbs.breadcrumbs.collect_early_data()
@@ -357,10 +364,10 @@ def gather_system_info():
 
 def prepare_system():
     """Setup the environment to do the conversion within"""
-    loggerinst.task("Prepare: Clear YUM/DNF version locks")
+    loggerinst.task("Clear YUM/DNF version locks")
     pkghandler.clear_versionlock()
 
-    loggerinst.task("Prepare: Clean yum cache metadata")
+    loggerinst.task("Clean yum cache metadata")
     pkgmanager.clean_yum_metadata()
 
 
@@ -373,6 +380,7 @@ def rollback_changes():
     """Perform a rollback of changes made during conversion."""
 
     loggerinst.warning("Abnormal exit! Performing rollback ...")
+    ConversionPhases.set_current(ConversionPhases.ROLLBACK)
 
     try:
         backup.backup_control.pop_all()

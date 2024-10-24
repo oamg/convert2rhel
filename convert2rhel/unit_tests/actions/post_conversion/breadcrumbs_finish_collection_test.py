@@ -36,5 +36,5 @@ def test_breadcrumbs_finish_collection(monkeypatch, caplog, breadcrumbs_finish_c
 
     breadcrumbs_finish_collection_instance.run()
 
-    assert "Final: Update breadcrumbs" in caplog.records[-1].message
+    assert "Update breadcrumbs" in caplog.records[-1].message
     assert finish_collection.call_count == 1

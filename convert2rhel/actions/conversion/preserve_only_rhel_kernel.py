@@ -35,7 +35,7 @@ class InstallRhelKernel(actions.Action):
     def run(self):
         """Install and update the RHEL kernel."""
         super(InstallRhelKernel, self).run()
-        loggerinst.task("Convert: Prepare kernel")
+        loggerinst.task("Prepare kernel")
 
         # Solution for RHELC-1707
         # Update is needed in the UpdateKernel action

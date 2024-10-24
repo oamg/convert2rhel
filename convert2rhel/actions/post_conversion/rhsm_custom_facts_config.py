@@ -30,7 +30,7 @@ class RHSMCustomFactsConfig(actions.Action):
 
     def run(self):
         super(RHSMCustomFactsConfig, self).run()
-        loggerinst.task("Final: Update RHSM custom facts")
+        loggerinst.task("Update RHSM custom facts")
         ret_code, output = subscription.update_rhsm_custom_facts()
 
         if not output:
