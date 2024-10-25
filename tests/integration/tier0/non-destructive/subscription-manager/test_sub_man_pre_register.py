@@ -18,6 +18,9 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
             "SUBSCRIBE_SYSTEM has succeeded",
@@ -49,6 +52,9 @@ def test_pre_registered_re_register(shell, pre_registered, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Registering the system using subscription-manager")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
@@ -69,6 +75,9 @@ def test_unregistered_no_credentials(shell, convert2rhel):
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("SUBSCRIBE_SYSTEM::SYSTEM_NOT_REGISTERED - Not registered with RHSM", timeout=300)
 
     assert c2r.exitstatus == 2
@@ -83,6 +92,9 @@ def test_no_sca_not_subscribed(shell, pre_registered, convert2rhel):
     """
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
@@ -107,6 +119,9 @@ def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registere
     """
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement.
+        c2r.expect("Continue with the system conversion?")
+        c2r.sendline("y")
+
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 

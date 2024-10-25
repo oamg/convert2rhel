@@ -235,7 +235,6 @@ class Breadcrumbs:
             "- Convert2RHEL related environment variables\n\n",
             RHSM_CUSTOM_FACTS_FILE,
         )
-
         utils.ask_to_continue()
 
 
