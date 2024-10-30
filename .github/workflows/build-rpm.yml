@@ -2,6 +2,10 @@
 name: Build release RPMs
 
 on:
+  workflow_run:
+    workflows: [Auto Tag]
+    types:
+      - completed
   push:
     tags:
       - v*

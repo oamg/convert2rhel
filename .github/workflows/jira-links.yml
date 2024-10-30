@@ -1,5 +1,5 @@
 ---
-name: Build release RPMs & Handle release
+name: Handle release
 
 on:
   release:
