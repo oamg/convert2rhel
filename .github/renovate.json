@@ -11,7 +11,11 @@
     "**/*centos7*Containerfile",
     ".devcontainer/centos7/**"
   ],
-  "labels": ["skip/changelog", "tests/skip"],
+  "labels": [
+    "kind/dependencies",
+    "skip/changelog",
+    "tests/skip"
+  ],
   "packageRules": [
     {
       "matchPackageNames": [
