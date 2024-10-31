@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 __metaclass__ = type
 
+import os
+
 import pytest
 
 from convert2rhel import checks
@@ -44,3 +46,14 @@ def testis_initramfs_file_valid(latest_installed_kernel, subprocess_output, expe
     if not expected:
         assert "Couldn't verify initramfs file. It may be corrupted." in caplog.records[-2].message
         assert "Output of lsinitrd: {}".format(subprocess_output[0]) in caplog.records[-1].message
+
+
+def test_is_initramfs_file_valid_unicodedecodeerror(monkeypatch):
+    def mock_run(*args, **kwargs):
+        raise UnicodeDecodeError("utf-8", b"", 0, 1, "can't decode bytes")
+
+    monkeypatch.setattr(checks, "run_subprocess", mock_run)
+    monkeypatch.setattr(os.path, "exists", lambda x: True)
+    result = checks.is_initramfs_file_valid("mock_file")
+
+    assert result is False
