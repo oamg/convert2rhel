@@ -26,3 +26,8 @@ jobs:
           git config --local user.name "GitHub Actions"
           git tag ${{ steps.determine_tag.outputs.tag  }}
           git push origin ${{ steps.determine_tag.outputs.tag }}
+
+      - name: Call build RPM workflow
+        uses: oamg/convert2rhel/.github/workflows/build-rpm.yml@main
+        with:
+          tag: ${{ steps.determine_tag.outputs.tag  }}
