@@ -144,4 +144,4 @@ def test_file_backup(convert2rhel, shell, file_action_fixture, request):
         # Verify the rollback starts and analysis report is printed out
         c2r.expect("Abnormal exit! Performing rollback")
         c2r.expect("Pre-conversion analysis report")
-    assert c2r.exitstatus == 0
+    assert c2r.exitstatus == 2
