@@ -2,12 +2,10 @@
 name: Build release RPMs
 
 on:
-  workflow_call:
-    inputs:
-      tag:
-        required: false
-        type: string
-        default: "v0.0.0"
+  workflow_run:
+    workflows: [Auto Tag]
+    types:
+      - completed
   push:
     tags:
       - v*
@@ -33,16 +31,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get tag
-        if: startsWith(github.event.ref, 'refs/tags/')
+      - name: Determine tag
         id: tag
-        uses: devops-actions/action-get-tag@v1.0.3
-        with:
-          strip_v: true # Optional: Remove 'v' character from version
-          default: ${{ inputs.tag }} # Optional: Default version when tag not found
+        run: |
+          echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
 
       - name: Update specfile to match tag
-        if: startsWith(github.event.ref, 'refs/tags/') && ${{ steps.tag.outputs.tag != '0.0.0' }}
+        if: startsWith(github.event.ref, 'refs/tags/')
         uses: jacobtomlinson/gha-find-replace@v3
         with:
           include: "packaging/convert2rhel.spec"
@@ -50,7 +45,7 @@ jobs:
           replace: "${1}${{steps.tag.outputs.tag}}"
 
       - name: Update convert2rhel version to match tag
-        if: startsWith(github.event.ref, 'refs/tags/') && ${{ steps.tag.outputs.tag != '0.0.0' }}
+        if: startsWith(github.event.ref, 'refs/tags/')
         uses: jacobtomlinson/gha-find-replace@v3
         with:
           include: "convert2rhel/__init__.py"
