@@ -12,22 +12,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: 3.10.13
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: |
-          pip install argparse-manpage six pexpect
-
-      - name: Install python3-rpm and python3-dnf package with apt-get
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-rpm python3-dnf
-
-      - name: Generate Manpages
+      - name: Run version check script
         run: |
           chmod +x scripts/manpage_generation.sh
           bash scripts/manpage_generation.sh
