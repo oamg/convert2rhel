@@ -20,8 +20,6 @@ from convert2rhel import actions, pkgmanager, utils
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.systeminfo import system_info
-from convert2rhel.toolopts import tool_opts
-from convert2rhel.utils import warn_deprecated_env
 
 
 logger = root_logger.getChild(__name__)
@@ -79,7 +77,6 @@ class PackageUpdates(actions.Action):
             return
 
         if len(packages_to_update) > 0:
-            warn_deprecated_env("CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP")
             package_not_up_to_date_error_message = (
                 "The system has {} package(s) not updated based on repositories defined in the system repositories.\n"
                 "List of packages to update: {}.\n\n"
@@ -88,40 +85,15 @@ class PackageUpdates(actions.Action):
                     len(packages_to_update), " ".join(packages_to_update)
                 )
             )
-            if not tool_opts.outdated_package_check_skip:
-                logger.warning(package_not_up_to_date_error_message)
-                self.set_result(
-                    level="OVERRIDABLE",
-                    id="OUT_OF_DATE_PACKAGES",
-                    title="Outdated packages detected",
-                    description="Please refer to the diagnosis for further information",
-                    diagnosis=package_not_up_to_date_error_message,
-                    remediations="If you wish to ignore this message, set the environment variable "
-                    "'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' to 1.",
-                )
-                return
-
-            skip_package_not_up_to_date_message = (
-                "Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable, we will skip "
-                "the package up-to-date check.\n"
-                "Beware, this could leave your system in a broken state."
-            )
-            logger.warning(skip_package_not_up_to_date_message)
-            self.add_message(
-                level="WARNING",
-                id="SKIP_OUTDATED_PACKAGE_CHECK",
-                title="Skip package not up to date check",
-                description=skip_package_not_up_to_date_message,
-            )
-
             logger.warning(package_not_up_to_date_error_message)
             self.add_message(
                 level="WARNING",
-                id="OUTDATED_PACKAGE_MESSAGE",
+                id="OUT_OF_DATE_PACKAGES",
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=package_not_up_to_date_error_message,
                 remediations="Run yum update to update all the packages on the system.",
             )
-        else:
-            logger.info("System is up-to-date.")
+            return
+
+        logger.info("System is up-to-date.")

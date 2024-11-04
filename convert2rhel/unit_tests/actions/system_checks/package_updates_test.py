@@ -17,12 +17,11 @@
 
 __metaclass__ = type
 
-import os
 
 import pytest
 import six
 
-from convert2rhel import actions, pkgmanager, unit_tests
+from convert2rhel import actions, pkgmanager
 from convert2rhel.actions.system_checks import package_updates
 from convert2rhel.unit_tests.conftest import centos8, oracle8
 
@@ -65,7 +64,6 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
 
 @centos8
 def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_action, global_tool_opts):
-    monkeypatch.setattr(package_updates, "tool_opts", global_tool_opts)
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: [])
 
     package_updates_action.run()
@@ -76,7 +74,6 @@ def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_
 def test_check_package_updates_not_up_to_date(
     pretend_os, monkeypatch, package_updates_action, caplog, global_tool_opts
 ):
-    monkeypatch.setattr(package_updates, "tool_opts", global_tool_opts)
     packages = ["package-2", "package-1"]
     diagnosis = (
         "The system has 2 package(s) not updated based on repositories defined in the system repositories.\n"
@@ -87,61 +84,20 @@ def test_check_package_updates_not_up_to_date(
     monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: packages)
 
     package_updates_action.run()
-    unit_tests.assert_actions_result(
-        package_updates_action,
-        level="OVERRIDABLE",
-        id="OUT_OF_DATE_PACKAGES",
-        title="Outdated packages detected",
-        description="Please refer to the diagnosis for further information",
-        diagnosis=diagnosis,
-        remediations=(
-            "If you wish to ignore this message, set the environment variable "
-            "'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' to 1."
-        ),
-    )
-
-    assert diagnosis in caplog.records[-1].message
-
-
-@centos8
-def test_check_package_updates_not_up_to_date_skip(pretend_os, monkeypatch, package_updates_action):
-    packages = ["package-2", "package-1"]
-    diagnosis = (
-        "The system has 2 package(s) not updated based on repositories defined in the system repositories.\n"
-        "List of packages to update: package-1 package-2.\n\n"
-        "Not updating the packages may cause the conversion to fail.\n"
-        "Consider updating the packages before proceeding with the conversion."
-    )
-    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: packages)
-    monkeypatch.setattr(
-        os,
-        "environ",
-        {"CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP": 1},
-    )
-
     expected = set(
         (
             actions.ActionMessage(
                 level="WARNING",
-                id="SKIP_OUTDATED_PACKAGE_CHECK",
-                title="Skip package not up to date check",
-                description=(
-                    "Detected 'CONVERT2RHEL_OUTDATED_PACKAGE_CHECK_SKIP' environment variable, we will skip "
-                    "the package up-to-date check.\n"
-                    "Beware, this could leave your system in a broken state."
-                ),
-            ),
-            actions.ActionMessage(
-                level="WARNING",
-                id="OUTDATED_PACKAGE_MESSAGE",
+                id="OUT_OF_DATE_PACKAGES",
                 title="Outdated packages detected",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
                 remediations="Run yum update to update all the packages on the system.",
+                variables={},
             ),
         )
     )
-    package_updates_action.run()
+
     assert expected.issuperset(package_updates_action.messages)
     assert expected.issubset(package_updates_action.messages)
 
