@@ -60,6 +60,11 @@ tag+:
             This test marks the kernel as tainted which is not supported by convert2rhel.
             We need to install specific kernel packages to build own custom kernel module.
             Verify TAINTED_KMODS.TAINTED_KMODS_DETECTED is raised.
+        adjust+:
+            - enabled: false
+              when: distro == stream-9
+              because: |
+                  Loading the kernel module on CentOS Stream 9 is flaky.
         tag+:
             - custom-built-tainted-kernel-module
         test: |

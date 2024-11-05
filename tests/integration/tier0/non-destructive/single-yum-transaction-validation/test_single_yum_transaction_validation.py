@@ -217,6 +217,9 @@ def test_override_exclude_list_in_yum_config(convert2rhel, outdated_kernel, yum_
         4/ Run the analysis and check that the transaction was successful.
     """
     if os.environ["TMT_REBOOT_COUNT"] == "1":
+        # The downgrade of a kernel causes an unavailable kernel module to load
+        if "oracle" in SystemInformationRelease.distribution:
+            shell("rmmod nvme_common")
         try:
             with convert2rhel(
                 "analyze --serverurl {} --username {} --password {} --debug -y".format(

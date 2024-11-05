@@ -55,18 +55,5 @@ def test_system_not_updated(shell, convert2rhel, downgrade_and_versionlock):
     ) as c2r:
         c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
         c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
-        c2r.expect_exact("ERROR - (OVERRIDABLE) PACKAGE_UPDATES::OUT_OF_DATE_PACKAGES - Outdated packages detected")
-
-    assert c2r.exitstatus == 2
-
-    # Run utility until the reboot
-    with convert2rhel(
-        "-y --serverurl {} --username {} --password {} --debug".format(
-            TEST_VARS["RHSM_SERVER_URL"],
-            TEST_VARS["RHSM_SCA_USERNAME"],
-            TEST_VARS["RHSM_SCA_PASSWORD"],
-        )
-    ) as c2r:
-        c2r.expect("WARNING - YUM/DNF versionlock plugin is in use. It may cause the conversion to fail.")
-        c2r.expect(r"WARNING - The system has \d+ package\(s\) not updated")
+        c2r.expect_exact("(WARNING) PACKAGE_UPDATES::OUT_OF_DATE_PACKAGES - Outdated packages detected")
     assert c2r.exitstatus == 0
