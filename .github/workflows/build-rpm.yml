@@ -61,10 +61,6 @@ jobs:
             convert2rhel/__init__.py
           retention-days: 1
 
-      - name: Trigger Manpage Generation
-        run: |
-          oamg/convert2rhel/.github/workflows/generate_manpage.yml@main
-
   build_rpms:
     needs:
       - setup_version
