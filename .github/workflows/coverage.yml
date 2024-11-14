@@ -45,7 +45,7 @@ jobs:
       - name: Upload coverage to Codecov - First Attempt
         id: UploadFirstAttempt
         continue-on-error: true
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -63,7 +63,7 @@ jobs:
       - name: Upload coverage to Codecov - Second Attempt
         id: UploadSecondAttempt
         if: steps.UploadFirstAttempt.outcome == 'failure'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
