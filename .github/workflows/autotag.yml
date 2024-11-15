@@ -1,6 +1,7 @@
 name: Auto Tag
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "1 12 * * 5"
 
@@ -26,6 +27,3 @@ jobs:
           git config --local user.name "GitHub Actions"
           git tag ${{ steps.determine_tag.outputs.tag  }}
           git push origin ${{ steps.determine_tag.outputs.tag }}
-
-  call-build-rpms:
-    uses: oamg/convert2rhel/.github/workflows/build-rpm.yml@main
