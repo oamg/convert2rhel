@@ -19,6 +19,7 @@ __metaclass__ = type
 
 
 import tempfile
+import re
 
 from contextlib import closing
 
@@ -29,6 +30,7 @@ from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import TMP_DIR, store_content_to_file
+from convert2rhel.pkgmanager import TYPE, call_yum_cmd
 
 
 DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
@@ -58,30 +60,91 @@ def get_rhel_repoids():
     return repos_needed
 
 
-def get_rhel_repos_to_disable():
-    """Get the list of repositories which should be disabled when performing pre-conversion checks.
+class DisableReposDuringAnalysis(object):
+    _instance = None
 
-    Avoid downloading backup and up-to-date checks from them. The output list can looks like: ["rhel*"]
+    def __new__(cls):
+        """Singleton pattern"""
+        if cls._instance is None:
+            cls._instance = super(DisableReposDuringAnalysis, cls).__new__(cls)
+            # Cannot call the _set_rhel_repos_to_disable() directly due Python 2 support
+            cls._instance._initialized = False
 
-    .. note::
-        If --enablerepo switch is used together with the --no-rhsm, we will return a combination of repositories to disable as following:
+        return cls._instance
 
-        >>> # tool_opts.enablerepo comes from the CLI option `--enablerepo`.
-        >>> repos_to_disable = ["rhel*"]
-        >>> repos_to_disable.extend(tool_opts.enablerepo) # returns: ["rhel*", "my-rhel-repo-mirror"]
+    def __init__(self):
+        if self._initialized:
+            return
 
-    :return: List of repositories to disable when performing checks.
-    :rtype: list[str]
+        self._set_rhel_repos_to_disable()
+        self._instance._initialized = True
+
+    def _set_rhel_repos_to_disable(self):
+        """Set the list of repositories which should be disabled when performing pre-conversion checks.
+
+        Avoid downloading backup and up-to-date checks from them. The output list can looks like: ["rhel*"]
+
+        .. note::
+            If --enablerepo switch is used together with the --no-rhsm, we will return a combination of repositories to disable as following:
+
+            >>> # tool_opts.enablerepo comes from the CLI option `--enablerepo`.
+            >>> self.repos_to_disable = ["rhel*"]
+            >>> self.repos_to_disable.extend(tool_opts.enablerepo) # returns: ["rhel*", "my-rhel-repo-mirror"]
+
+        """
+        # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
+        self.repos_to_disable = ["rhel*"]
+
+        # this is for the case where the user configures e.g. [my-rhel-repo-mirror] on the system and leaves it enabled
+        # before running convert2rhel - we want to prevent the checks from accessing it as it contains packages for RHEL
+        if tool_opts.no_rhsm and tool_opts.enablerepo:
+            logger.debug("Preparing list of RHEL repositories to be disabled during analysis.")
+            self._set_custom_repos()
+
+        return self.repos_to_disable
+
+    def _set_custom_repos(self):
+        """If we are using YUM pkg manager, we need to check if all the provided reponames are accessible.
+        DNF package manager can handle situation of unreachable repo by skipping it."""
+        if TYPE == "dnf":
+            self.repos_to_disable.extend(tool_opts.enablerepo)
+            return
+
+        # pkg manager is yum
+        # copy the enablerepo list to avoid changing the original one
+        repos_to_check = list(tool_opts.enablerepo)
+        self.repos_to_disable.extend(_get_valid_custom_repos(repos_to_check))
+
+
+def _get_valid_custom_repos(repos_to_check):
+    """Check if provided repo IDs are accessible.
+    :arg repos_to_check: Repo IDs to be checked
+    :arg type: List
+    :return: Accessible repositories
+    :rtype: List
     """
-    # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
-    repos_to_disable = ["rhel*"]
+    if not repos_to_check:
+        return []
 
-    # this is for the case where the user configures e.g. [my-rhel-repo-mirror] on the system and leaves it enabled
-    # before running convert2rhel - we want to prevent the checks from accessing it as it contains packages for RHEL
-    if tool_opts.no_rhsm:
-        repos_to_disable.extend(tool_opts.enablerepo)
+    args = ["-v", "--setopt=*.skip_if_unavailable=False"]
+    output, ret_code = call_yum_cmd(
+        command="makecache", args=args, print_output=False, disable_repos=repos_to_check, enable_repos=[]
+    )
 
-    return repos_to_disable
+    if ret_code:
+        reponame_regex = r"Error getting repository data for ([^,]+),"
+        problematic_reponame_line = re.search(reponame_regex, output)
+        if problematic_reponame_line:
+            reponame = problematic_reponame_line.group(1)
+            logger.debug(
+                "Removed the {reponame} from the list of repositories to be disable during analysis as is inaccessible now.".format(
+                    reponame=reponame
+                )
+            )
+            repos_to_check.remove(reponame)
+            return _get_valid_custom_repos(repos_to_check)
+
+    return repos_to_check
 
 
 def get_rhel_disable_repos_command(disable_repos):

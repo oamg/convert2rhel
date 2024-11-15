@@ -60,7 +60,8 @@ class RestorablePackage(RestorableChange):
         self.varsdir = varsdir
 
         # RHELC-884 disable the RHEL repos to avoid downloading pkg from them.
-        self.disable_repos = disable_repos or repo.get_rhel_repos_to_disable()
+        disable_repos_ints = repo.DisableReposDuringAnalysis()
+        self.disable_repos = disable_repos or disable_repos_ints.repos_to_disable
 
         self._backedup_pkgs_paths = []
 

@@ -78,24 +78,6 @@ def test_get_rhel_repoids_el7(pretend_os, is_els_release, expected, monkeypatch)
 
 
 @pytest.mark.parametrize(
-    ("no_rhsm", "enablerepo", "disablerepos"),
-    (
-        (False, [], ["rhel*"]),
-        (True, ["test-repo"], ["rhel*", "test-repo"]),
-        (True, [], ["rhel*"]),
-        (False, ["test-repo"], ["rhel*"]),
-    ),
-)
-def test_get_rhel_repos_to_disable(monkeypatch, global_tool_opts, no_rhsm, enablerepo, disablerepos):
-    monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
-    global_tool_opts.enablerepo = enablerepo
-    global_tool_opts.no_rhsm = no_rhsm
-
-    repos = repo.get_rhel_repos_to_disable()
-    assert repos == disablerepos
-
-
-@pytest.mark.parametrize(
     ("disable_repos", "command"),
     (
         ([], []),
@@ -189,3 +171,113 @@ def test_write_temporary_repofile_store_failure(tmpdir, monkeypatch):
     assert "STORE_REPOFILE_FAILED" in execinfo._excinfo[1].id
     assert "Failed to store a repository file" in execinfo._excinfo[1].title
     assert "test" in execinfo._excinfo[1].description
+
+
+class TestDisableReposDuringAnalysis:
+    def test_singleton(self, monkeypatch):
+        """Test if the singleton works properly and only 1 instance is created."""
+        # Force remove the singleton instance
+        repo.DisableReposDuringAnalysis._instance = None
+
+        get_rhel_repos_to_disable = mock.Mock()
+        monkeypatch.setattr(repo.DisableReposDuringAnalysis, "_set_rhel_repos_to_disable", get_rhel_repos_to_disable)
+
+        singleton1 = repo.DisableReposDuringAnalysis()
+        singleton2 = repo.DisableReposDuringAnalysis()
+
+        assert singleton1 is singleton2
+        assert get_rhel_repos_to_disable.call_count == 1
+
+        # Force remove the singleton instance
+        repo.DisableReposDuringAnalysis._instance = None
+
+    @pytest.mark.parametrize(
+        ("disable_repos", "yum_output", "result"),
+        (
+            (
+                ["repo1", "repo2", "repo3"],
+                [
+                    (
+                        """Loading "fastestmirror" plugin
+                        Config time: 0.003
+
+
+                        Error getting repository data for repo1, repository not found""",
+                        1,
+                    ),
+                    ("", 0),
+                ],
+                ["repo2", "repo3"],
+            ),
+            ([], "Some testing output, won't be called", []),
+            (["repo1", "repo2"], [("Message causing exit code 1", 1)], ["repo1", "repo2"]),
+            (
+                ["repo1"],
+                [("All fine", 0)],
+                ["repo1"],
+            ),
+        ),
+    )
+    def test_get_valid_custom_repos(self, yum_output, disable_repos, result, monkeypatch):
+        """Test parsing of the yum output and getting the unavailable repositories."""
+        monkeypatch.setattr(repo, "call_yum_cmd", mock.Mock(side_effect=yum_output))
+
+        output = repo._get_valid_custom_repos(disable_repos)
+
+        assert output == result
+
+    @pytest.mark.parametrize(
+        ("no_rhsm", "enablerepo", "disablerepos"),
+        (
+            (False, [], ["rhel*"]),
+            (True, ["test-repo"], ["rhel*", "test-repo"]),
+            (True, [], ["rhel*"]),
+            (False, ["test-repo"], ["rhel*"]),
+        ),
+    )
+    def test_get_rhel_repos_to_disable_dnf(self, monkeypatch, global_tool_opts, no_rhsm, enablerepo, disablerepos):
+        """Test getting the repositories to be disabled on systems with DNF. On DNF there is no need to check if
+        repositories for disabling are accessible. The package manager handles it well.
+        """
+        # Force remove the singleton instance
+        repo.DisableReposDuringAnalysis._instance = None
+
+        monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(repo, "TYPE", "dnf")
+        global_tool_opts.enablerepo = enablerepo
+        global_tool_opts.no_rhsm = no_rhsm
+
+        repos = repo.DisableReposDuringAnalysis().repos_to_disable
+        assert repos == disablerepos
+
+        # Force remove the singleton instance
+        repo.DisableReposDuringAnalysis._instance = None
+
+    @pytest.mark.parametrize(
+        ("no_rhsm", "enablerepo", "disablerepos"),
+        (
+            (False, [], ["rhel*"]),
+            (True, ["test-repo"], ["rhel*", "test-repo"]),
+            (True, [], ["rhel*"]),
+            (False, ["test-repo"], ["rhel*"]),
+        ),
+    )
+    def test_get_rhel_repos_to_disable_yum(self, monkeypatch, global_tool_opts, no_rhsm, enablerepo, disablerepos):
+        """Test getting the repositories to be disabled on systems with YUM. With YUM all the repositories needs
+        to be accessible.
+        """
+        # Force remove the singleton instance
+        repo.DisableReposDuringAnalysis._instance = None
+
+        monkeypatch.setattr(repo, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(repo, "TYPE", "yum")
+        # Set the output of yum makecache empty (no problem, simulating the inaccessible repo is in different test)
+        monkeypatch.setattr(repo, "call_yum_cmd", mock.Mock(return_value=("", 0)))
+        global_tool_opts.enablerepo = enablerepo
+        global_tool_opts.no_rhsm = no_rhsm
+
+        repos = repo.DisableReposDuringAnalysis().repos_to_disable
+        assert repos == disablerepos
+
+        # Force remove the singleton instance
+        repo.DisableReposDuringAnalysis._instance = None

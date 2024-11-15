@@ -243,6 +243,7 @@ def call_yum_cmd(
         # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
         # through subscription-manager
         repos_to_enable = system_info.get_enabled_rhel_repos()
+        logger.debug("Custom epos in yum cmd: {repos_to_enable}".format(repos_to_enable=repos_to_enable))
 
     for repo in repos_to_enable:
         cmd.append("--enablerepo={}".format(repo))
