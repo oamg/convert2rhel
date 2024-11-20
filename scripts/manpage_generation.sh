@@ -16,7 +16,8 @@ CURRENT_VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
 echo "Current version: $CURRENT_VER"
 
 # Generate the manpage using argparse-manpage
-PYTHONPATH=. /usr/bin/python /home/runner/.local/bin/argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
+PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $CURRENT_VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
+
 
 # Check for differences in the generated manpage
 if ! git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
