@@ -60,12 +60,6 @@ class InstallRhelKernel(actions.Action):
             return
 
         loggerinst.info("RHEL kernel has been verified to be on the system.")
-        self.add_message(
-            level="INFO",
-            id="RHEL_KERNEL_INSTALL_VERIFIED",
-            title="RHEL kernel install verified",
-            description="The RHEL kernel has been verified to be on the system.",
-        )
 
 
 class FixInvalidGrub2Entries(actions.Action):

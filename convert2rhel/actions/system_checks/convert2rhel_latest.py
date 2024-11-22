@@ -192,42 +192,21 @@ class Convert2rhelLatest(actions.Action):
                     diagnosis=diagnosis,
                 )
             else:
-                if int(system_info.version.major) <= 6:
-                    logger.warning(
+                self.set_result(
+                    level="OVERRIDABLE",
+                    id="OUT_OF_DATE",
+                    title="Outdated convert2rhel version detected",
+                    description="An outdated convert2rhel version has been detected",
+                    diagnosis=(
                         "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                        "We encourage you to update to the latest version.".format(
+                        "Only the latest version is supported for conversion.".format(
                             formatted_convert2rhel_version, formatted_available_version
                         )
-                    )
-                    self.add_message(
-                        level="WARNING",
-                        id="OUTDATED_CONVERT2RHEL_VERSION",
-                        title="Outdated convert2rhel version detected",
-                        description="An outdated convert2rhel version has been detected",
-                        diagnosis=(
-                            "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                            "We encourage you to update to the latest version.".format(
-                                formatted_convert2rhel_version, formatted_available_version
-                            )
-                        ),
-                    )
-
-                else:
-                    self.set_result(
-                        level="OVERRIDABLE",
-                        id="OUT_OF_DATE",
-                        title="Outdated convert2rhel version detected",
-                        description="An outdated convert2rhel version has been detected",
-                        diagnosis=(
-                            "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                            "Only the latest version is supported for conversion.".format(
-                                formatted_convert2rhel_version, formatted_available_version
-                            )
-                        ),
-                        remediations="If you want to disregard this check, set the allow_older_version inhibitor"
+                    ),
+                    remediations="If you want to disregard this check, set the allow_older_version inhibitor"
                         " override in the /etc/convert2rhel.ini config file to true.",
-                    )
-                    return
+                )
+                return
 
         logger.info("Latest available convert2rhel version is installed.")
 

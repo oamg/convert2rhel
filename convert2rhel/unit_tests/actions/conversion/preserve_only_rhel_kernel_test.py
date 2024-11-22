@@ -111,27 +111,15 @@ class TestInstallRhelKernel:
 
         assert handle_no_newer_rhel_kernel_available.call_count == no_newer_kernel_call
 
-    def test_verify_rhel_kernel_installed(self, monkeypatch, install_rhel_kernel_instance):
+    def test_verify_rhel_kernel_installed(self, monkeypatch, install_rhel_kernel_instance, caplog):
         monkeypatch.setattr(
             pkghandler,
             "get_installed_pkgs_by_key_id",
             GetInstalledPkgsByKeyIdMocked(return_value=[create_pkg_information(name="kernel")]),
         )
         install_rhel_kernel_instance.run()
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="INFO",
-                    id="RHEL_KERNEL_INSTALL_VERIFIED",
-                    title="RHEL kernel install verified",
-                    description="The RHEL kernel has been verified to be on the system.",
-                    diagnosis=None,
-                    remediations=None,
-                ),
-            )
-        )
-        assert expected.issuperset(install_rhel_kernel_instance.messages)
-        assert expected.issubset(install_rhel_kernel_instance.messages)
+
+        assert "RHEL kernel has been verified to be on the system." in caplog.text
 
     def test_verify_rhel_kernel_installed_not_installed(self, monkeypatch, install_rhel_kernel_instance):
         monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_key_id", mock.Mock(return_value=[]))
