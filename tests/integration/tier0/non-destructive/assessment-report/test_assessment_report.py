@@ -68,10 +68,10 @@ def test_failures_and_skips_in_report(convert2rhel):
         # Verify the ordering and contents
         # of the skip and error header
         # Success header first
-        c2r.expect_exact("Success (No changes needed)")
+        c2r.expect_exact("Success (No action required)")
 
         # Info header
-        c2r.expect_exact("Info (No changes needed)")
+        c2r.expect_exact("Info (No action required)")
 
         # Warning header
         c2r.expect_exact("Warning (Review and fix if needed)")
@@ -119,7 +119,7 @@ def test_successful_report(convert2rhel):
 
         # Verify that only success header printed out, assert if error or skip header appears
         c2r_report_header_index = c2r.expect(
-            ["No changes needed", "Must fix before conversion", "Could not be checked due to other failures"],
+            ["No action required", "Must fix before conversion", "Could not be checked due to other failures"],
             timeout=300,
         )
         if c2r_report_header_index == 0:
@@ -168,7 +168,7 @@ def test_convert_method_successful_report(convert2rhel):
 
         # Verify that none of the headers is present, assert if it is present
         c2r_report_header_index = c2r.expect(
-            [EOF, "No changes needed", "Must fix before conversion", "Could not be checked due to other failures"],
+            [EOF, "No action required", "Must fix before conversion", "Could not be checked due to other failures"],
             timeout=300,
         )
         if c2r_report_header_index == 0:
