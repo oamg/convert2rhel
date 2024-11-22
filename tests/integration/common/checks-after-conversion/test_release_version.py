@@ -33,6 +33,12 @@ DISTRO_CONVERSION_MAPPING = {
         {"id": "Seafoam Ocelot", "name": "AlmaLinux", "version": "9.4"},
         {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.4"},
     ),
+    "Red Hat Enterprise Linux release 9.5 (Plow)": (
+        {"id": "null", "name": "Oracle Linux Server", "version": "9.5"},
+        {"id": "null", "name": "CentOS Stream", "version": "9"},
+        {"id": "Teal Serval", "name": "AlmaLinux", "version": "9.5"},
+        {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.5"},
+    ),
 }
 
 
