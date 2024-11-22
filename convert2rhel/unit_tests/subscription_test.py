@@ -1098,6 +1098,8 @@ def test_enable_repos_toolopts_enablerepo(
 )
 @centos7
 def test_update_rhsm_custom_facts(subprocess, expected, pretend_os, monkeypatch, caplog):
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", mock.Mock(return_value="whatever"))
+
     cmd = ["subscription-manager", "facts", "--update"]
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
@@ -1118,7 +1120,16 @@ def test_update_rhsm_custom_facts_no_rhsm(global_tool_opts, caplog, monkeypatch)
     global_tool_opts.no_rhsm = True
 
     subscription.update_rhsm_custom_facts()
-    assert "Skipping updating RHSM custom facts." in caplog.records[-1].message
+    assert "Option to not use RHSM detected. Skipping updating RHSM custom facts." in caplog.records[-1].message
+
+
+def test_update_rhsm_custom_facts_no_sub_man(global_tool_opts, caplog, monkeypatch):
+    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", mock.Mock(return_value=[]))
+    subscription.update_rhsm_custom_facts()
+    assert (
+        "The subscription-manager package is not installed. Skipping updating RHSM custom facts."
+        in caplog.records[-1].message
+    )
 
 
 def test_get_rhsm_facts(monkeypatch, global_tool_opts, tmpdir):

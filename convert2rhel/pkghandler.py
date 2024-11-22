@@ -130,7 +130,7 @@ def get_installed_pkg_information(pkg_name="*"):
 
     :param pkg_name: Full name of a package to check their signature.  If not given, information about all installed packages is returned.
     :type pkg_obj: str
-    :return: Return the package signature.
+    :return: Return a list of PackageInformation objects holding information about matching packages.
     :rtype: list[PackageInformation]
     """
     cmd = [

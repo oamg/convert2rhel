@@ -286,9 +286,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
             == 0
         )
     # There should be an Error reported during the analysis,
-    # but the report should be printed out successfully
-    # TODO(danmyway) uncomment when https://issues.redhat.com/browse/RHELC-1728 gets resolved
-    # assert c2r.exitstatus == 0
+    assert c2r.exitstatus == 2
 
     with convert2rhel("--debug") as c2r:
         # We need to get past the data collection acknowledgement

@@ -894,22 +894,29 @@ def update_rhsm_custom_facts():
     the conversion with the candlepin server, thus, propagating the
     "breadcrumbs" from convert2rhel as RHSM facts.
     """
-    if not tool_opts.no_rhsm:
-        logger.info("Updating RHSM custom facts collected during the conversion.")
-        cmd = ["subscription-manager", "facts", "--update"]
-        output, ret_code = utils.run_subprocess(cmd, print_output=False)
+    if tool_opts.no_rhsm:
+        logger.info("Option to not use RHSM detected. Skipping updating RHSM custom facts.")
+        return None, None
 
-        if ret_code != 0:
-            logger.warning(
-                "Failed to update the RHSM custom facts with return code '%s' and output '%s'.",
-                ret_code,
-                output,
-            )
-            return ret_code, output
-        else:
-            logger.info("RHSM custom facts uploaded successfully.")
-    else:
-        logger.info("Skipping updating RHSM custom facts.")
+    # It may happen that this facts updating function is called before we install the sub-man packages (e.g. when an
+    # exception is raised early)
+    if not pkghandler.get_installed_pkg_information("subscription-manager"):
+        logger.info("The subscription-manager package is not installed. Skipping updating RHSM custom facts.")
+        return None, None
+
+    logger.info("Updating RHSM custom facts collected during the conversion.")
+    cmd = ["subscription-manager", "facts", "--update"]
+    output, ret_code = utils.run_subprocess(cmd, print_output=False)
+
+    if ret_code != 0:
+        logger.warning(
+            "Failed to update the RHSM custom facts with return code '%s' and output '%s'.",
+            ret_code,
+            output,
+        )
+        return ret_code, output
+
+    logger.info("RHSM custom facts uploaded successfully.")
     return None, None
 
 
