@@ -113,7 +113,7 @@ class Breadcrumbs:
             if not self.activity:
                 raise ValueError("Activity is not set in tool_opts")
         except Exception as e:
-            print(f"Error setting activity: {e}")
+            logger.logging.warnning(f"Error setting activity: {e}")
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
@@ -123,7 +123,7 @@ class Breadcrumbs:
                 raise ValueError("No installed package objects found for convert2rhel")
             self._pkg_object = pkg_objects[0]
         except Exception as e:
-            print(f"Error setting pkg_object: {e}")
+            logger.logging.warnning(f"Error setting pkg_object: {e}")
 
     def _set_executed(self):
         """Set how was Convert2RHEL executed"""
@@ -132,7 +132,7 @@ class Breadcrumbs:
             if not self.executed:
                 raise ValueError("Executed command is not set")
         except Exception as e:
-            print(f"Error setting executed: {e}")
+            logger.logging.warnning(f"Error setting executed: {e}")
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
@@ -141,7 +141,7 @@ class Breadcrumbs:
             if not self.nevra:
                 raise ValueError("NEVRA is not set")
         except Exception as e:
-            print(f"Error setting nevra: {e}")
+            logger.logging.warnning(f"Error setting nevra: {e}")
 
     def _set_signature(self):
         """Set signature of installed Convert2RHEL"""
@@ -153,7 +153,7 @@ class Breadcrumbs:
             if not self.signature:
                 raise ValueError("Signature is not set")
         except Exception as e:
-            print(f"Error setting signature: {e}")
+            logger.logging.warnning(f"Error setting signature: {e}")
 
     def _set_started(self):
         """Set start time of activity"""
