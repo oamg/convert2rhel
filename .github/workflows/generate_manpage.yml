@@ -1,33 +1,40 @@
-name: Generate Manpages
+name: Update Manpages
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  generate-manpages:
+  update-manpages:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.10.13
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          pip install argparse-manpage six pexpect rpm
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pexpect
+        pip install argparse-manpage
 
-      - name: Install python3-rpm and python3-dnf package with apt-get
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-rpm python3-dnf
+    - name: Create and set permissions for config files
+      run: |
+        mkdir -p ~/.convert2rhel
+        echo "# Configuration content" > ~/.convert2rhel.ini
+        sudo cp ~/.convert2rhel.ini /etc/convert2rhel.ini
+        chmod 0600 ~/.convert2rhel.ini
+        sudo chmod 0600 /etc/convert2rhel.ini
 
-      - name: Generate Manpages
-        run: |
-          chmod +x scripts/manpage_generation.sh
-          bash scripts/manpage_generation.sh
+    - name: Generate manpages
+      run: |
+        PYTHONPATH=$(pwd) argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel 2.1.0" --prog="convert2rhel" --include man/distribution --include man/synopsis > "man/convert2rhel.8"
