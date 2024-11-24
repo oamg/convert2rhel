@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     python3-dev \
     rpm \
+    python3-rpm \
     librpm-dev \
     build-essential \
     libpopt-dev \
