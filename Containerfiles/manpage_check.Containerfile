@@ -24,8 +24,11 @@ WORKDIR /app
 # Copy the project files into the container
 COPY . /app
 
-# Set up entrypoint to run manpage_generation.sh
-COPY manpage_generation.sh /app/
+# Copy manpage_generation.sh from the scripts directory into the container
+COPY scripts/manpage_generation.sh /app/
+
+# Ensure the script is executable
 RUN chmod +x /app/manpage_generation.sh
 
+# Set up entrypoint to run manpage_generation.sh
 ENTRYPOINT ["/app/manpage_generation.sh"]
