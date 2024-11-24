@@ -1,11 +1,11 @@
-# Use a pre-configured image that includes rpm-python
+# Use the latest Fedora image as the base
 FROM quay.io/fedora/fedora:latest
 
 # Install system dependencies
 RUN dnf install -y \
     python3 \
     python3-pip \
-    python3-venv \
+    python3-virtualenv \
     rpm-devel \
     git \
     && dnf clean all
