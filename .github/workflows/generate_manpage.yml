@@ -26,7 +26,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pexpect
         pip install argparse-manpage
-        pip install rpm
+        pip install rpm-py-installer
 
     - name: Create and set permissions for config files
       run: |
