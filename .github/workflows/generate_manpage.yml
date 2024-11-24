@@ -23,8 +23,8 @@ jobs:
 
     - name: Build Podman image
       run: |
-        podman build -t manpage_check -f Containerfiles .
+        podman build -t convert2rhel-manpages -f Containerfiles/manpage_check.Containerfile .
 
     - name: Run Podman container
       run: |
-        podman run --rm manpage_check
+        podman run --rm convert2rhel-manpages
