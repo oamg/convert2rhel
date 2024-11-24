@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y \
     rpm \
     python3-rpm \
     build-essential \
-    libpopt-dev
+    libpopt-dev \
+    git
 
 # Create and activate a virtual environment
 RUN python3 -m venv /venv
