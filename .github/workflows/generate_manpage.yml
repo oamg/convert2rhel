@@ -23,7 +23,7 @@ jobs:
 
     - name: Build Podman image
       run: |
-        podman build -t manpage_check -f Containerfile .
+        podman build -t manpage_check -f Containerfiles .
 
     - name: Run Podman container
       run: |
