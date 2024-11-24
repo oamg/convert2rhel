@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-venv \
     rpm \
-    python3-rpm \
+    librpm-dev \
     build-essential \
     libpopt-dev \
     git
@@ -18,6 +18,10 @@ ENV PATH="/venv/bin:$PATH"
 # Install Python packages in the virtual environment
 RUN pip install --upgrade pip
 RUN pip install pexpect argparse-manpage
+
+# Install rpm-python bindings using pip within the virtual environment
+RUN pip install rpm-py-installer
+RUN rpm_py_installer --install-latest
 
 # Set the working directory
 WORKDIR /app
