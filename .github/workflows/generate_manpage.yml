@@ -16,29 +16,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
-    - name: Install dependencies
+    - name: Install Podman
       run: |
         sudo apt-get update
-        sudo apt-get install -y rpm
-        sudo apt-get install -y python3-rpm
-        sudo apt-get install -y build-essential libpopt-dev
-        python -m pip install --upgrade pip
-        pip install pexpect
-        pip install argparse-manpage
+        sudo apt-get -y install podman
 
-    - name: Create and set permissions for config files
+    - name: Build Podman image
       run: |
-        mkdir -p ~/.convert2rhel
-        echo "# Configuration content" > ~/.convert2rhel.ini
-        sudo cp ~/.convert2rhel.ini /etc/convert2rhel.ini
-        chmod 0600 ~/.convert2rhel.ini
-        sudo chmod 0600 /etc/convert2rhel.ini
+        podman build -t convert2rhel-manpages -f Containerfile .
 
-    - name: Generate manpages
+    - name: Run Podman container
       run: |
-        PYTHONPATH=$(pwd) argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel 2.1.0" --prog="convert2rhel" --include man/distribution --include man/synopsis > "man/convert2rhel.8"
+        podman run --rm convert2rhel-manpages
