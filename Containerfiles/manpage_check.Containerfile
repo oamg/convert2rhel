@@ -1,17 +1,14 @@
-# Use the latest Ubuntu image as the base
-FROM ubuntu:latest
+# Use a pre-configured image that includes rpm-python
+FROM quay.io/fedora/fedora:latest
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN dnf install -y \
     python3 \
+    python3-pip \
     python3-venv \
-    python3-dev \
-    rpm \
-    python3-rpm \
-    librpm-dev \
-    build-essential \
-    libpopt-dev \
-    git
+    rpm-devel \
+    git \
+    && dnf clean all
 
 # Create and activate a virtual environment
 RUN python3 -m venv /venv
