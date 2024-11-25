@@ -23,7 +23,7 @@ import logging
 import sys
 
 from convert2rhel import __version__, utils
-from convert2rhel.toolopts import tool_opts
+from convert2rhel.toolopts.__init__ import tool_opts
 from convert2rhel.toolopts.config import CliConfig, FileConfig
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME, POST_RPM_VA_LOG_FILENAME
 
