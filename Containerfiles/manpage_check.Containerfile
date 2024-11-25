@@ -5,20 +5,15 @@ FROM quay.io/fedora/fedora:latest
 RUN dnf install -y \
     python3 \
     python3-pip \
-    python3-virtualenv \
     python3-devel \
     rpm-devel \
     rpm-python \
     git \
     && dnf clean all
 
-# Create and activate a virtual environment
-RUN python3 -m venv /venv
-ENV PATH="/venv/bin:$PATH"
-
-# Install Python packages in the virtual environment
-RUN pip install --upgrade pip
-RUN pip install pexpect argparse-manpage
+# Install Python packages
+RUN pip3 install --upgrade pip
+RUN pip3 install pexpect argparse-manpage
 
 # Set the working directory
 WORKDIR /app
