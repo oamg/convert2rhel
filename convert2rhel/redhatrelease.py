@@ -36,7 +36,7 @@ def get_system_release_filepath():
     release_filepath = "/etc/system-release"  # RHEL 7/8 based OSes
     if os.path.isfile(release_filepath):
         return release_filepath
-    logger.critical("Error: Unable to find the /etc/system-release file containing the OS name and version")
+    logger.critical("Error: Unable to find the /etc/system-release file containing the OS name and version.")
 
 
 def get_system_release_content():

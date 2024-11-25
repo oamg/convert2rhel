@@ -169,7 +169,7 @@ class MoveGrubFiles(actions.Action):
                 )
                 continue
 
-            logger.info("Moving '{}' to '{}'".format(src_file, dst_file))
+            logger.info("Moving '{}' to '{}'.".format(src_file, dst_file))
 
             try:
                 shutil.move(src_file, dst_file)

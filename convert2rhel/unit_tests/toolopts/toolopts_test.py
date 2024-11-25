@@ -214,7 +214,7 @@ def test_handle_config_conflicts(config_sources, expected_message, expected_outp
                 ),
                 MockConfig(source="configuration file", username=None, org=None, activation_key=None, password=None),
             ],
-            "You have passed the RHSM password without an associated username. Please provide a username together"
+            "You have passed the RHSM password without an associated username. Provide a username together"
             " with the password.",
         ),
         # Config File - password without username
@@ -231,7 +231,7 @@ def test_handle_config_conflicts(config_sources, expected_message, expected_outp
                 ),
                 MockConfig(source="configuration file", username=None, org=None, activation_key=None, password="test"),
             ],
-            "You have passed the RHSM password without an associated username. Please provide a username together"
+            "You have passed the RHSM password without an associated username. Provide a username together"
             " with the password.",
         ),
         # CLI - username without password
@@ -248,7 +248,7 @@ def test_handle_config_conflicts(config_sources, expected_message, expected_outp
                 ),
                 MockConfig(source="configuration file", username=None, org=None, activation_key=None, password=None),
             ],
-            "You have passed the RHSM username without an associated password. Please provide a password together"
+            "You have passed the RHSM username without an associated password. Provide a password together"
             " with the username.",
         ),
         # Config File - username without password
@@ -265,7 +265,7 @@ def test_handle_config_conflicts(config_sources, expected_message, expected_outp
                 ),
                 MockConfig(source="configuration file", username="test", org=None, activation_key=None, password=None),
             ],
-            "You have passed the RHSM username without an associated password. Please provide a password together"
+            "You have passed the RHSM username without an associated password. Provide a password together"
             " with the username.",
         ),
         (

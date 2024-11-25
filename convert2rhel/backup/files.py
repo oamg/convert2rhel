@@ -65,7 +65,7 @@ class RestorableFile(RestorableChange):
                 logger.critical_no_exit("Error({}): {}".format(err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
-                    title="Failed to copy file to the backup directory.",
+                    title="Failed to copy file to the backup directory",
                     description=(
                         "Copying the current file has failed. This can lead to inconsistency during the rollbacks as "
                         "convert2rhel won't be able to restore the file in case of failures."
@@ -124,7 +124,7 @@ class RestorableFile(RestorableChange):
         if rollback:
             logger.task("Restore {} from backup".format(self.filepath))
         else:
-            logger.info("Restoring {} from backup".format(self.filepath))
+            logger.info("Restoring {} from backup.".format(self.filepath))
 
         if not self.enabled:
             logger.info("{} hasn't been backed up.".format(self.filepath))
@@ -201,10 +201,10 @@ class MissingFile(RestorableChange):
         logger.task("Remove file created during conversion {filepath}".format(filepath=self.filepath))
 
         if not os.path.isfile(self.filepath):
-            logger.info("File {filepath} wasn't created during conversion".format(filepath=self.filepath))
+            logger.info("File {filepath} wasn't created during conversion.".format(filepath=self.filepath))
         else:
             # Possible exceptions will be handled in the BackupController
             os.remove(self.filepath)
-            logger.info("File {filepath} removed".format(filepath=self.filepath))
+            logger.info("File {filepath} removed.".format(filepath=self.filepath))
 
             super(MissingFile, self).restore()

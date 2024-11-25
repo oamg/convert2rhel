@@ -49,7 +49,9 @@ class TestEus:
             (Version(9, 2), False),
         ),
     )
-    def test_els_warning_message(self, els_action, monkeypatch, global_tool_opts, version_string, message_reported):
+    def test_els_warning_message(
+        self, els_action, monkeypatch, global_tool_opts, version_string, message_reported, caplog
+    ):
         global_tool_opts.els = False
         monkeypatch.setattr(system_info, "version", version_string)
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
@@ -62,8 +64,9 @@ class TestEus:
                     level="WARNING",
                     id="ELS_COMMAND_LINE_OPTION_UNUSED",
                     title="The --els command line option is unused",
-                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to consider using the --els"
-                    " command line option to land on a system patched with the latest security errata.",
+                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to"
+                    " consider using the --els command line option to land on a system patched with the latest security"
+                    " errata.",
                 ),
             )
         )
@@ -73,3 +76,4 @@ class TestEus:
             assert expected.issubset(els_action.messages)
         else:
             assert els_action.messages == []
+            "Applicable only to conversions to RHEL 7." in caplog.records[-1].message

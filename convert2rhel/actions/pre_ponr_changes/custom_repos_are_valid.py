@@ -39,7 +39,10 @@ class CustomReposAreValid(actions.Action):
         logger.task("Check if --enablerepo repositories are accessible")
 
         if not tool_opts.enablerepo:
-            logger.info("Did not perform the check of repositories due to the use of RHSM for the conversion.")
+            logger.info(
+                "No repositories passed through --enablerepo. Skipping the check verifying the"
+                " accessibility of the repositories."
+            )
             return
 
         output, ret_code = call_yum_cmd(
@@ -53,7 +56,7 @@ class CustomReposAreValid(actions.Action):
                 id="UNABLE_TO_ACCESS_REPOSITORIES",
                 title="Unable to access repositories",
                 description="Access could not be made to the custom repositories.",
-                diagnosis="Unable to access the repositories passed through the --enablerepo option.",
+                diagnosis="Unable to access repositories passed through the --enablerepo option.",
                 remediations="For more details, see YUM/DNF output:\n{0}".format(output),
             )
             return

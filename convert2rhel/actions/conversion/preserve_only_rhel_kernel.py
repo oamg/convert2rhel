@@ -36,7 +36,7 @@ class InstallRhelKernel(actions.Action):
         non-RHEL kernel(s) conflicted with the available RHEL kernels.
         """
         super(InstallRhelKernel, self).run()
-        loggerinst.info("Verifying that RHEL kernel has been installed")
+        loggerinst.task("Verify RHEL kernel installation")
 
         rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
 
@@ -68,8 +68,8 @@ class FixInvalidGrub2Entries(actions.Action):
 
     def run(self):
         """
-        On systems derived from RHEL 8 and later, /etc/machine-id is being used to identify grub2 boot loader entries per
-        the Boot Loader Specification.
+        On systems derived from RHEL 8 and later, /etc/machine-id is being used to identify grub2 bootloader entries per
+        the bootloader Specification.
         However, at the time of executing convert2rhel, the current machine-id can be different from the machine-id from the
         time when the kernels were installed. If that happens:
         - convert2rhel installs the RHEL kernel, but it's not set as default
@@ -79,18 +79,18 @@ class FixInvalidGrub2Entries(actions.Action):
         """
         super(FixInvalidGrub2Entries, self).run()
 
+        loggerinst.task("Fix GRUB2 bootloader entries")
         if system_info.version.major < 8:
             # Applicable only on systems derived from RHEL 8 and later, and systems using GRUB2 (s390x uses zipl)
+            loggerinst.info("Skipped. Only relevant to RHEL 8 and newer.")
             return
-
-        loggerinst.info("Fixing GRUB boot loader entries.")
 
         machine_id = utils.get_file_content("/etc/machine-id").strip()
         boot_entries = glob.glob("/boot/loader/entries/*.conf")
         for entry in boot_entries:
-            # The boot loader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
+            # The bootloader entries in /boot/loader/entries/<machine-id>-<kernel-version>.conf
             if machine_id not in os.path.basename(entry):
-                loggerinst.debug("Removing boot entry {}".format(entry))
+                loggerinst.debug("Removing boot entry {}.".format(entry))
                 os.remove(entry)
 
         # Removing a boot entry that used to be the default makes grubby to choose a different entry as default,
@@ -99,24 +99,24 @@ class FixInvalidGrub2Entries(actions.Action):
         if ret_code:
             # Not setting the default entry shouldn't be a deal breaker and the reason to stop the conversions,
             # grub should pick one entry in any case.
-            description = "Couldn't get the default GRUB2 boot loader entry:\n{}".format(output)
+            description = "Couldn't get the default GRUB2 bootloader entry:\n{}".format(output)
             loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
                 id="UNABLE_TO_GET_GRUB2_BOOT_LOADER_ENTRY",
-                title="Unable to get the GRUB2 boot loader entry",
+                title="Unable to get the GRUB2 bootloader entry",
                 description=description,
             )
             return
-        loggerinst.debug("Setting RHEL kernel {} as the default boot loader entry.".format(output.strip()))
+        loggerinst.debug("Setting RHEL kernel {} as the default bootloader entry.".format(output.strip()))
         output, ret_code = utils.run_subprocess(["/usr/sbin/grubby", "--set-default", output.strip()])
         if ret_code:
-            description = "Couldn't set the default GRUB2 boot loader entry:\n{}".format(output)
+            description = "Couldn't set the default GRUB2 bootloader entry:\n{}".format(output)
             loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
                 id="UNABLE_TO_SET_GRUB2_BOOT_LOADER_ENTRY",
-                title="Unable to set the GRUB2 boot loader entry",
+                title="Unable to set the GRUB2 bootloader entry",
                 description=description,
             )
 
@@ -134,7 +134,7 @@ class FixDefaultKernel(actions.Action):
         """
         super(FixDefaultKernel, self).run()
 
-        loggerinst.info("Checking for incorrect boot kernel")
+        loggerinst.task("Check for default boot kernel in /etc/sysconfig/kernel")
         kernel_sys_cfg = utils.get_file_content("/etc/sysconfig/kernel")
 
         possible_kernels = ["kernel-uek", "kernel-plus"]
@@ -143,22 +143,29 @@ class FixDefaultKernel(actions.Action):
             None,
         )
         if kernel_to_change:
-            description = "Detected leftover boot kernel, changing to RHEL kernel"
-            loggerinst.warning(description)
+            diagnosis = "Detected default boot kernel {} in /etc/sysconfig/kernel.".format(kernel_to_change)
+            # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
+            new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major == 7 else "kernel-core")
+            loggerinst.warning(diagnosis)
             self.add_message(
                 level="WARNING",
                 id="LEFTOVER_BOOT_KERNEL_DETECTED",
-                title="Leftover boot kernel detected",
-                description=description,
+                title="Leftover default boot kernel detected",
+                diagnosis=diagnosis,
+                description="Some systems have the default boot kernel in /etc/sysconfig/kernel set to a distribution"
+                " specific kernel even after such a kernel is uninstalled. We have changed it to {}.".format(
+                    new_kernel_str
+                ),
             )
-            # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
-            new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major == 7 else "kernel-core")
-
             kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
             utils.store_content_to_file("/etc/sysconfig/kernel", kernel_sys_cfg)
-            loggerinst.info("Boot kernel {} was changed to {}".format(kernel_to_change, new_kernel_str))
+            loggerinst.info(
+                "Default boot kernel {} was changed to {} in /etc/sysconfig/kernel.".format(
+                    kernel_to_change, new_kernel_str
+                )
+            )
         else:
-            loggerinst.debug("Boot kernel validated.")
+            loggerinst.debug("The default boot kernel is correct.")
 
 
 class KernelPkgsInstall(actions.Action):
@@ -169,18 +176,20 @@ class KernelPkgsInstall(actions.Action):
         """Remove non-RHEL kernels."""
         super(KernelPkgsInstall, self).run()
 
+        loggerinst.task("Remove non-RHEL kernels")
+
         kernel_pkgs_to_install = self.remove_non_rhel_kernels()
         if kernel_pkgs_to_install:
             self.install_additional_rhel_kernel_pkgs(kernel_pkgs_to_install)
 
     def remove_non_rhel_kernels(self):
-        loggerinst.info("Searching for non-RHEL kernels ...")
+        loggerinst.info("Searching for non-RHEL kernels.")
         non_rhel_kernels = pkghandler.get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel, "kernel*")
         if not non_rhel_kernels:
             loggerinst.info("None found.")
             return None
 
-        loggerinst.info("Removing non-RHEL kernels\n")
+        loggerinst.info("Removing detected non-RHEL kernels.\n")
         pkghandler.print_pkg_info(non_rhel_kernels)
         pkgs_to_remove = [pkghandler.get_pkg_nvra(pkg) for pkg in non_rhel_kernels]
         utils.remove_pkgs(pkgs_to_remove)
@@ -198,7 +207,7 @@ class KernelPkgsInstall(actions.Action):
         pkg_names = [p.nevra.name.replace(ol_kernel_ext, "", 1) for p in additional_pkgs]
         for name in set(pkg_names):
             if name != "kernel":
-                loggerinst.info("Installing RHEL {}".format(name))
+                loggerinst.info("Installing RHEL {}.".format(name))
                 pkgmanager.call_yum_cmd("install", args=[name])
 
 
@@ -217,4 +226,5 @@ class UpdateKernel(actions.Action):
         """
         super(UpdateKernel, self).run()
 
+        loggerinst.task("Update RHEL kernel")
         pkghandler.update_rhel_kernel()

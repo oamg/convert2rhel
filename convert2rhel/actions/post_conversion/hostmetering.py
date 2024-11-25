@@ -69,8 +69,8 @@ class ConfigureHostMetering(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="INSTALL_HOST_METERING_FAILURE",
-                title="Failed to install host metering package.",
-                description="When installing host metering package an error occurred meaning we can't"
+                title="Failed to install the host-metering package",
+                description="When installing the host-metering package an error occurred meaning we can't"
                 " enable host metering on the system.",
                 diagnosis="`yum install host-metering` command returned {ret_install} with message {output}".format(
                     ret_install=ret_install, output=output
@@ -89,9 +89,9 @@ class ConfigureHostMetering(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="CONFIGURE_HOST_METERING_FAILURE",
-                title="Failed to enable and start host metering service.",
+                title="Failed to enable and start the host metering service",
                 description="The host metering service failed to start"
-                " successfully and won't be able to keep track.",
+                " successfully and won't be able to report on the use of the system for the billing purposes.",
                 diagnosis="Command {command} failed with {error_message}".format(
                     command=command, error_message=error_message
                 ),
@@ -109,7 +109,7 @@ class ConfigureHostMetering(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="HOST_METERING_NOT_RUNNING",
-                title="Host metering service is not running.",
+                title="Host metering service is not running",
                 description="host-metering.service is not running.",
                 remediations="You can try to start the service manually"
                 " by running following command:\n"
@@ -126,7 +126,7 @@ class ConfigureHostMetering(actions.Action):
         :rtype: bool
         """
         if tool_opts.configure_host_metering is None:
-            logger.debug("You have not enabled configuration of host metering. Skipping it.")
+            logger.info("You have not enabled configuration of host metering. Skipping it.")
             return False
 
         if tool_opts.configure_host_metering not in ("force", "auto"):
@@ -152,19 +152,22 @@ class ConfigureHostMetering(actions.Action):
         if tool_opts.configure_host_metering == "force":
             logger.warning(
                 "You've set the host metering setting to 'force'."
-                " Please note that this option is mainly used for testing and will configure host-metering unconditionally. "
-                " For generic usage please use the 'auto' option."
+                " Note that this option is mainly used for testing and will configure host-metering unconditionally. "
+                " For generic usage use the 'auto' option."
             )
             self.add_message(
                 level="WARNING",
                 id="FORCED_CONFIGURE_HOST_METERING",
                 title="Configuration of host metering set to 'force'",
-                description="Please note that this option is mainly used for testing and"
+                description="Note that this option is mainly used for testing and"
                 " will configure host-metering unconditionally."
-                " For generic usage please use the 'auto' option.",
+                " For generic usage use the 'auto' option.",
             )
         elif tool_opts.configure_host_metering == "auto":
-            logger.debug("Automatic detection of host hyperscaler and configuration.")
+            logger.debug(
+                "Configuration of host metering set to 'auto' - host-metering will be enabled based on"
+                " a detected hyperscaler."
+            )
 
         return True
 

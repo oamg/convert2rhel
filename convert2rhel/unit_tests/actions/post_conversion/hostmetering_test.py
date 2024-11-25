@@ -167,7 +167,7 @@ def test_configure_host_metering(
             hostmetering_instance,
             level="ERROR",
             id="HOST_METERING_NOT_RUNNING",
-            title="Host metering service is not running.",
+            title="Host metering service is not running",
             description="host-metering.service is not running.",
             remediations="You can try to start the service manually"
             " by running following command:\n"
@@ -209,9 +209,9 @@ def test_configure_host_metering(
                     level="WARNING",
                     id="FORCED_CONFIGURE_HOST_METERING",
                     title="Configuration of host metering set to 'force'",
-                    description="Please note that this option is mainly used for testing and"
+                    description="Note that this option is mainly used for testing and"
                     " will configure host-metering unconditionally."
-                    " For generic usage please use the 'auto' option.",
+                    " For generic usage use the 'auto' option.",
                 )
             },
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
@@ -253,23 +253,21 @@ def test_configure_host_metering(
             ("yum install fail", 1),
             ("", ""),
             None,
-            set(
-                (
-                    actions.ActionMessage(
-                        level="WARNING",
-                        id="INSTALL_HOST_METERING_FAILURE",
-                        title="Failed to install host metering package.",
-                        description="When installing host metering package an error occurred meaning we can't"
-                        " enable host metering on the system.",
-                        diagnosis="`yum install host-metering` command returned 1 with message yum install fail",
-                        remediations="You can try install and set up the host metering"
-                        " manually using following commands:\n"
-                        " - `yum install host-metering`\n"
-                        " - `systemctl enable host-metering.service`\n"
-                        " - `systemctl start host-metering.service`",
-                    ),
+            {
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="INSTALL_HOST_METERING_FAILURE",
+                    title="Failed to install the host-metering package",
+                    description="When installing the host-metering package an error occurred meaning we can't"
+                    " enable host metering on the system.",
+                    diagnosis="`yum install host-metering` command returned 1 with message yum install fail",
+                    remediations="You can try install and set up the host metering"
+                    " manually using following commands:\n"
+                    " - `yum install host-metering`\n"
+                    " - `systemctl enable host-metering.service`\n"
+                    " - `systemctl start host-metering.service`",
                 )
-            ),
+            },
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
         ),
         (
@@ -279,22 +277,20 @@ def test_configure_host_metering(
             ("", 0),
             ("systemctl enable host-metering.service", "Failed to enable"),
             None,
-            set(
-                (
-                    actions.ActionMessage(
-                        level="WARNING",
-                        id="CONFIGURE_HOST_METERING_FAILURE",
-                        title="Failed to enable and start host metering service.",
-                        description="The host metering service failed to start"
-                        " successfully and won't be able to keep track.",
-                        diagnosis="Command systemctl enable host-metering.service failed with Failed to enable",
-                        remediations="You can try set up the host metering"
-                        " service manually using following commands:\n"
-                        " - `systemctl enable host-metering.service`\n"
-                        " - `systemctl start host-metering.service`",
-                    ),
+            {
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="CONFIGURE_HOST_METERING_FAILURE",
+                    title="Failed to enable and start the host metering service",
+                    description="The host metering service failed to start successfully and won't"
+                    " be able to report on the use of the system for the billing purposes.",
+                    diagnosis="Command systemctl enable host-metering.service failed with Failed to enable",
+                    remediations="You can try set up the host metering"
+                    " service manually using following commands:\n"
+                    " - `systemctl enable host-metering.service`\n"
+                    " - `systemctl start host-metering.service`",
                 )
-            ),
+            },
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
         ),
         (
@@ -308,7 +304,7 @@ def test_configure_host_metering(
             actions.ActionResult(
                 level="ERROR",
                 id="HOST_METERING_NOT_RUNNING",
-                title="Host metering service is not running.",
+                title="Host metering service is not running",
                 description="host-metering.service is not running.",
                 remediations="You can try to start the service manually"
                 " by running following command:\n"

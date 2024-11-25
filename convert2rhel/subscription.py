@@ -161,7 +161,7 @@ def register_system():
             )
 
         logger.info(
-            "%sRegistering the system using subscription-manager ...",
+            "%sRegistering the system using subscription-manager.",
             attempt_msg,
         )
 
@@ -217,7 +217,7 @@ def register_system():
             )
             raise exceptions.CriticalError(
                 id_="FAILED_TO_SUBSCRIBE_SYSTEM",
-                title="Failed to subscribe system.",
+                title="Failed to restore /etc/os-release",
                 description="Failed to restore the /etc/os-release file needed for subscribing the system.",
                 diagnosis="The restore failed with error {}.".format(str(e)),
             )
@@ -247,8 +247,10 @@ def register_system():
         logger.critical_no_exit("Unable to register the system through subscription-manager.")
         raise exceptions.CriticalError(
             id_="FAILED_TO_SUBSCRIBE_SYSTEM",
-            title="Failed to subscribe system.",
-            description="After several attempts, convert2rhel was unable to subscribe the system using subscription-manager. This issue might occur because of but not limited to DBus, file permission-related issues, bad credentials, or network issues.",
+            title="Failed to subscribe the system",
+            description="After several attempts, convert2rhel was unable to subscribe the system using"
+            " subscription-manager. This issue might occur because of but not limited to DBus,"
+            " file permission-related issues, bad credentials, or network issues.",
             diagnosis="System registration failed with error {}.".format(str(troublesome_exception)),
         )
 
@@ -442,14 +444,14 @@ class RegistrationCommand:
         # if we need one in the future.
         REGISTER_OPTS_DICT = dbus.Dictionary({}, signature="sv", variant_level=1)
 
-        logger.debug("Getting a handle to the system dbus")
+        logger.debug("Getting a handle to the system dbus.")
         system_bus = dbus.SystemBus()
 
         # Create a new bus so we can talk to rhsm privately (For security:
         # talking on the system bus might be eavesdropped in certain scenarios)
-        logger.debug("Getting a subscription-manager RegisterServer object from dbus")
+        logger.debug("Getting a subscription-manager RegisterServer object from dbus.")
         register_server = system_bus.get_object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
-        logger.debug("Starting a private DBus to talk to subscription-manager")
+        logger.debug("Starting a private DBus to talk to subscription-manager.")
         address = register_server.Start(
             i18n.SUBSCRIPTION_MANAGER_LOCALE,
             dbus_interface="com.redhat.RHSM1.RegisterServer",
@@ -457,7 +459,7 @@ class RegistrationCommand:
 
         try:
             # Use the private bus to register the machine
-            logger.debug("Connecting to the private DBus")
+            logger.debug("Connecting to the private DBus.")
             private_bus = dbus.connection.Connection(address)
 
             try:
@@ -529,7 +531,7 @@ class RegistrationCommand:
 
         finally:
             # Always shut down the private bus
-            logger.debug("Shutting down private DBus instance")
+            logger.debug("Shutting down private DBus instance.")
             register_server.Stop(
                 i18n.SUBSCRIPTION_MANAGER_LOCALE,
                 dbus_interface="com.redhat.RHSM1.RegisterServer",
@@ -675,7 +677,7 @@ def attach_subscription():
     """
     # check if SCA is enabled
     if is_sca_enabled():
-        logger.info("Simple Content Access is enabled, skipping subscription attachment")
+        logger.info("Simple Content Access is enabled, skipping subscription attachment.")
         if tool_opts.pool:
             logger.warning(
                 "Because Simple Content Access is enabled the subscription specified by the pool ID will not be attached."
@@ -705,13 +707,13 @@ def attach_subscription():
         # Unsuccessful attachment, e.g. the pool ID is incorrect or the
         # number of purchased attachments has been depleted.
         logger.critical_no_exit(
-            "Unsuccessful attachment of a subscription. Please refer to https://access.redhat.com/management/"
+            "Unsuccessful attachment of a subscription. Refer to https://access.redhat.com/management/"
             " where you can either enable the SCA, create an activation key, or find a Pool ID of the subscription"
             " you wish to use and pass it to convert2rhel through the `--pool` CLI option."
         )
         raise exceptions.CriticalError(
             id_="FAILED_TO_ATTACH_SUBSCRIPTION",
-            title="Failed to attach a subscription to the system.",
+            title="Failed to attach a subscription to the system",
             description="convert2rhel was unable to attach a subscription to the system. An attached subscription is required for RHEL package installation.",
             remediations="Refer to https://access.redhat.com/management/ where you can enable Simple Content Access, create an activation key, or find a Pool ID of the subscription you wish to use and pass it to convert2rhel through the `--pool` CLI option.",
         )
@@ -735,7 +737,7 @@ def verify_rhsm_installed():
         )
         raise exceptions.CriticalError(
             id_="FAILED_TO_VERIFY_SUBSCRIPTION_MANAGER",
-            title="Failed to verify subscription-manager package.",
+            title="Failed to verify the subscription-manager package",
             description="The subscription-manager package is not installed correctly. Therefore, the pre-conversion analysis cannot verify that the correct package is installed on your system.",
             remediations="Manually installing subscription-manager before running convert2rhel.",
         )
@@ -756,7 +758,7 @@ def disable_repos():
         logger.critical_no_exit("Could not disable subscription-manager repositories:\n{}".format(output))
         raise exceptions.CriticalError(
             id_="FAILED_TO_DISABLE_SUBSCRIPTION_MANAGER_REPOSITORIES",
-            title="Could not disable repositories through subscription-manager.",
+            title="Could not disable repositories through subscription-manager",
             description="As part of the conversion process, convert2rhel disables all current subscription-manager repositories and enables only repositories required for the conversion. convert2rhel was unable to disable these repositories, and the conversion is unable to proceed.",
             diagnosis="Failed to disable repositories: {}.".format(output),
         )
@@ -806,7 +808,7 @@ def submgr_enable_repos(repos_to_enable):
             description=description,
         )
 
-    logger.info("Repositories enabled through subscription-manager")
+    logger.info("Repositories enabled through subscription-manager.")
 
 
 def needed_subscription_manager_pkgs():

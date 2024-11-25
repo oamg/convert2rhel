@@ -100,7 +100,7 @@ class TestEFIChecks:
                 ExpectedMessage(
                     id="BOOTLOADER_ERROR",
                     title="Bootloader error detected",
-                    description="An unknown bootloader error occurred, please look at the diagnosis for more information.",
+                    description="An unknown bootloader error occurred. Look at the diagnosis for more information.",
                     diagnosis="errmsg",
                     remediations="",
                     log_msg="",

@@ -25,7 +25,7 @@ def test_sub_man_rollback(convert2rhel, shell, fixture_subman):
                 TEST_VARS["RHSM_SCA_PASSWORD"],
             )
         ) as c2r:
-            assert c2r.expect("Validate the dnf transaction") == 0
+            assert c2r.expect("Validate the main dnf transaction") == 0
             # At this point the centos-linux-release package is already installed
             c2r.sendcontrol("c")
             # Expect rollback, otherwise TIMEOUT

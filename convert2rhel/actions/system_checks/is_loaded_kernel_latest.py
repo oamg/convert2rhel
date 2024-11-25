@@ -96,7 +96,7 @@ class IsLoadedKernelLatest(actions.Action):
             logger.debug("Got the following output: %s", repoquery_output)
             logger.warning(
                 "Couldn't fetch the list of the most recent kernels available in "
-                "the repositories. Did not perform the loaded kernel check."
+                "the repositories. Did not perform the loaded kernel currency check."
             )
             self.add_message(
                 level="WARNING",
@@ -104,7 +104,7 @@ class IsLoadedKernelLatest(actions.Action):
                 title="Unable to fetch recent kernels",
                 description=(
                     "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Did not perform the loaded kernel check."
+                    "the repositories. Did not perform the loaded kernel currency check."
                 ),
             )
             return
@@ -132,14 +132,14 @@ class IsLoadedKernelLatest(actions.Action):
                 level="OVERRIDABLE",
                 id="KERNEL_CURRENCY_CHECK_FAIL",
                 title="Kernel currency check failed",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=(
                     "Could not find any {} from repositories to compare against the loaded kernel.".format(
                         package_to_check
                     )
                 ),
                 remediations=(
-                    "Please check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                    "Check if you have any vendor repositories enabled to proceed with the conversion.\n"
                     "If you wish to disregard this message, set the skip_kernel_currency_check inhibitor override in"
                     " the /etc/convert2rhel.ini config file to true."
                 ),
@@ -162,7 +162,7 @@ class IsLoadedKernelLatest(actions.Action):
                 level="WARNING",
                 id="INVALID_KERNEL_PACKAGE",
                 title="Invalid kernel package found",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=str(exc),
             )
             return
@@ -172,7 +172,7 @@ class IsLoadedKernelLatest(actions.Action):
                 level="OVERRIDABLE",
                 id="INVALID_KERNEL_VERSION",
                 title="Invalid kernel version detected",
-                description="The loaded kernel version mismatch the latest one available in system repositories",
+                description="The loaded kernel version mismatch the latest one available in system repositories.",
                 diagnosis=(
                     "The version of the loaded kernel is different from the latest version in system repositories. \n"
                     " Latest kernel version available in {}: {}\n"
