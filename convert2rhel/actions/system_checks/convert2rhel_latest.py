@@ -179,14 +179,14 @@ class Convert2rhelLatest(actions.Action):
             if tool_opts.allow_older_version:
                 diagnosis = (
                     "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                    "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion".format(
+                    "You have set the option to allow older convert2rhel version, continuing conversion".format(
                         formatted_convert2rhel_version, formatted_available_version
                     )
                 )
                 logger.warning(diagnosis)
                 self.add_message(
                     level="WARNING",
-                    id="ALLOW_OLDER_VERSION_ENVIRONMENT_VARIABLE",
+                    id="ALLOW_OLDER_VERSION_OPTION",
                     title="Outdated convert2rhel version detected",
                     description="An outdated convert2rhel version has been detected",
                     diagnosis=diagnosis,
@@ -224,7 +224,8 @@ class Convert2rhelLatest(actions.Action):
                                 formatted_convert2rhel_version, formatted_available_version
                             )
                         ),
-                        remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+                        remediations="If you want to disregard this check, set the allow_older_version inhibitor"
+                        " override in the /etc/convert2rhel.ini config file to true.",
                     )
                     return
 

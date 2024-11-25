@@ -69,20 +69,17 @@ class IsLoadedKernelLatest(actions.Action):
         warn_deprecated_env("CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK")
         if tool_opts.skip_kernel_currency_check:
             logger.warning(
-                "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                "the {} comparison.\n"
-                "Beware, this could leave your system in a broken state.".format(package_to_check)
+                "You have set the option to skip the kernel currency check. We will not be checking if the loaded"
+                " kernel is of the latest version available.\nBeware, this could leave your system in a broken state."
             )
 
             self.add_message(
                 level="WARNING",
                 id="UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
                 title="Did not perform the kernel currency check",
-                description=(
-                    "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip "
-                    "the {} comparison.\n"
-                    "Beware, this could leave your system in a broken state.".format(package_to_check)
-                ),
+                description="We will not be checking if the loaded kernel is of the latest version available."
+                "\nBeware, this could leave your system in a broken state.",
+                diagnosis="You have set the option to skip the kernel currency check.",
             )
             return
 
@@ -141,9 +138,9 @@ class IsLoadedKernelLatest(actions.Action):
                     )
                 ),
                 remediations=(
-                    "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
-                    "If you wish to disregard this message, set the environment variable "
-                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1."
+                    "Please check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                    "If you wish to disregard this message, set the skip_kernel_currency_check inhibitor override in"
+                    " the /etc/convert2rhel.ini config file to true."
                 ),
             )
             return
@@ -184,8 +181,8 @@ class IsLoadedKernelLatest(actions.Action):
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
                     "1. yum install {}-{} -y\n"
                     "2. reboot\n"
-                    "If you wish to ignore this message, set the environment variable "
-                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1.".format(package_to_check, latest_kernel)
+                    "If you wish to ignore this message, set the skip_kernel_currency_check inhibitor override in"
+                    " the /etc/convert2rhel.ini config file to true.".format(package_to_check, latest_kernel)
                 ),
             )
             return

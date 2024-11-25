@@ -99,8 +99,8 @@ class ToolOpts:
                 message = (
                     "We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes"
                     " done to the system during the pre-conversion analysis. If you accept the risk of an"
-                    " incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment"
-                    " variable. Otherwise, remove the --no-rpm-va option."
+                    " incomplete rollback, set the incomplete_rollback option in the /etc/convert2rhel.ini"
+                    " config file to true. Otherwise, remove the --no-rpm-va option."
                 )
                 loggerinst.critical(message)
 

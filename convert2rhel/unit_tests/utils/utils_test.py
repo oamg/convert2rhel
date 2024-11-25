@@ -530,31 +530,34 @@ class TestDownload_pkg:
                 custom_releasever=None,
             )
 
-    def test_download_pkg_failed_download_exit(self, monkeypatch):
+    def test_download_pkg_failed_download_exit(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
         monkeypatch.setattr(os, "environ", {})
+        monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
 
         with pytest.raises(SystemExit):
             utils.download_pkg("kernel")
 
-    def test_download_pkg_failed_during_analysis_download_exit(self, monkeypatch):
+    def test_download_pkg_failed_during_analysis_download_exit(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": "1"})
-        monkeypatch.setattr(toolopts.tool_opts, "activity", "analysis")
+        monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(global_tool_opts, "activity", "analysis")
 
         with pytest.raises(SystemExit):
             utils.download_pkg("kernel")
 
-    def test_download_pkg_failed_download_overridden(self, monkeypatch):
+    def test_download_pkg_failed_download_overridden(self, monkeypatch, global_tool_opts):
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_code=1))
         monkeypatch.setattr(os, "environ", {"CONVERT2RHEL_INCOMPLETE_ROLLBACK": "1"})
-        monkeypatch.setattr(toolopts.tool_opts, "activity", "conversion")
+        monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
+        monkeypatch.setattr(global_tool_opts, "activity", "conversion")
 
         path = utils.download_pkg("kernel")
 
@@ -571,6 +574,7 @@ class TestDownload_pkg:
         monkeypatch.setattr(system_info, "releasever", "7Server")
         monkeypatch.setattr(system_info, "version", systeminfo.Version(7, 0))
         monkeypatch.setattr(utils, "run_cmd_in_pty", RunCmdInPtyMocked(return_string=output))
+        monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
 
         with pytest.raises(SystemExit):
             utils.download_pkg("kernel")
@@ -587,14 +591,21 @@ def test_get_rpm_path_from_yumdownloader_output(output):
     ("envvar", "activity", "should_raise", "message"),
     (
         (None, "conversion", True, "If you would rather disregard this check"),
-        ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "conversion", False, "environment variable detected"),
+        (
+            "CONVERT2RHEL_INCOMPLETE_ROLLBACK",
+            "conversion",
+            False,
+            "You have set the incomplete rollback inhibitor override",
+        ),
         (None, "analysis", True, "you can choose to disregard this check"),
         ("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "analysis", True, "you can choose to disregard this check"),
     ),
 )
 def test_report_on_a_download_error(envvar, activity, should_raise, message, monkeypatch, caplog, global_tool_opts):
+    monkeypatch.setattr(utils, "tool_opts", global_tool_opts)
     global_tool_opts.activity = activity
-    monkeypatch.setattr(os, "environ", {envvar: "1"})
+    if envvar:
+        monkeypatch.setattr(os, "environ", {envvar: "1"})
 
     if should_raise:
         with pytest.raises(SystemExit):

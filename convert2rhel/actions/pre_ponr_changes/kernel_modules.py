@@ -247,21 +247,21 @@ class EnsureKernelModulesCompatibility(actions.Action):
             rhel_supported_kmods = self._get_rhel_supported_kmods()
             unsupported_kmods = self._get_unsupported_kmods(host_kmods, rhel_supported_kmods)
 
-            # Check if we have the environment variable set, if we do, send a
+            # Check if the user has specified that they allow unavailable kmods and if so, print a
             # warning and return.
             warn_deprecated_env("CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS")
             if tool_opts.allow_unavailable_kmods:
                 logger.warning(
-                    "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
-                    " We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
+                    "You have set the option to allow unavailable kernel modules."
+                    " The conversion will continue with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods))
                 )
                 self.add_message(
                     level="WARNING",
                     id="ALLOW_UNAVAILABLE_KERNEL_MODULES",
                     title="Did not perform the ensure kernel modules compatibility check",
-                    description="Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable.",
-                    diagnosis="We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
+                    diagnosis="You have set the option to allow unavailable kernel modules.",
+                    description="We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods)),
                 )
                 return
@@ -280,8 +280,8 @@ class EnsureKernelModulesCompatibility(actions.Action):
                     "message persists, you can prevent the modules from loading by following {0} and rerun convert2rhel.\n"
                     "Keeping them loaded could cause the system to malfunction after the conversion as they might not work "
                     "properly with the RHEL kernel.\n"
-                    "To circumvent this check and accept the risk you can set environment variable "
-                    "'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS=1'.".format(LINK_PREVENT_KMODS_FROM_LOADING),
+                    "To circumvent this check and accept the risk, set the allow_unavailable_kmods inhibitor override in the"
+                    "/etc/convert2rhel.ini config file to true.".format(LINK_PREVENT_KMODS_FROM_LOADING),
                 )
                 return
 

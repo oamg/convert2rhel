@@ -157,12 +157,12 @@ class TestCheckConvert2rhelLatest:
             level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
-            description="An outdated convert2rhel version has been detected",
             diagnosis=(
                 "You are currently running {} and the latest version of convert2rhel is {}.\n"
                 "Only the latest version is supported for conversion.".format(running_version, latest_version)
             ),
-            remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to disregard this check, set the allow_older_version inhibitor"
+            " override in the /etc/convert2rhel.ini config file to true.",
         )
 
     @pytest.mark.parametrize(
@@ -337,7 +337,7 @@ class TestCheckConvert2rhelLatest:
 
         log_msg = (
             "You are currently running {} and the latest version of convert2rhel is {}.\n"
-            "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion".format(
+            "You have set the option to allow older convert2rhel version, continuing conversion".format(
                 running_version, latest_version
             )
         )
@@ -769,7 +769,8 @@ class TestCheckConvert2rhelLatest:
                 "You are currently running {} and the latest version of convert2rhel is {}.\n"
                 "Only the latest version is supported for conversion.".format(running_version, latest_version)
             ),
-            remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to disregard this check, set the allow_older_version inhibitor"
+            " override in the /etc/convert2rhel.ini config file to true.",
         )
 
     def test_convert2rhel_latest_unable_to_get_c2r_repofile(

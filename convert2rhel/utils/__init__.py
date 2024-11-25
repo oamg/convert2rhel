@@ -783,25 +783,24 @@ def report_on_a_download_error(output, pkg):
     # (4) Making the choices here mean that when used inside of the Action
     #     framework, we are limited to returning a FAILURE for the Action
     #     plugin whereas returning SKIP would be more accurate.
-    from convert2rhel import toolopts
     from convert2rhel.systeminfo import system_info
 
-    if toolopts.tool_opts.activity == "conversion":
-        if "CONVERT2RHEL_INCOMPLETE_ROLLBACK" not in os.environ:
+    if tool_opts.activity == "conversion":
+        warn_deprecated_env("CONVERT2RHEL_INCOMPLETE_ROLLBACK")
+        if not tool_opts.incomplete_rollback:
             logger.critical(
                 "Couldn't download the {} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
                 "Check to make sure that the {} repositories are enabled"
                 " and the package is updated to its latest version.\n"
-                "If you would rather disregard this check set the environment variable"
-                " 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'.".format(pkg, system_info.name)
+                "If you would rather disregard this check set the incomplete_rollback option in the"
+                " /etc/convert2rhel.ini config file to true.".format(pkg, system_info.name)
             )
         else:
-            warn_deprecated_env("CONVERT2RHEL_INCOMPLETE_ROLLBACK")
             logger.warning(
                 "Couldn't download the {} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
-                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing"
+                "You have set the incomplete rollback inhibitor override, continuing"
                 " conversion.".format(pkg)
             )
     else:
@@ -810,7 +809,7 @@ def report_on_a_download_error(output, pkg):
             " Check to make sure that the {} repositories are enabled and the package is"
             " updated to its latest version.\n"
             "Note that you can choose to disregard this check when running a conversion by"
-            " setting the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1'"
+            " setting the incomplete_rollback option in the /etc/convert2rhel.ini config file to true,"
             " but not during a pre-conversion analysis.".format(pkg, system_info.name)
         )
 

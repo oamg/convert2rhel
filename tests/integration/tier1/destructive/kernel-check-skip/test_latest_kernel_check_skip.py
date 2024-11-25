@@ -47,7 +47,7 @@ def test_latest_kernel_check_skip(shell, convert2rhel, backup_directory):
         # Make sure the kernel comparison is skipped
         c2r_expect_index = c2r.expect(
             [
-                "we will skip the kernel comparison.",
+                "We will not be checking if the loaded kernel is of the latest version available",
                 "Could not find any kernel packages in repositories to compare against the loaded kernel.",
             ]
         )

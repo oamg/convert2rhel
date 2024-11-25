@@ -372,12 +372,10 @@ class TestIsLoadedKernelLatest:
                 "WARNING",
                 "UNSUPPORTED_SKIP_KERNEL_CURRENCY_CHECK_DETECTED",
                 "Did not perform the kernel currency check",
-                (
-                    "Detected 'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' environment variable, we will skip the kernel-core comparison.\nBeware, this could leave your system in a broken state."
-                ),
+                "We will not be checking if the loaded kernel is of the latest version available."
+                "\nBeware, this could leave your system in a broken state.",
+                "You have set the option to skip the kernel currency check.",
                 None,
-                None,
-                id="Unsupported skip with environment var set to 1",
             ),
         ),
     )
@@ -554,9 +552,9 @@ class TestIsLoadedKernelLatest:
                 "Please refer to the diagnosis for further information",
                 "Could not find any {0} from repositories to compare against the loaded kernel.",
                 (
-                    "Please, check if you have any vendor repositories enabled to proceed with the conversion.\n"
-                    "If you wish to disregard this message, set the environment variable "
-                    "'CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK' to 1."
+                    "Please check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                    "If you wish to disregard this message, set the skip_kernel_currency_check inhibitor override in"
+                    " the /etc/convert2rhel.ini config file to true."
                 ),
                 id="Repoquery failure without environment var",
             ),
