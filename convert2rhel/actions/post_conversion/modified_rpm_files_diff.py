@@ -46,7 +46,7 @@ class ModifiedRPMFilesDiff(actions.Action):
             self.add_message(
                 level="INFO",
                 id="SKIPPED_MODIFIED_RPM_FILES_DIFF",
-                title="Skipped comparison of 'rpm -Va' output from before and after the conversion.",
+                title="Skipped comparison of 'rpm -Va' output from before and after the conversion",
                 description="Comparison of 'rpm -Va' output was not performed due to missing output "
                 "of the 'rpm -Va' run before the conversion.",
                 diagnosis="This is caused mainly by using '--no-rpm-va' argument for convert2rhel.",
@@ -76,8 +76,8 @@ class ModifiedRPMFilesDiff(actions.Action):
             self.add_message(
                 level="INFO",
                 id="FOUND_MODIFIED_RPM_FILES",
-                title="Modified rpm files from before and after the conversion were found.",
-                description="Comparison of modified rpm files from before and after " "the conversion: \n{}".format(
+                title="Modified rpm files from before and after the conversion were found",
+                description="Comparison of modified rpm files from before and after the conversion: \n{}".format(
                     modified_rpm_files_diff
                 ),
             )

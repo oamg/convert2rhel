@@ -261,12 +261,12 @@ def run_as_child_process(func):
             # API) will keep executing until they finish their execution and
             # ignore the call for termination issued by the parent. To avoid
             # having "zombie" processes, we need to wait for them to finish.
-            logger.warning("Terminating child process...")
+            logger.warning("Terminating child process.")
             if process.is_alive():
-                logger.debug("Process with pid %s is alive", process.pid)
+                logger.debug("Process with pid %s is alive.", process.pid)
                 process.terminate()
 
-            logger.debug("Process with pid %s exited", process.pid)
+            logger.debug("Process with pid %s exited.", process.pid)
 
             # If there is a KeyboardInterrupt raised while the child process is
             # being executed, let's just re-raise it to the stack and move on.
@@ -511,7 +511,7 @@ def ask_to_continue():
         if cont == "y":
             break
         if cont == "n":
-            logger.critical("User canceled the conversion\n")
+            logger.critical("User canceled the conversion.\n")
 
 
 def prompt_user(question, password=False):
@@ -556,11 +556,11 @@ def remove_tmp_dir():
     """Remove temporary folder (TMP_DIR), not needed post-conversion."""
     try:
         shutil.rmtree(TMP_DIR)
-        logger.info("Temporary folder {} removed".format(TMP_DIR))
+        logger.info("Temporary folder {} removed.".format(TMP_DIR))
     except OSError as err:
         logger.warning("Failed removing temporary folder {}\nError ({}): {}".format(TMP_DIR, err.errno, err.strerror))
     except TypeError:
-        logger.warning("TypeError error while removing temporary folder {}".format(TMP_DIR))
+        logger.warning("TypeError error while removing temporary folder {}.".format(TMP_DIR))
 
 
 class DictWListValues(dict):
@@ -700,7 +700,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
     pkgs_removed = []
 
     if not pkgs_to_remove:
-        logger.info("No package to remove")
+        logger.info("No package to remove.")
         return pkgs_removed
 
     pkgs_failed_to_remove = []
@@ -722,7 +722,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
             logger.critical_no_exit("Error: Couldn't remove {}.".format(pkgs_as_str))
             raise exceptions.CriticalError(
                 id_="FAILED_TO_REMOVE_PACKAGES",
-                title="Couldn't remove packages.",
+                title="Couldn't remove packages",
                 description="While attempting to roll back changes, we encountered an unexpected failure while attempting to remove one or more of the packages we installed earlier.",
                 diagnosis="Couldn't remove {}.".format(pkgs_as_str),
             )
@@ -1143,8 +1143,10 @@ def warn_deprecated_env(env_name):
         return None
 
     root_logger.warning(
-        "The environment variable {} is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
-        "Please, use the configuration file instead.".format(env_name)
+        "The environment variable {} is deprecated and will be removed in convert2rhel 2.4.0.\n"
+        "Use the {} option in the /etc/convert2rhel.ini configuration file.".format(
+            env_name, env_var_to_toolopts_map[env_name]
+        )
     )
     key = env_var_to_toolopts_map[env_name]
     value = os.getenv(env_name, None)

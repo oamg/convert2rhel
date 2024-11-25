@@ -23,7 +23,7 @@ def test_pre_registered_wont_unregister(shell, pre_registered, convert2rhel):
 
         c2r.expect("Subscription Manager is already present", timeout=300)
         c2r.expect(
-            "SUBSCRIBE_SYSTEM has succeeded",
+            "The SUBSCRIBE_SYSTEM action has succeeded.",
             timeout=600,
         )
         c2r.expect("Continue with the system conversion?")
@@ -99,7 +99,7 @@ def test_no_sca_not_subscribed(shell, pre_registered, convert2rhel):
         c2r.sendline("y")
 
         c2r.expect("We'll try to auto-attach a subscription")
-        c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
+        c2r.expect("The SUBSCRIBE_SYSTEM action has succeeded.")
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("n")
 
