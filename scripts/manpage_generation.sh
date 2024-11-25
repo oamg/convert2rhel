@@ -8,6 +8,15 @@ mkdir -p "$MANPAGE_DIR"
 
 echo "Generating manpages"
 
+# Check if the configuration file exists
+CONFIG_FILE="/path/to/existing/config.ini"
+if [ -f "$CONFIG_FILE" ]; then
+    echo "Configuration file found: $CONFIG_FILE"
+else
+    echo "Configuration file not found: $CONFIG_FILE"
+    exit 1
+fi
+
 # Generate a file with convert2rhel synopsis for argparse-manpage
 python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > "$MANPAGE_DIR/synopsis"
 
@@ -17,7 +26,6 @@ echo "Current version: $CURRENT_VER"
 
 # Generate the manpage using argparse-manpage
 PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $CURRENT_VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
-
 
 # Check for differences in the generated manpage
 if ! git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
