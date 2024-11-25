@@ -7,7 +7,7 @@ RUN dnf install -y \
     python3-pip \
     python3-devel \
     rpm-devel \
-    rpm-python \
+    python3-rpm \
     git \
     && dnf clean all
 
