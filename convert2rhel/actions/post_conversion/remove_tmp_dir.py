@@ -45,7 +45,7 @@ class RemoveTmpDir(actions.Action):
 
         try:
             shutil.rmtree(self.tmp_dir)
-            loggerinst.info("Temporary folder {} removed".format(self.tmp_dir))
+            loggerinst.info("Temporary folder {} removed.".format(self.tmp_dir))
         except OSError as exc:
             # We want run() to be idempotent, so do nothing silently if
             # the path doesn't exist.
@@ -61,6 +61,6 @@ class RemoveTmpDir(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="UNSUCCESSFUL_REMOVE_TMP_DIR",
-                title="Temporary folder {tmp_dir} wasn't removed.".format(tmp_dir=self.tmp_dir),
+                title="Temporary folder {tmp_dir} wasn't removed".format(tmp_dir=self.tmp_dir),
                 description=warning_message,
             )

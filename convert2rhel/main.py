@@ -88,7 +88,7 @@ def initialize_file_logging(log_name, log_dir):
     try:
         logger_module.archive_old_logger_files(log_name, log_dir)
     except (IOError, OSError) as e:
-        loggerinst.warning("Unable to archive previous log: {}".format(e))
+        loggerinst.warning("Unable to archive the previous log file: {}".format(e))
 
     logger_module.add_file_handler(log_name, log_dir)
 
@@ -405,7 +405,7 @@ def rollback_changes():
         backup.backup_control.pop_all()
     except IndexError as e:
         if e.args[0] == "No backups to restore":
-            loggerinst.info("During rollback there were no backups to restore")
+            loggerinst.info("During rollback there were no backups to restore.")
         else:
             raise
 

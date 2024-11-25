@@ -46,7 +46,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
                 level="INFO",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
                 title="Did not perform the package updates check",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=diagnosis,
                 remediations=None,
                 variables={},
@@ -77,7 +77,7 @@ def test_check_package_updates_not_up_to_date(
     packages = ["package-2", "package-1"]
     diagnosis = (
         "The system has 2 package(s) not updated based on repositories defined in the system repositories.\n"
-        "List of packages to update: package-1 package-2.\n\n"
+        "List of packages to update: package-1 package-2\n\n"
         "Not updating the packages may cause the conversion to fail.\n"
         "Consider updating the packages before proceeding with the conversion."
     )
@@ -90,7 +90,7 @@ def test_check_package_updates_not_up_to_date(
                 level="WARNING",
                 id="OUT_OF_DATE_PACKAGES",
                 title="Outdated packages detected",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=diagnosis,
                 remediations="Run yum update to update all the packages on the system.",
                 variables={},
@@ -118,7 +118,7 @@ def test_check_package_updates_with_repoerror_warning(pretend_os, monkeypatch, c
                 level="WARNING",
                 id="PACKAGE_UP_TO_DATE_CHECK_MESSAGE",
                 title="Package up to date check fail",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=diagnosis,
                 remediations=None,
                 variables={},
