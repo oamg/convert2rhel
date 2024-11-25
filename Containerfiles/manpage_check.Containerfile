@@ -21,8 +21,8 @@ WORKDIR /app
 # Copy the project files into the container
 COPY . /app
 
-# Copy the existing configuration file into the container
-COPY config/config.ini /etc/convert2rhel/config.ini
+# Copy the convert2rhel.ini configuration file into the container
+COPY config/convert2rhel.ini /etc/convert2rhel/convert2rhel.ini
 
 # Copy manpage_generation.sh from the scripts directory into the container
 COPY scripts/manpage_generation.sh /app/
