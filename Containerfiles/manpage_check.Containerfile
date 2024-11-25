@@ -13,7 +13,7 @@ RUN dnf install -y \
 
 # Install Python packages
 RUN pip3 install --upgrade pip
-RUN pip3 install pexpect argparse-manpage
+RUN pip3 install pexpect argparse-manpage six
 
 # Set the working directory
 WORKDIR /app
