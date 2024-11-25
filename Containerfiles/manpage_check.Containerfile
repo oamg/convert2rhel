@@ -13,13 +13,16 @@ RUN dnf install -y \
 
 # Install Python packages
 RUN pip3 install --upgrade pip
-RUN pip3 install pexpect argparse-manpage six
+RUN pip3 install pexpect argparse-manpage
 
 # Set the working directory
 WORKDIR /app
 
 # Copy the project files into the container
 COPY . /app
+
+# Copy the existing configuration file into the container
+COPY /path/to/existing/config.ini /etc/convert2rhel/config.ini
 
 # Copy manpage_generation.sh from the scripts directory into the container
 COPY scripts/manpage_generation.sh /app/
