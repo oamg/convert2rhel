@@ -22,7 +22,7 @@ WORKDIR /app
 COPY . /app
 
 # Copy the existing configuration file into the container
-COPY /path/to/existing/config.ini /etc/convert2rhel/config.ini
+COPY config/config.ini /etc/convert2rhel/config.ini
 
 # Copy manpage_generation.sh from the scripts directory into the container
 COPY scripts/manpage_generation.sh /app/
