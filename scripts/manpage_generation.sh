@@ -8,15 +8,6 @@ mkdir -p "$MANPAGE_DIR"
 
 echo "Generating manpages"
 
-# Check if the configuration file exists
-CONFIG_FILE="/path/to/existing/config.ini"
-if [ -f "$CONFIG_FILE" ]; then
-    echo "Configuration file found: $CONFIG_FILE"
-else
-    echo "Configuration file not found: $CONFIG_FILE"
-    exit 1
-fi
-
 # Generate a file with convert2rhel synopsis for argparse-manpage
 python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > "$MANPAGE_DIR/synopsis"
 
