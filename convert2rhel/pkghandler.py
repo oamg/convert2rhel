@@ -594,19 +594,19 @@ def install_gpg_keys():
 
 
 def handle_no_newer_rhel_kernel_available():
-    """Handle cases when the installed third party (non-RHEL) kernel has the
-    same version as (or newer than) the RHEL one available in the RHEL repo(s).
+    """Handle cases when the installed non-RHEL kernel has the
+    same version as (or newer than) the latest RHEL kernel available in the RHEL repo(s).
     """
-    installed, available = get_kernel_availability()
-    to_install = [kernel for kernel in available if kernel not in installed]
+    installed, all_available = get_kernel_availability()
+    available_to_install = [kernel for kernel in all_available if kernel not in installed]
 
-    if not to_install:
-        # All the available RHEL kernel versions are already installed
+    if not available_to_install:
+        # All the available RHEL kernels are already installed
         if len(installed) > 1:
             # There's more than one installed non-RHEL kernel. We'll remove one
             # of them - the one that has the same version as the available RHEL
             # kernel
-            older = available[-1]
+            older = all_available[-1]
             utils.remove_pkgs(pkgs_to_remove=["kernel-{}".format(older)])
             pkgmanager.call_yum_cmd(command="install", args=["kernel-{}".format(older)])
         else:
@@ -615,7 +615,7 @@ def handle_no_newer_rhel_kernel_available():
         return
 
     # Install the latest out of the available non-clashing RHEL kernels
-    pkgmanager.call_yum_cmd(command="install", args=["kernel-{}".format(to_install[-1])])
+    pkgmanager.call_yum_cmd(command="install", args=["kernel-{}".format(available_to_install[-1])])
 
 
 def get_kernel_availability():
