@@ -10,8 +10,6 @@ link:
     - https://issues.redhat.com/browse/RHELC-1226
 
 /test_host_metering_conversion:
-    environment+:
-        CONVERT2RHEL_CONFIGURE_HOST_METERING: force
     tag+:
         - test-host-metering-conversion
     test: pytest -m test_run_conversion_with_host_metering
