@@ -16,15 +16,47 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Podman
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get -y install podman
+        sudo apt-get install -y python3-pip python3-venv rpm rpm-python
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install pexpect argparse-manpage
 
-    - name: Build Podman image
+    - name: Generate manpages
       run: |
-        podman build -t convert2rhel-manpages -f Containerfiles/manpage_check.Containerfile .
+        set -e
 
-    - name: Run Podman container
-      run: |
-        podman run --rm convert2rhel-manpages
+        # Directory to store the generated manpages
+        MANPAGE_DIR='man'
+
+        # Ensure the manpage directory exists
+        mkdir -p "$MANPAGE_DIR"
+
+        echo 'Generating manpages'
+
+        # Generate a file with convert2rhel synopsis for argparse-manpage
+        python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > "$MANPAGE_DIR/synopsis"
+
+        # Extract the current version from the spec file
+        CURRENT_VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
+        echo 'Current version: $CURRENT_VER'
+
+        # Generate the manpage using argparse-manpage
+        PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title='General Commands Manual' --description='Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux.' --project-name 'convert2rhel $CURRENT_VER' --prog='convert2rhel' --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
+
+        # Check for differences in the generated manpage
+        if ! git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
+            echo 'Manpages are outdated. Please update them.'
+            exit 1
+        else
+            echo 'Manpages are up-to-date.'
+            exit 0
+        fi
