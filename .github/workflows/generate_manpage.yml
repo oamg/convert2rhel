@@ -24,9 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-pip python3-venv rpm
-        python3 -m venv venv
-        source venv/bin/activate
+        sudo apt-get install -y python3-pip rpm
         pip install --upgrade pip
         pip install pexpect argparse-manpage
 
@@ -59,4 +57,3 @@ jobs:
         else
             echo 'Manpages are up-to-date.'
             exit 0
-        fi
