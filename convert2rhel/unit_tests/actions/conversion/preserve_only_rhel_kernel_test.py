@@ -47,11 +47,6 @@ def install_rhel_kernel_instance():
 
 
 @pytest.fixture
-def verify_rhel_kernel_installed_instance():
-    return preserve_only_rhel_kernel.VerifyRhelKernelInstalled()
-
-
-@pytest.fixture
 def fix_invalid_grub2_entries_instance():
     return preserve_only_rhel_kernel.FixInvalidGrub2Entries()
 
@@ -81,31 +76,17 @@ class TestInstallRhelKernel:
         (
             "pkgs_w_rhel_key_id",
             "no_newer_kernel_call",
-            "action_message",
-            "action_result",
         ),
         (
             (
                 # rhel kernel not installed
                 [],
                 1,
-                set(()),
-                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
             (
                 # rhel kernel already installed
-                [
-                    create_pkg_information(
-                        name="kernel",
-                        version="4.18.0",
-                        release="183.el8",
-                        arch="x86_64",
-                        packager="Red Hat",
-                    ),
-                ],
+                [create_pkg_information(name="kernel")],
                 0,
-                set(()),
-                actions.ActionResult(level="SUCCESS", id="SUCCESS"),
             ),
         ),
     )
@@ -117,10 +98,8 @@ class TestInstallRhelKernel:
         install_rhel_kernel_instance,
         no_newer_kernel_call,
         pretend_os,
-        action_message,
-        action_result,
     ):
-        """Test the logic of kernel installation&update"""
+        """Test the logic of kernel installation"""
         handle_no_newer_rhel_kernel_available = mock.Mock()
 
         monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", handle_no_newer_rhel_kernel_available)
@@ -131,9 +110,43 @@ class TestInstallRhelKernel:
         install_rhel_kernel_instance.run()
 
         assert handle_no_newer_rhel_kernel_available.call_count == no_newer_kernel_call
-        assert action_message.issuperset(install_rhel_kernel_instance.messages)
-        assert action_message.issubset(install_rhel_kernel_instance.messages)
-        assert action_result == install_rhel_kernel_instance.result
+
+    def test_verify_rhel_kernel_installed(self, monkeypatch, install_rhel_kernel_instance):
+        monkeypatch.setattr(
+            pkghandler,
+            "get_installed_pkgs_by_key_id",
+            GetInstalledPkgsByKeyIdMocked(return_value=[create_pkg_information(name="kernel")]),
+        )
+        install_rhel_kernel_instance.run()
+        expected = set(
+            (
+                actions.ActionMessage(
+                    level="INFO",
+                    id="RHEL_KERNEL_INSTALL_VERIFIED",
+                    title="RHEL kernel install verified",
+                    description="The RHEL kernel has been verified to be on the system.",
+                    diagnosis=None,
+                    remediations=None,
+                ),
+            )
+        )
+        assert expected.issuperset(install_rhel_kernel_instance.messages)
+        assert expected.issubset(install_rhel_kernel_instance.messages)
+
+    def test_verify_rhel_kernel_installed_not_installed(self, monkeypatch, install_rhel_kernel_instance):
+        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_key_id", mock.Mock(return_value=[]))
+        monkeypatch.setattr(pkghandler, "handle_no_newer_rhel_kernel_available", mock.Mock())
+
+        install_rhel_kernel_instance.run()
+        unit_tests.assert_actions_result(
+            install_rhel_kernel_instance,
+            level="ERROR",
+            id="NO_RHEL_KERNEL_INSTALLED",
+            title="No RHEL kernel installed",
+            description="There is no RHEL kernel installed on the system.",
+            remediations="Verify that the repository used for installing kernel contains RHEL packages and install the"
+            " kernel manually.",
+        )
 
 
 class TestKernelPkgsInstall:
@@ -195,43 +208,6 @@ class TestKernelPkgsInstall:
         removed_pkgs = kernel_packages_install_instance.remove_non_rhel_kernels()
         kernel_packages_install_instance.install_additional_rhel_kernel_pkgs(removed_pkgs)
         assert pkgmanager.call_yum_cmd.call_count == 2
-
-
-class TestVerifyRHELKernelInstalled:
-    def test_verify_rhel_kernel_installed(self, monkeypatch, verify_rhel_kernel_installed_instance):
-        monkeypatch.setattr(
-            pkghandler,
-            "get_installed_pkgs_by_key_id",
-            GetInstalledPkgsByKeyIdMocked(return_value=[create_pkg_information(name="kernel")]),
-        )
-        verify_rhel_kernel_installed_instance.run()
-        expected = set(
-            (
-                actions.ActionMessage(
-                    level="INFO",
-                    id="RHEL_KERNEL_INSTALL_VERIFIED",
-                    title="RHEL kernel install verified",
-                    description="The RHEL kernel has been verified to be on the system.",
-                    diagnosis=None,
-                    remediations=None,
-                ),
-            )
-        )
-        assert expected.issuperset(verify_rhel_kernel_installed_instance.messages)
-        assert expected.issubset(verify_rhel_kernel_installed_instance.messages)
-
-    def test_verify_rhel_kernel_installed_not_installed(self, monkeypatch, verify_rhel_kernel_installed_instance):
-        monkeypatch.setattr(pkghandler, "get_installed_pkgs_by_key_id", mock.Mock(return_value=[]))
-
-        verify_rhel_kernel_installed_instance.run()
-        unit_tests.assert_actions_result(
-            verify_rhel_kernel_installed_instance,
-            level="ERROR",
-            id="NO_RHEL_KERNEL_INSTALLED",
-            title="No RHEL kernel installed",
-            description="There is no RHEL kernel installed on the system.",
-            remediations="Verify that the repository used for installing kernel contains RHEL packages.",
-        )
 
 
 class TestFixInvalidGrub2Entries:

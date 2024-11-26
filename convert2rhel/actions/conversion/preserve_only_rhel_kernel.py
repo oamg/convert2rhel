@@ -30,27 +30,23 @@ class InstallRhelKernel(actions.Action):
     dependencies = ("CONVERT_SYSTEM_PACKAGES",)
 
     def run(self):
-        """Install and update the RHEL kernel."""
+        """Ensure that the RHEL kernel is installed.
+
+        The RHEL kernel might have not been installed during the main conversion transaction in case the installed
+        non-RHEL kernel(s) conflicted with the available RHEL kernels.
+        """
         super(InstallRhelKernel, self).run()
-        loggerinst.task("Prepare kernel")
+        loggerinst.info("Verifying that RHEL kernel has been installed")
 
         rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
 
         if not rhel_kernels:
-            # install the rhel kernel when any isn't installed
-            loggerinst.debug("handle_no_newer_rhel_kernel_available")
+            loggerinst.debug(
+                "RHEL kernel has not been installed in the main conversion transaction."
+                "We are about to handle its installation separately."
+            )
             pkghandler.handle_no_newer_rhel_kernel_available()
 
-
-class VerifyRhelKernelInstalled(actions.Action):
-    id = "VERIFY_RHEL_KERNEL_INSTALLED"
-    dependencies = ("INSTALL_RHEL_KERNEL",)
-
-    def run(self):
-        """Verify that the RHEL kernel has been successfully installed and raise an ERROR if not"""
-        super(VerifyRhelKernelInstalled, self).run()
-
-        loggerinst.info("Verifying that RHEL kernel has been installed")
         installed_rhel_kernels = pkghandler.get_installed_pkgs_by_key_id(system_info.key_ids_rhel, name="kernel")
         if len(installed_rhel_kernels) <= 0:
             self.set_result(
@@ -58,7 +54,8 @@ class VerifyRhelKernelInstalled(actions.Action):
                 id="NO_RHEL_KERNEL_INSTALLED",
                 title="No RHEL kernel installed",
                 description="There is no RHEL kernel installed on the system.",
-                remediations="Verify that the repository used for installing kernel contains RHEL packages.",
+                remediations="Verify that the repository used for installing kernel contains RHEL packages and install"
+                " the kernel manually.",
             )
             return
 
@@ -73,7 +70,7 @@ class VerifyRhelKernelInstalled(actions.Action):
 
 class FixInvalidGrub2Entries(actions.Action):
     id = "FIX_INVALID_GRUB2_ENTRIES"
-    dependencies = ("KERNEL_PACKAGES_INSTALLATION",)
+    dependencies = ("REMOVE_NON_RHEL_KERNELS",)
 
     def run(self):
         """
@@ -171,11 +168,11 @@ class FixDefaultKernel(actions.Action):
 
 
 class KernelPkgsInstall(actions.Action):
-    id = "KERNEL_PACKAGES_INSTALLATION"
-    dependencies = ("VERIFY_RHEL_KERNEL_INSTALLED",)
+    id = "REMOVE_NON_RHEL_KERNELS"
+    dependencies = ("INSTALL_RHEL_KERNEL",)
 
     def run(self):
-        """Install kernel packages and remove non-RHEL kernels."""
+        """Remove non-RHEL kernels."""
         super(KernelPkgsInstall, self).run()
 
         kernel_pkgs_to_install = self.remove_non_rhel_kernels()
@@ -213,9 +210,17 @@ class KernelPkgsInstall(actions.Action):
 
 class UpdateKernel(actions.Action):
     id = "UPDATE_KERNEL"
-    dependencies = ("FIX_DEFAULT_KERNEL",)
+    dependencies = ("REMOVE_NON_RHEL_KERNELS",)
 
     def run(self):
+        """Ensure that the latest RHEL kernel is installed.
+
+        The RHEL kernel we've installed during the main conversion transaction is not up-to-date in case
+        the latest available RHEL kernel conflicted with the installed non-RHEL kernels.
+
+        At this point though all non-RHEL kernels are already removed so the latest RHEL kernel won't conflict with
+        them anymore.
+        """
         super(UpdateKernel, self).run()
 
         pkghandler.update_rhel_kernel()

@@ -25,7 +25,7 @@ loggerinst = logger.root_logger.getChild(__name__)
 
 class ListNonRedHatPkgsLeft(actions.Action):
     id = "LIST_NON_RED_HAT_PKGS_LEFT"
-    dependencies = ("KERNEL_PACKAGES_INSTALLATION",)
+    dependencies = ("REMOVE_NON_RHEL_KERNELS",)
 
     def run(self):
         """List all the packages that have not been replaced by the
