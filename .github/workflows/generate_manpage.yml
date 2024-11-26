@@ -28,6 +28,11 @@ jobs:
         pip install --upgrade pip
         pip install pexpect argparse-manpage
 
+    - name: Verify Python Path
+      run: |
+        python -c "import sys; print(sys.path)"
+        python -c "import pexpect; print('pexpect module is available.')"
+
     - name: Generate manpages
       run: |
         set -e
@@ -57,3 +62,4 @@ jobs:
         else
             echo 'Manpages are up-to-date.'
             exit 0
+        fi
