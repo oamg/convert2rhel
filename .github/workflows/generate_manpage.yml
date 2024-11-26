@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-pip rpm
+        sudo apt-get install -y python3-pip rpm rpm-python rpm-python3 rpm-devel
         pip install --upgrade pip
         pip install pexpect argparse-manpage
 
@@ -32,6 +32,7 @@ jobs:
       run: |
         python -c "import sys; print(sys.path)"
         python -c "import pexpect; print('pexpect module is available.')"
+        python -c "import rpm; print('rpm module is available.')"
 
     - name: Generate manpages
       run: |
