@@ -67,7 +67,7 @@ jobs:
         echo 'Generating manpages'
 
         # Generate a file with convert2rhel synopsis for argparse-manpage
-        python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.cli.usage())' > "$MANPAGE_DIR/synopsis"
+        python -c 'from convert2rhel import cli; print("[synopsis]\n."+cli.usage())' > "$MANPAGE_DIR/synopsis"
 
         # Extract the current version from the spec file
         CURRENT_VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
