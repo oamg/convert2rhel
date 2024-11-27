@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'  # Use Python 3.10
+        python-version: '3.10'
 
     - name: Add Universe Repository
       run: |
@@ -28,7 +28,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install -y python3-pip rpm libnspr4-dev libnss3-dev libpopt-dev libarchive-dev libdb-dev
+        sudo apt-get install -y python3-pip rpm libnspr4-dev libnss3-dev libpopt-dev libarchive-dev libdb-dev \
+          autoconf automake bison flex gettext libtool pkg-config
         pip install --upgrade pip
         pip install pexpect argparse-manpage
 
@@ -45,6 +46,7 @@ jobs:
         sudo make install
         cd python
         python3 setup.py install
+        sudo ldconfig
 
     - name: Verify Python Path
       run: |
