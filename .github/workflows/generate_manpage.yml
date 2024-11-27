@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'
+        python-version: '3.10'  # Use Python 3.10
 
     - name: Add Universe Repository
       run: |
@@ -37,10 +37,10 @@ jobs:
         wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.tar.bz2
         tar -xjf rpm-4.14.2.tar.bz2
         cd rpm-4.14.2
-        export PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.10.0/x64/lib/pkgconfig
-        export PYTHON_CFLAGS="-I/opt/hostedtoolcache/Python/3.10.0/x64/include/python3.10"
-        export PYTHON_LIBS="-L/opt/hostedtoolcache/Python/3.10.0/x64/lib -lpython3.10"
-        ./configure --disable-nls --enable-python
+        export PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.10.15/x64/lib/pkgconfig
+        export PYTHON_CFLAGS="-I/opt/hostedtoolcache/Python/3.10.15/x64/include/python3.10"
+        export PYTHON_LIBS="-L/opt/hostedtoolcache/Python/3.10.15/x64/lib -lpython3.10"
+        ./configure --disable-nls --enable-python --without-lua
         make
         sudo make install
         cd python
