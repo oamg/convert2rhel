@@ -1,7 +1,13 @@
+import os
 import re
 
+import pytest
+from test_helpers.common_functions import get_log_file_data
 
-def test_verify_initramfs_and_vmlinuz_present(log_file_data):
+log_data = get_log_file_data()
+
+
+def test_verify_initramfs_and_vmlinuz_present(log_file_data=log_data):
     """
     Verify that after a successful conversion the kernel boot files are
     present.
@@ -13,7 +19,7 @@ def test_verify_initramfs_and_vmlinuz_present(log_file_data):
     assert "The initramfs and vmlinuz files are valid." in log_file_data
 
 
-def test_failed_to_parse_package_info_empty_arch_not_present(log_file_data):
+def test_failed_to_parse_package_info_empty_arch_not_present(log_file_data=log_data):
     """
     Verify that in case of package with the `arch` field missing in its information,
     the message Failed to parse a package does not appear during the conversion run.
@@ -24,7 +30,7 @@ def test_failed_to_parse_package_info_empty_arch_not_present(log_file_data):
     assert match is None, f"{failed_to_parse} is present in the log file data."
 
 
-def test_traceback_not_present(log_file_data):
+def test_traceback_not_present(log_file_data=log_data):
     """
     Verify that there is not a traceback raised in the log file during the conversion run.
     """
@@ -33,7 +39,7 @@ def test_traceback_not_present(log_file_data):
     assert match is None, "Traceback found in the log file data."
 
 
-def test_check_empty_exclude_in_critical_commands(log_file_data):
+def test_check_empty_exclude_in_critical_commands(log_file_data=log_data):
     """
     Verify that convert2rhel used `--setopt=exclude=` in every `repoquery` and `yumdownloader` call.
     Reference ticket: https://issues.redhat.com/browse/RHELC-774
@@ -50,3 +56,17 @@ def test_check_empty_exclude_in_critical_commands(log_file_data):
         re.findall("Calling command 'yumdownloader.*--setopt=exclude=\s.*", log_file_data)
     )
     assert number_of_yumdownloader_calls == number_of_yumdownloader_calls_with_exclude
+
+
+def test_check_deprecated_envar_message(log_file_data=log_data):
+    """
+    Validate that the warning message for deprecated environment variables is present,
+    if the respective environment variable is used.
+    """
+    missing_envar_messages = []
+    for key in os.environ.keys():
+        if re.match("CONVERT2RHEL_", key):
+            if not re.search(f"The environment variable {key} is deprecated", log_file_data):
+                missing_envar_messages.append(key)
+    if missing_envar_messages:
+        pytest.fail(f"The warning message for deprecated envars {missing_envar_messages} is not not present.")

@@ -38,10 +38,7 @@ logger = logging.getLogger(__name__)
 # We use pytest_plugins to allow us to use fixtures we define in other files without the need to explicitly import them
 # inside each test file.
 # LINK - https://docs.pytest.org/en/7.0.x/reference/reference.html#globalvar-pytest_plugins
-pytest_plugins = (
-    "test_helpers.common_functions",
-    "test_helpers.workarounds",
-)
+pytest_plugins = ("test_helpers.common_functions", "test_helpers.workarounds", "test_helpers.checks_nondestructive")
 
 
 def pytest_collection_modifyitems(items):

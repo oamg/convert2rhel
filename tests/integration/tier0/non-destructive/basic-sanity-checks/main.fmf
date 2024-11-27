@@ -166,8 +166,6 @@ tag+:
         This test verifies a basic incompatibility of the analyze and --no-rpm-va options.
         The user should be warned that the --no-rpm-va option will be ignored and the command
         will be called.
-    environment+:
-        CONVERT2RHEL_INCOMPLETE_ROLLBACK: 1
     tag+:
         - analyze-no-rpm-va-option
         - sanity

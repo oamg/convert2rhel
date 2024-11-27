@@ -110,8 +110,7 @@ def get_custom_repos_names():
     return repos
 
 
-@pytest.fixture()
-def log_file_data():
+def get_log_file_data():
     """
     Helper fixture.
     Reads and returns data from the convert2rhel.log file.
