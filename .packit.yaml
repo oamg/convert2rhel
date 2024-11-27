@@ -98,7 +98,7 @@ jobs:
     merge_pr_in_ci: false
     targets:
       epel-9-x86_64:
-        distros: ["AlmaLinux OS 9.4.20240805 x86_64"] # Owner ID for Rocky Linux images 764336703387
+        distros: ["AlmaLinux OS 9.5.20241122 x86_64"] # Owner ID for Alma Linux images 764336703387
     trigger: pull_request
     identifier: "tier0-al9"
     tmt_plan: "tier0/core"
@@ -143,7 +143,7 @@ jobs:
     merge_pr_in_ci: false
     targets:
       epel-9-x86_64:
-        distros: ["Rocky-9-EC2-Base-9.4-20240523.0.x86_64"] # Owner ID for Rocky Linux images 792107900819
+        distros: ["Rocky-9-EC2-Base-9.5-20241118.0.x86_64"] # Owner ID for Rocky Linux images 792107900819
     trigger: pull_request
     identifier: "tier0-rl9"
     tmt_plan: "tier0/core"
