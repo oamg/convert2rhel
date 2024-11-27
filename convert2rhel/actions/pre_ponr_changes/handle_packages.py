@@ -43,10 +43,9 @@ class ListThirdPartyPackages(actions.Action):
         if third_party_pkgs:
             # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
             # There is needed for avoid reaching out RHEL repositories while requesting info about pkgs.
-            disable_repos_ints = repo.DisableReposDuringAnalysis()
-            disable_repos = disable_repos_ints.repos_to_disable
+            repos_to_disable = repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
             pkg_list = pkghandler.format_pkg_info(
-                sorted(third_party_pkgs, key=self.extract_packages), disable_repos=disable_repos
+                sorted(third_party_pkgs, key=self.extract_packages), disable_repos=repos_to_disable
             )
             warning_message = (
                 "Only packages signed by {} are to be"
@@ -131,9 +130,8 @@ class RemoveSpecialPackages(actions.Action):
 
             # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
             # There is needed for avoid reaching out RHEL repositories while requesting info about pkgs.
-            disable_repos_ints = repo.DisableReposDuringAnalysis()
-            disable_repos = disable_repos_ints.repos_to_disable
-            pkgs_removed = _remove_packages_unless_from_redhat(pkgs_list=all_pkgs, disable_repos=disable_repos)
+            repos_to_disable = repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
+            pkgs_removed = _remove_packages_unless_from_redhat(pkgs_list=all_pkgs, disable_repos=repos_to_disable)
 
             # https://issues.redhat.com/browse/RHELC-1677
             # In some cases the {system}-release package takes ownership of the /etc/yum.repos.d/ directory,

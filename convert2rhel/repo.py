@@ -62,6 +62,7 @@ def get_rhel_repoids():
 
 class DisableReposDuringAnalysis(object):
     _instance = None
+    _repos_to_disable = None
 
     def __new__(cls):
         """Singleton pattern"""
@@ -82,42 +83,55 @@ class DisableReposDuringAnalysis(object):
     def _set_rhel_repos_to_disable(self):
         """Set the list of repositories which should be disabled when performing pre-conversion checks.
 
-        Avoid downloading backup and up-to-date checks from them. The output list can looks like: ["rhel*"]
+        Avoid using RHEL repos for certain re-conversion analysis phase operations such as:
+         - downloading a package backup
+         - the package up-to-date check
+         - querying what repository local packages have been installed from
+         - the latest available kernel check
+        Only the original system vendor repos should be used for these pre-conversion analysis phase operations.
 
         .. note::
-            If --enablerepo switch is used together with the --no-rhsm, we will return a combination of repositories to disable as following:
+            If --enablerepo switch is used together with the --no-rhsm, we will return a combination of repositories to
+            disable as following:
 
             >>> # tool_opts.enablerepo comes from the CLI option `--enablerepo`.
             >>> self.repos_to_disable = ["rhel*"]
             >>> self.repos_to_disable.extend(tool_opts.enablerepo) # returns: ["rhel*", "my-rhel-repo-mirror"]
 
+        :return: List of repoids to disable, such as ["rhel*", "my-optional-repo"]
+        :rtype: List
         """
         # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
-        self.repos_to_disable = ["rhel*"]
+        self._repos_to_disable = ["rhel*"]
 
         # this is for the case where the user configures e.g. [my-rhel-repo-mirror] on the system and leaves it enabled
         # before running convert2rhel - we want to prevent the checks from accessing it as it contains packages for RHEL
         if tool_opts.no_rhsm and tool_opts.enablerepo:
-            logger.debug("Preparing list of RHEL repositories to be disabled during analysis.")
+            logger.debug("Preparing a list of RHEL repositories to be disabled during analysis.")
             self._set_custom_repos()
 
-        return self.repos_to_disable
+        return self._repos_to_disable
 
     def _set_custom_repos(self):
-        """If we are using YUM pkg manager, we need to check if all the provided reponames are accessible.
-        DNF package manager can handle situation of unreachable repo by skipping it."""
+        """If we are using the YUM pkg manager, we need to check if all custom repositories provided by the user through
+        --enablerepo are accessible. DNF package manager can handle situation of unreachable repo by skipping it."""
         if TYPE == "dnf":
-            self.repos_to_disable.extend(tool_opts.enablerepo)
+            self._repos_to_disable.extend(tool_opts.enablerepo)
             return
 
         # pkg manager is yum
         # copy the enablerepo list to avoid changing the original one
         repos_to_check = list(tool_opts.enablerepo)
-        self.repos_to_disable.extend(_get_valid_custom_repos(repos_to_check))
+        self._repos_to_disable.extend(_get_valid_custom_repos(repos_to_check))
+
+    def get_rhel_repos_to_disable(self):
+        """See the docstring of _set_rhel_repos_to_disable for details about the repos to disable."""
+        return self._repos_to_disable
 
 
 def _get_valid_custom_repos(repos_to_check):
-    """Check if provided repo IDs are accessible.
+    """Check if provided repo IDs are accessible. The function is recursive.
+
     :arg repos_to_check: Repo IDs to be checked
     :arg type: List
     :return: Accessible repositories
@@ -137,18 +151,19 @@ def _get_valid_custom_repos(repos_to_check):
         if problematic_reponame_line:
             reponame = problematic_reponame_line.group(1)
             logger.debug(
-                "Removed the {reponame} from the list of repositories to be disable during analysis as is inaccessible now.".format(
-                    reponame=reponame
-                )
+                "Removed the {reponame} repository from the list of repositories to disable in certain"
+                " pre-conversion analysis checks as it is inaccessible at the moment and yum fails when trying to"
+                " disable an inaccessible repository.".format(reponame=reponame)
             )
             repos_to_check.remove(reponame)
             return _get_valid_custom_repos(repos_to_check)
 
+    # The list of repositories passed to the function sans the inaccessible ones
     return repos_to_check
 
 
 def get_rhel_disable_repos_command(disable_repos):
-    """Build command containing all the repos for disable. The result looks like
+    """Build command containing all the repos to disable. The result looks like
     '--disablerepo repo --disablerepo repo1 --disablerepo repo2'
     If provided list is empty, empty string is returned.
 

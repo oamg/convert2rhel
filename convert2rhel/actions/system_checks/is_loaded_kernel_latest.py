@@ -45,8 +45,8 @@ class IsLoadedKernelLatest(actions.Action):
             return
 
         # RHELC-884 disable the RHEL repos to avoid reaching them when checking original system.
-        disable_repos_ints = repo.DisableReposDuringAnalysis()
-        disable_repo_command = repo.get_rhel_disable_repos_command(disable_repos_ints.repos_to_disable)
+        repos_to_disable = repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
+        disable_repo_command = repo.get_rhel_disable_repos_command(repos_to_disable)
 
         cmd = [
             "repoquery",

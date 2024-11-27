@@ -179,14 +179,14 @@ class TestDisableReposDuringAnalysis:
         # Force remove the singleton instance
         repo.DisableReposDuringAnalysis._instance = None
 
-        get_rhel_repos_to_disable = mock.Mock()
-        monkeypatch.setattr(repo.DisableReposDuringAnalysis, "_set_rhel_repos_to_disable", get_rhel_repos_to_disable)
+        set_rhel_repos_to_disable = mock.Mock()
+        monkeypatch.setattr(repo.DisableReposDuringAnalysis, "_set_rhel_repos_to_disable", set_rhel_repos_to_disable)
 
         singleton1 = repo.DisableReposDuringAnalysis()
         singleton2 = repo.DisableReposDuringAnalysis()
 
         assert singleton1 is singleton2
-        assert get_rhel_repos_to_disable.call_count == 1
+        assert set_rhel_repos_to_disable.call_count == 1
 
         # Force remove the singleton instance
         repo.DisableReposDuringAnalysis._instance = None
@@ -247,7 +247,7 @@ class TestDisableReposDuringAnalysis:
         global_tool_opts.enablerepo = enablerepo
         global_tool_opts.no_rhsm = no_rhsm
 
-        repos = repo.DisableReposDuringAnalysis().repos_to_disable
+        repos = repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
         assert repos == disablerepos
 
         # Force remove the singleton instance
@@ -276,7 +276,7 @@ class TestDisableReposDuringAnalysis:
         global_tool_opts.enablerepo = enablerepo
         global_tool_opts.no_rhsm = no_rhsm
 
-        repos = repo.DisableReposDuringAnalysis().repos_to_disable
+        repos = repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
         assert repos == disablerepos
 
         # Force remove the singleton instance

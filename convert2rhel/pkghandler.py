@@ -734,13 +734,12 @@ def get_total_packages_to_update():
     # RHEL repositories needs to be disabled when checking if the packages are up to date.
     # When user specifies rhel repos to use during conversion, disabling them is also needed.
     # Note: Do not depend on the --no-rhsm option, enable repos can be specified without it.
-    disable_repos_ints = repo.DisableReposDuringAnalysis()
-    disable_repos = disable_repos_ints.repos_to_disable
+    repos_to_disable = repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
 
     if pkgmanager.TYPE == "yum":
-        packages = _get_packages_to_update_yum(disable_repos=disable_repos)
+        packages = _get_packages_to_update_yum(disable_repos=repos_to_disable)
     elif pkgmanager.TYPE == "dnf":
-        packages = _get_packages_to_update_dnf(disable_repos=disable_repos)
+        packages = _get_packages_to_update_dnf(disable_repos=repos_to_disable)
 
     return set(packages)
 
