@@ -31,7 +31,7 @@ jobs:
         sudo apt-get install -y python3-pip rpm libnspr4-dev libnss3-dev libpopt-dev libarchive-dev libdb-dev \
           autoconf automake bison flex gettext libtool pkg-config
         pip install --upgrade pip
-        pip install pexpect argparse-manpage
+        pip install pexpect argparse-manpage six
 
     - name: Download and install RPM
       run: |
