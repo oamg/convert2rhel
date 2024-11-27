@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install -y python3-pip rpm libnspr4-dev libnss3-dev
+        sudo apt-get install -y python3-pip rpm libnspr4-dev libnss3-dev libpopt-dev
         pip install --upgrade pip
         pip install pexpect argparse-manpage
 
