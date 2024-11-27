@@ -37,6 +37,9 @@ jobs:
         wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.tar.bz2
         tar -xjf rpm-4.14.2.tar.bz2
         cd rpm-4.14.2
+        export PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.10.0/x64/lib/pkgconfig
+        export PYTHON_CFLAGS="-I/opt/hostedtoolcache/Python/3.10.0/x64/include/python3.10"
+        export PYTHON_LIBS="-L/opt/hostedtoolcache/Python/3.10.0/x64/lib -lpython3.10"
         ./configure --disable-nls --enable-python
         make
         sudo make install
