@@ -21,16 +21,20 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Add Universe Repository
-      run: |
-        sudo add-apt-repository universe
-        sudo apt-get update
-
     - name: Install dependencies
       run: |
-        sudo apt-get install -y python3-pip rpm python3-rpm
+        sudo apt-get update
+        sudo apt-get install -y python3-pip rpm
         pip install --upgrade pip
         pip install pexpect argparse-manpage
+        wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.tar.bz2
+        tar -xjf rpm-4.14.2.tar.bz2
+        cd rpm-4.14.2
+        ./configure --disable-nls --enable-python
+        make
+        sudo make install
+        cd python
+        python3 setup.py install
 
     - name: Verify Python Path
       run: |
