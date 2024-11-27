@@ -62,8 +62,9 @@ class TaintedKmods(actions.Action):
                     remediations=(
                         "Prevent the modules from loading by following {0}"
                         " and run convert2rhel again to continue with the conversion."
-                        " Although it is not recommended, you can disregard this message by setting the environment variable"
-                        " 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' to 1. Overriding this check can be dangerous"
+                        " Although it is not recommended, you can disregard this message by setting the"
+                        " tainted_kernel_module_check_skip inhibitor override in the /etc/convert2rhel.ini"
+                        " config file to true. Overriding this check can be dangerous"
                         " so it is recommended that you do a system backup beforehand."
                         " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
                             LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
@@ -76,9 +77,9 @@ class TaintedKmods(actions.Action):
                 level="WARNING",
                 id="SKIP_TAINTED_KERNEL_MODULE_CHECK",
                 title="Skip tainted kernel module check",
+                diagnosis="You have set the option to skip the tainted kernel module check.",
                 description=(
-                    "Detected 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP' environment variable, we will skip "
-                    "the tainted kernel module check.\n"
+                    "We will ignore results of the check that makes sure no tainted kernel modules are loaded.\n"
                     "Beware, this could leave your system in a broken state."
                 ),
             )

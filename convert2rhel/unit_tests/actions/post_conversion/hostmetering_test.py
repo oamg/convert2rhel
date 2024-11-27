@@ -213,18 +213,16 @@ def test_configure_host_metering(
             (None, 0),
             ("", ""),
             True,
-            set(
-                (
-                    actions.ActionMessage(
-                        level="WARNING",
-                        id="FORCED_CONFIGURE_HOST_METERING",
-                        title="The `force' option has been used for the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
-                        description="Please note that this option is mainly used for testing and"
-                        " will configure host-metering unconditionally."
-                        " For generic usage please use the 'auto' option.",
-                    ),
-                ),
-            ),
+            {
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="FORCED_CONFIGURE_HOST_METERING",
+                    title="Configuration of host metering set to 'force'",
+                    description="Please note that this option is mainly used for testing and"
+                    " will configure host-metering unconditionally."
+                    " For generic usage please use the 'auto' option.",
+                )
+            },
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
         ),
         (
@@ -234,17 +232,17 @@ def test_configure_host_metering(
             (None, 0),
             ("", ""),
             None,
-            set(
-                (
-                    actions.ActionMessage(
-                        level="WARNING",
-                        id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",
-                        title="Unrecognized option in CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
-                        description="Environment variable wrong_env not recognized.",
-                        remediations="Set the option to `auto` value if you want to configure host metering.",
-                    ),
-                ),
-            ),
+            {
+                actions.ActionMessage(
+                    level="WARNING",
+                    id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",
+                    title="Unexpected value of the host metering setting",
+                    diagnosis="Unexpected value of 'configure_host_metering' in convert2rhel.ini or the"
+                    " CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: wrong_env",
+                    description="Host metering will not be configured.",
+                    remediations="Set the option to 'auto' or 'force' if you want to configure host metering.",
+                )
+            },
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
         ),
         (
@@ -383,16 +381,16 @@ def test_configure_host_metering_messages_and_results(
 
 
 def test_configure_host_metering_no_env_var(monkeypatch, hostmetering_instance, global_tool_opts):
-    expected = set(
-        (
-            actions.ActionMessage(
-                level="INFO",
-                id="CONFIGURE_HOST_METERING_SKIP",
-                title="Did not perform host metering configuration.",
-                description="CONVERT2RHEL_CONFIGURE_HOST_METERING was not set.",
-            ),
-        ),
-    )
+    expected = {
+        actions.ActionMessage(
+            level="INFO",
+            id="CONFIGURE_HOST_METERING_SKIP",
+            title="Did not perform host metering configuration.",
+            description="Configuration of host metering has been skipped.",
+            diagnosis="We haven't detected 'configure_host_metering' in the convert2rhel.ini config file nor"
+            " the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
+        )
+    }
     monkeypatch.setattr(hostmetering, "tool_opts", global_tool_opts)
 
     hostmetering_instance.run()

@@ -133,10 +133,8 @@ class CLI:
             " stored in log files {} and {}. At the end of the conversion, these logs are compared"
             " to show you what rpm files have been affected by the conversion."
             " Cannot be used with analyze subcommand."
-            " The environment variable CONVERT2RHEL_INCOMPLETE_ROLLBACK"
-            " needs to be set to 1 to use this argument.".format(
-                utils.rpm.PRE_RPM_VA_LOG_FILENAME, utils.rpm.POST_RPM_VA_LOG_FILENAME
-            ),
+            " The incomplete_rollback option needs to be set to true in the /etc/convert2rhel.ini config file to"
+            " use this argument.".format(utils.rpm.PRE_RPM_VA_LOG_FILENAME, utils.rpm.POST_RPM_VA_LOG_FILENAME),
         )
         self._shared_options_parser.add_argument(
             "--eus",

@@ -223,7 +223,7 @@ class TestBackupSystem:
     def test_get_changed_package_files_missing(
         self, caplog, tmpdir, monkeypatch, backup_package_files_action, global_tool_opts
     ):
-        message = "Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected."
+        message = "You have set the incomplete rollback inhibitor override - skipping backing up of the package files."
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmpdir))
         monkeypatch.setenv("CONVERT2RHEL_INCOMPLETE_ROLLBACK", "1")
         monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)

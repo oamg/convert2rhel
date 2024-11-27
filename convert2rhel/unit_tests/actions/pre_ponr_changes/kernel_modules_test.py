@@ -230,8 +230,8 @@ def test_ensure_compatibility_of_kmods_check_env_and_message(
 
     ensure_kernel_modules_compatibility_instance.run()
     should_be_in_logs = (
-        ".*Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable."
-        " We will continue the conversion with the following kernel modules unavailable in RHEL:.*"
+        ".*You have set the option to allow unavailable kernel modules."
+        " The conversion will continue with the following kernel modules unavailable in RHEL:.*"
     )
     assert re.match(pattern=should_be_in_logs, string=caplog.records[-1].message, flags=re.MULTILINE | re.DOTALL)
     # cannot assert exact action message contents as the kmods arrangement in the message is not static
@@ -239,8 +239,10 @@ def test_ensure_compatibility_of_kmods_check_env_and_message(
     assert STATUS_CODE["WARNING"] == message.level
     assert "ALLOW_UNAVAILABLE_KERNEL_MODULES" == message.id
     assert "Did not perform the ensure kernel modules compatibility check" == message.title
-    assert "Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable." in message.description
-    assert "We will continue the conversion with the following kernel modules unavailable in RHEL:" in message.diagnosis
+    assert (
+        "We will continue the conversion with the following kernel modules unavailable in RHEL:" in message.description
+    )
+    assert "You have set the option to allow unavailable kernel modules." in message.diagnosis
 
 
 @pytest.mark.parametrize(

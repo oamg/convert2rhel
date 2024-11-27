@@ -28,20 +28,16 @@ logger = root_logger.getChild(__name__)
 
 
 class ConfigureHostMetering(actions.Action):
-    """Configure host metering on a machine if it's needed.
-
-    env_var: str
-        Content of CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.
-    """
+    """Configure host metering on a machine if it's needed."""
 
     id = "CONFIGURE_HOST_METERING_IF_NEEDED"
 
     def run(self):
         """
-        Decide whether to install, enable and start host-metering on the system based on the
-        CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.
+        Decide whether to install, enable and start host-metering on the system based on the setting of
+        'configure_host_metering' in /etc/convert2rhel.ini.
 
-        Behavior can be controlled CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable:
+        The behavior can be controlled via the 'configure_host_metering' as follows:
         - "auto": host-metering will be configured based on the above conditions
         - "force": forces configuration of host-metering (e.g., even if not running on a hyperscaler)
         - any other value: Will be ignored and host metering will not be configured.
@@ -53,7 +49,7 @@ class ConfigureHostMetering(actions.Action):
         super(ConfigureHostMetering, self).run()
 
         warn_deprecated_env("CONVERT2RHEL_CONFIGURE_HOST_METERING")
-        if not self._check_env_var():
+        if not self._check_host_metering_configuration():
             return False
 
         if system_info.version.major != 7 and tool_opts.configure_host_metering == "auto":
@@ -134,46 +130,55 @@ class ConfigureHostMetering(actions.Action):
 
         return service_running
 
-    def _check_env_var(self):
-        """Check if the env var is set and if it has the right content. If the
-        content is auto|force, the hostmetering should be configued on the system.
+    def _check_host_metering_configuration(self):
+        """Check if host metering has been configured by the user and if the configuration option has the right value.
+        If the value is auto|force, the host metering should be configured on the system.
 
         :return: Return True if the value is equal to auto|force, otherwise False
         :rtype: bool
         """
         if tool_opts.configure_host_metering is None:
-            logger.debug("CONVERT2RHEL_CONFIGURE_HOST_METERING was not set. Skipping it.")
+            logger.debug("Configuration of host metering has not been enabled. Skipping it.")
             self.add_message(
                 level="INFO",
                 id="CONFIGURE_HOST_METERING_SKIP",
                 title="Did not perform host metering configuration.",
-                description="CONVERT2RHEL_CONFIGURE_HOST_METERING was not set.",
+                description="Configuration of host metering has been skipped.",
+                diagnosis="We haven't detected 'configure_host_metering' in the convert2rhel.ini config file nor"
+                " the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
             )
             return False
 
         if tool_opts.configure_host_metering not in ("force", "auto"):
-            logger.debug("Value for environment variable not recognized: {}".format(tool_opts.configure_host_metering))
+            logger.debug(
+                "Unexpected value of 'configure_host_metering' in convert2rhel.ini or the"
+                " CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: {}".format(
+                    tool_opts.configure_host_metering
+                )
+            )
             self.add_message(
                 level="WARNING",
                 id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",
-                title="Unrecognized option in CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
-                description="Environment variable {env_var} not recognized.".format(
-                    env_var=tool_opts.configure_host_metering
+                title="Unexpected value of the host metering setting",
+                diagnosis="Unexpected value of 'configure_host_metering' in convert2rhel.ini or the"
+                " CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: {}".format(
+                    tool_opts.configure_host_metering
                 ),
-                remediations="Set the option to `auto` value if you want to configure host metering.",
+                description="Host metering will not be configured.",
+                remediations="Set the option to 'auto' or 'force' if you want to configure host metering.",
             )
             return False
 
         if tool_opts.configure_host_metering == "force":
             logger.warning(
-                "The `force' option has been used for the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable."
+                "You've set the host metering setting to 'force'."
                 " Please note that this option is mainly used for testing and will configure host-metering unconditionally. "
                 " For generic usage please use the 'auto' option."
             )
             self.add_message(
                 level="WARNING",
                 id="FORCED_CONFIGURE_HOST_METERING",
-                title="The `force' option has been used for the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
+                title="Configuration of host metering set to 'force'",
                 description="Please note that this option is mainly used for testing and"
                 " will configure host-metering unconditionally."
                 " For generic usage please use the 'auto' option.",

@@ -543,7 +543,10 @@ def test_critical_exit_no_rpm_va_setting(monkeypatch, global_tool_opts, tmpdir):
     monkeypatch.setattr(sys, "argv", mock_cli_arguments(["--no-rpm-va"]))
     with pytest.raises(
         SystemExit,
-        match="We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes done to the system during the pre-conversion analysis. If you accept the risk of an incomplete rollback, set the CONVERT2RHEL_INCOMPLETE_ROLLBACK=1 environment variable. Otherwise, remove the --no-rpm-va option.",
+        match="We need to run the 'rpm -Va' command to be able to perform a complete rollback of changes"
+        " done to the system during the pre-conversion analysis. If you accept the risk of an"
+        " incomplete rollback, set the incomplete_rollback option in the /etc/convert2rhel.ini"
+        " config file to true. Otherwise, remove the --no-rpm-va option.",
     ):
         cli.CLI()
 

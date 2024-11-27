@@ -70,8 +70,8 @@ def test_override_inhibitor_with_unavailable_kmod_loaded(
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        c2r.expect("Detected 'CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS' environment variable")
-        c2r.expect("We will continue the conversion with the following kernel modules")
+        c2r.expect("You have set the option to allow unavailable kernel modules.")
+        c2r.expect("The conversion will continue with the following kernel modules unavailable in RHEL")
 
         c2r.sendcontrol("c")
 
@@ -191,7 +191,8 @@ def test_inhibitor_with_custom_built_tainted_kmod(custom_kmod, convert2rhel):
     ) as c2r:
         c2r.expect("Tainted kernel modules detected")
         c2r.expect(
-            "disregard this message by setting the environment variable 'CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP'"
+            "disregard this message by setting the tainted_kernel_module_check_skip inhibitor override in the"
+            " /etc/convert2rhel.ini config file"
         )
         c2r.sendcontrol("c")
 

@@ -165,7 +165,7 @@ def test_c2r_version_latest_override_inhibitor(convert2rhel, c2r_version, versio
         assert c2r.expect("You are currently running 0.01.0", timeout=300) == 0
         assert (
             c2r.expect(
-                "'CONVERT2RHEL_ALLOW_OLDER_VERSION' environment variable detected, continuing conversion",
+                "You have set the option to allow older convert2rhel version, continuing conversion",
                 timeout=300,
             )
             == 0
@@ -279,7 +279,8 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
         # Verify the user is informed to not use the envar during the analysis
         assert (
             c2r.expect(
-                "setting the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK=1' but not during a pre-conversion analysis",
+                "setting the incomplete_rollback option in the /etc/convert2rhel.ini config file to true,"
+                " but not during a pre-conversion analysis",
                 timeout=300,
             )
             == 0
@@ -295,7 +296,7 @@ def test_analyze_incomplete_rollback(remove_repositories, convert2rhel):
         c2r.sendline("y")
         assert (
             c2r.expect(
-                "'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.",
+                "You have set the incomplete rollback inhibitor override, continuing conversion.",
                 timeout=300,
             )
             == 0

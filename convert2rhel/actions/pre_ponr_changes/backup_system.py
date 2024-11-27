@@ -192,7 +192,10 @@ class BackupPackageFiles(actions.Action):
         except IOError as err:
             warn_deprecated_env("CONVERT2RHEL_INCOMPLETE_ROLLBACK")
             if tool_opts.incomplete_rollback:
-                logger.debug("Skipping backup of the package files. CONVERT2RHEL_INCOMPLETE_ROLLBACK detected.")
+                logger.debug(
+                    "You have set the incomplete rollback inhibitor override - skipping backing up of the package"
+                    " files."
+                )
                 # Return empty list results in no backup of the files
                 return data
             else:

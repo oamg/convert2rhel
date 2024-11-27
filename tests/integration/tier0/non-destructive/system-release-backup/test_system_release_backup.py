@@ -60,7 +60,7 @@ def test_inhibitor_os_release_restored(shell, convert2rhel, fixture_satellite, r
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        c2r.expect_exact("set the environment variable 'CONVERT2RHEL_INCOMPLETE_ROLLBACK", timeout=600)
+        c2r.expect_exact("set the incomplete_rollback option in the /etc/convert2rhel.ini config file", timeout=600)
     # We expect the return code to be 2, given an error is raised
     assert c2r.exitstatus == 2
 
@@ -96,7 +96,7 @@ def test_override_inhibitor_os_release_restored(
         c2r.expect("Continue with the system conversion?")
         c2r.sendline("y")
 
-        c2r.expect("'CONVERT2RHEL_INCOMPLETE_ROLLBACK' environment variable detected, continuing conversion.")
+        c2r.expect("You have set the incomplete rollback inhibitor override, continuing conversion.")
 
         c2r.expect("Continue with the system conversion")
         c2r.sendline("n")
