@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'  # Use Python 3.10
+        python-version: '3.10'
 
     - name: Add Universe Repository
       run: |
@@ -46,13 +46,13 @@ jobs:
         sudo make install
         cd python
         python3 setup.py install
-        sudo ldconfig  # Update library path
+        sudo ldconfig
 
     - name: Verify Python Path
       run: |
         python -c "import sys; print(sys.path)"
         python -c "import pexpect; print('pexpect module is available.')"
-        python -c "import convert2rhel.cli as cli; print(dir(cli)); print(cli.CLI)" || exit 1
+        python -c "import rpm; print('rpm module is available.')"
 
     - name: Generate manpages
       run: |
@@ -66,11 +66,8 @@ jobs:
 
         echo 'Generating manpages'
 
-        # Add debug statements
-        python -c 'import convert2rhel.cli as cli; print(dir(cli)); print(cli.CLI)' || exit 1
-
         # Generate a file with convert2rhel synopsis for argparse-manpage
-        python -c 'from convert2rhel.cli import CLI; print("[synopsis]\n."+CLI.usage())' > "$MANPAGE_DIR/synopsis"
+        python -c 'from convert2rhel import cli; print("[synopsis]\n."+cli.usage())' > "$MANPAGE_DIR/synopsis"
 
         # Extract the current version from the spec file
         CURRENT_VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
@@ -86,3 +83,4 @@ jobs:
         else
             echo 'Manpages are up-to-date.'
             exit 0
+        fi
