@@ -181,8 +181,8 @@ def main_locked():
         utils.restart_system()
     except _AnalyzeExit:
         breadcrumbs.breadcrumbs.finish_collection(success=True)
-        # Update RHSM custom facts only when this returns False. Otherwise,
-        # sub-man get uninstalled and the data is removed from the RHSM server.
+        # Update RHSM custom facts only when the system does not need to be subscribed/registered. Otherwise,
+        # we unregister the system as part of the rollback and the data is removed from the RHSM server.
         if not subscription.should_subscribe():
             subscription.update_rhsm_custom_facts()
 
@@ -286,8 +286,8 @@ def _handle_main_exceptions(current_phase, results=None):  # type: (ConversionPh
         loggerinst.info(no_changes_msg)
         return ConversionExitCodes.FAILURE
     elif execution_phase == ConversionPhases.PRE_PONR_CHANGES:
-        # Update RHSM custom facts only when this returns False. Otherwise,
-        # sub-man get uninstalled and the data is removed from the RHSM server.
+        # Update RHSM custom facts only when the system does not need to be subscribed/registered. Otherwise,
+        # we unregister the system as part of the rollback and the data is removed from the RHSM server.
         if not subscription.should_subscribe():
             subscription.update_rhsm_custom_facts()
 
