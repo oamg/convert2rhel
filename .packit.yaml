@@ -75,19 +75,30 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
-      - tier0
-      - oracle9
       - el9
+      - oracle9
+      - oracle
+      - tier0
+      - tier0-oracle9
+      - tier0-el9
+      - tier0-oracle
 
   - &tests-sanity-oraclelinux-9
     <<: *tests-tier0-oraclelinux-9
     identifier: "sanity-ol9"
     tmt_plan: "tier0/sanity"
     labels:
-      - tier0
-      - oracle9
-      - sanity
       - el9
+      - oracle9
+      - oracle
+      - tier0
+      - tier0-oracle9
+      - tier0-el9
+      - tier0-oracle
+      - sanity
+      - sanity-oracle9
+      - sanity-el9
+      - sanity-oracle
 
   - &tests-tier0-almalinux-9
     job: tests
@@ -120,19 +131,29 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
-      - tier0
-      - alma9
       - el9
+      - alma9
+      - alma
+      - tier0
+      - tier0-alma9
+      - tier0-el9
+      - tier0-alma
 
   - &tests-sanity-almalinux-9
     <<: *tests-tier0-almalinux-9
     identifier: "sanity-al9"
     tmt_plan: "tier0/sanity"
     labels:
-      - tier0
-      - alma9
-      - sanity
       - el9
+      - alma9
+      - tier0
+      - tier0-alma9
+      - tier0-el9
+      - tier0-alma
+      - sanity
+      - sanity-alma9
+      - sanity-el9
+      - sanity-alma
 
   - &tests-tier0-rockylinux-9
     job: tests
@@ -165,19 +186,30 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
-      - tier0
-      - rocky9
       - el9
+      - rocky9
+      - rocky
+      - tier0
+      - tier0-rocky9
+      - tier0-el9
+      - tier0-rocky
 
   - &tests-sanity-rockylinux-9
     <<: *tests-tier0-rockylinux-9
     identifier: "sanity-rl9"
     tmt_plan: "tier0/sanity"
     labels:
-      - tier0
-      - rocky9
-      - sanity
       - el9
+      - rocky9
+      - rocky
+      - tier0
+      - tier0-rocky9
+      - tier0-el9
+      - tier0-rocky
+      - sanity
+      - sanity-rocky9
+      - sanity-el9
+      - sanity-rocky
 
   - &tests-stream-9
     job: tests
@@ -211,9 +243,9 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
-      - stream
-      - stream-9
       - el9
+      - stream9
+      - stream
 
   - &tests-stream-8
     job: tests
@@ -247,10 +279,11 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el8
+      - stream8
       - stream
-      - stream-8
 
-  - &tests-tier0-centos
+  - &tests-tier0-centos8
     job: tests
     # Run tests on-demand
     manual_trigger: true
@@ -258,12 +291,10 @@ jobs:
     # Given we are rebasing the source branches regularly, we do not need this feature enabled
     merge_pr_in_ci: false
     targets:
-      epel-7-x86_64:
-        distros: [centos-7]
       epel-8-x86_64:
         distros: [centos-8-latest]
     trigger: pull_request
-    identifier: "tier0-centos"
+    identifier: "tier0-centos8"
     tmt_plan: "tier0/core"
     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
     use_internal_tf: True
@@ -281,17 +312,84 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
-      - tier0
+      - el8
+      - centos8
       - centos
+      - tier0
+      - tier0-centos8
+      - tier0-el8
+      - tier0-centos
 
-  - &tests-sanity-centos
-    <<: *tests-tier0-centos
-    identifier: "sanity-centos"
+  - &tests-sanity-centos8
+    <<: *tests-tier0-centos8
+    identifier: "sanity-centos8"
     tmt_plan: "tier0/sanity"
     labels:
-      - tier0
+      - el8
+      - centos8
       - centos
+      - tier0
+      - tier0-centos8
+      - tier0-el8
+      - tier0-centos
       - sanity
+      - sanity-centos8
+      - sanity-el8
+      - sanity-centos
+
+  - &tests-tier0-centos7
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-7-x86_64:
+        distros: [centos-7]
+    trigger: pull_request
+    identifier: "tier0-centos7"
+    tmt_plan: "tier0/core"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
+    tf_extra_params:
+      environments:
+        - settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - el7
+      - centos7
+      - centos
+      - tier0
+      - tier0-centos7
+      - tier0-el7
+      - tier0-centos
+
+  - &tests-sanity-centos7
+    <<: *tests-tier0-centos7
+    identifier: "sanity-centos7"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - el7
+      - centos7
+      - centos
+      - tier0
+      - tier0-centos7
+      - tier0-el7
+      - tier0-centos
+      - sanity
+      - sanity-centos7
+      - sanity-el7
+      - sanity-centos
 
   - &tests-tier0-oraclelinux-7
     job: tests
@@ -324,17 +422,30 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el7
+      - oracle7
+      - oracle
       - tier0
-      - oracle-7
+      - tier0-oracle7
+      - tier0-el7
+      - tier0-oracle
 
   - &tests-sanity-oraclelinux-7
     <<: *tests-tier0-oraclelinux-7
     identifier: "sanity-ol7"
     tmt_plan: "tier0/sanity"
     labels:
+      - el7
+      - oracle7
+      - oracle
       - tier0
-      - oracle-7
+      - tier0-oracle7
+      - tier0-el7
+      - tier0-oracle
       - sanity
+      - sanity-oracle7
+      - sanity-el7
+      - sanity-oracle
 
   - &tests-tier0-oraclelinux-8
     job: tests
@@ -367,17 +478,30 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el8
+      - oracle8
+      - oracle
       - tier0
-      - oracle-8
+      - tier0-oracle8
+      - tier0-el8
+      - tier0-oracle
 
   - &tests-sanity-oraclelinux-8
     <<: *tests-tier0-oraclelinux-8
     identifier: "sanity-ol8"
     tmt_plan: "tier0/sanity"
     labels:
+      - el8
+      - oracle8
+      - oracle
       - tier0
-      - oracle-8
+      - tier0-oracle8
+      - tier0-el8
+      - tier0-oracle
       - sanity
+      - sanity-oracle8
+      - sanity-el8
+      - sanity-oracle
 
   - &tests-tier0-almalinux-88
     job: tests
@@ -414,17 +538,32 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el8
+      - alma88
+      - alma
+      - eus
       - tier0
-      - alma-88
+      - tier0-alma88
+      - tier0-el8
+      - tier0-alma
 
   - &tests-sanity-almalinux-88
     <<: *tests-tier0-almalinux-88
     identifier: "sanity-al88"
     tmt_plan: "tier0/sanity"
     labels:
+      - el8
+      - alma88
+      - alma
+      - eus
       - tier0
-      - alma-88
+      - tier0-alma88
+      - tier0-el8
+      - tier0-alma
       - sanity
+      - sanity-alma88
+      - sanity-el8
+      - sanity-alma
 
   - &tests-tier0-almalinux-8
     job: tests
@@ -457,17 +596,30 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el8
+      - alma8
+      - alma
       - tier0
-      - alma-8
+      - tier0-alma8
+      - tier0-el8
+      - tier0-alma
+      - sanity
+      - sanity-alma8
+      - sanity-el8
+      - sanity-alma
 
   - &tests-sanity-almalinux-8
     <<: *tests-tier0-almalinux-8
     identifier: "sanity-al8"
     tmt_plan: "tier0/sanity"
     labels:
+      - el8
+      - alma8
+      - alma
       - tier0
-      - alma-8
-      - sanity
+      - tier0-alma8
+      - tier0-el8
+      - tier0-alma
 
   - &tests-tier0-rockylinux-88
     job: tests
@@ -500,17 +652,32 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el8
+      - rocky88
+      - rocky
+      - eus
       - tier0
-      - rocky-88
+      - tier0-rocky88
+      - tier0-el8
+      - tier0-rocky
 
   - &tests-sanity-rockylinux-88
     <<: *tests-tier0-rockylinux-88
     identifier: "sanity-rl88"
     tmt_plan: "tier0/sanity"
     labels:
+      - el8
+      - rocky88
+      - rocky
+      - eus
       - tier0
-      - rocky-88
+      - tier0-rocky88
+      - tier0-el8
+      - tier0-rocky
       - sanity
+      - sanity-rocky88
+      - sanity-el8
+      - sanity-rocky
 
   - &tests-tier0-rockylinux-8
     job: tests
@@ -543,108 +710,183 @@ jobs:
         pipeline:
             parallel-limit: 20
     labels:
+      - el8
+      - rocky8
+      - rocky
       - tier0
-      - rocky-8
+      - tier0-rocky8
+      - tier0-el8
+      - tier0-rocky
 
   - &tests-sanity-rockylinux-8
     <<: *tests-tier0-rockylinux-8
     identifier: "sanity-rl8"
     tmt_plan: "tier0/sanity"
     labels:
+      - el8
+      - rocky8
+      - rocky
       - tier0
-      - rocky-8
+      - tier0-rocky8
+      - tier0-el8
+      - tier0-rocky
       - sanity
+      - sanity-rocky8
+      - sanity-el8
+      - sanity-rocky
 
   ### Definitions of the tier1 tests
-  - &tests-tier1-manual-centos
-    <<: *tests-tier0-centos
-    identifier: "tier1-centos"
+  - &tests-tier1-manual-centos7
+    <<: *tests-tier0-centos7
+    identifier: "tier1-centos7"
     tmt_plan: "tier1"
     labels:
-      - tier1
+      - el7
+      - centos7
       - centos
+      - tier1
+      - tier1-centos7
+      - tier1-el7
+      - tier1-centos
 
   - &tests-tier1-manual-oraclelinux-7
     <<: *tests-tier0-oraclelinux-7
     identifier: "tier1-ol7"
     tmt_plan: "tier1"
     labels:
+      - el7
+      - oracle7
+      - oracle
       - tier1
-      - oracle-7
+      - tier1-oracle7
+      - tier1-el7
+      - tier1-oracle
+
+  - &tests-tier1-manual-centos8
+    <<: *tests-tier0-centos8
+    identifier: "tier1-centos8"
+    tmt_plan: "tier1"
+    labels:
+      - el8
+      - centos8
+      - centos
+      - tier1
+      - tier1-centos8
+      - tier1-el8
+      - tier1-centos
 
   - &tests-tier1-manual-oraclelinux-8
     <<: *tests-tier0-oraclelinux-8
     identifier: "tier1-ol8"
     tmt_plan: "tier1"
     labels:
+      - el8
+      - oracle8
+      - oracle
       - tier1
-      - oracle-8
+      - tier1-oracle8
+      - tier1-el8
+      - tier1-oracle
 
   - &tests-tier1-manual-almalinux-88
     <<: *tests-tier0-almalinux-88
     identifier: "tier1-al88"
     tmt_plan: "tier1"
     labels:
+      - el8
+      - alma88
+      - alma
+      - eus
       - tier1
-      - alma-88
+      - tier1-alma88
+      - tier1-el8
+      - tier1-alma
 
   - &tests-tier1-manual-almalinux-8
     <<: *tests-tier0-almalinux-8
     identifier: "tier1-al8"
     tmt_plan: "tier1"
     labels:
+      - el8
+      - alma8
+      - alma
       - tier1
-      - alma-8
+      - tier1-alma8
+      - tier1-el8
+      - tier1-alma
 
   - &tests-tier1-manual-rockylinux-88
     <<: *tests-tier0-rockylinux-88
     identifier: "tier1-rl88"
     tmt_plan: "tier1"
     labels:
+      - el8
+      - rocky88
+      - rocky
+      - eus
       - tier1
-      - rocky-88
+      - tier1-rocky88
+      - tier1-el8
+      - tier1-rocky
 
   - &tests-tier1-manual-rockylinux-8
     <<: *tests-tier0-rockylinux-8
     identifier: "tier1-rl8"
     tmt_plan: "tier1"
     labels:
+      - el8
+      - rocky8
+      - rocky
       - tier1
-      - rocky-8
+      - tier1-rocky8
+      - tier1-el8
+      - tier1-rocky
 
   - &tests-tier1-manual-rockylinux-9
     <<: *tests-tier0-rockylinux-9
     identifier: "tier1-rl9"
     tmt_plan: "tier1"
     labels:
-      - tier1
-      - rocky9
       - el9
+      - rocky9
+      - rocky
+      - tier1
+      - tier1-el9
+      - tier1-rocky9
+      - tier1-rocky
 
   - &tests-tier1-manual-almalinux-9
     <<: *tests-tier0-almalinux-9
     identifier: "tier1-al9"
     tmt_plan: "tier1"
     labels:
-      - tier1
-      - alma9
       - el9
+      - alma9
+      - alma
+      - tier1
+      - tier1-el9
+      - tier1-alma9
+      - tier1-alma
 
   - &tests-tier1-manual-oraclelinux-9
     <<: *tests-tier0-oraclelinux-9
     identifier: "tier1-ol9"
     tmt_plan: "tier1"
     labels:
-      - tier1
-      - oracle9
       - el9
+      - oracle9
+      - oracle
+      - tier1
+      - tier1-el9
+      - tier1-oracle9
+      - tier1-oracle
 
   ## Tests on merge to main stage. Tests are run automatically
-  - &tests-main-tier1-centos
-    <<: *tests-tier0-centos
+  - &tests-main-tier1-centos7
+    <<: *tests-tier0-centos7
     # Run test automatically with merge commit to main branch
     manual_trigger: false
-    identifier: "tier1-centos"
+    identifier: "tier1-centos7"
     tmt_plan: "tier1"
     trigger: commit
     branch: main
@@ -654,6 +896,15 @@ jobs:
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-ol7"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
+  - &tests-main-tier1-centos8
+    <<: *tests-tier0-centos8
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-centos8"
     tmt_plan: "tier1"
     trigger: commit
     branch: main
