@@ -9,8 +9,8 @@
 %endif
 
 Name:           convert2rhel
-Version:        2.1.0
-Release:        2%{?dist}
+Version:        2.2.0
+Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
 License:        GPLv3+
@@ -69,9 +69,9 @@ Requires:       grub2-tools
 The purpose of the convert2rhel tool is to provide an automated way of
 converting the installed other-than-RHEL OS distribution to Red Hat Enterprise
 Linux (RHEL). The tool replaces all the original OS-signed packages with the
-RHEL ones. Available are conversions of CentOS Linux 7/8, Oracle Linux 7/8/9,
-Alma Linux 8/9, Rocky Linux 8/9 and Scientific Linux 7 to the respective major
-version of RHEL.
+RHEL ones. Available are conversions of CentOS Linux 7/8, CentOS Stream 8/9,
+Oracle Linux 7/8/9, Alma Linux 8/9, Rocky Linux 8/9 and Scientific Linux 7
+to the respective major version of RHEL.
 
 %prep
 %setup -q
@@ -125,6 +125,26 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu Nov 28 2024 Michal Bocek <mbocek@redhat.com> 2.2.0
+- Rename GPG fingerprint to key_id
+- Port environment variables to config file
+- Add pre-conversion check for invalid grub file
+- Add deprecation notice about environment variables
+- Enable checking for EL9 convert2rhel latest version
+- Include EUS/ELS switches in breadcrumbs
+- Load inhibitor override env vars into the toolopts structure
+- Advise users to back up their system
+- Change out-of-date packages overridable inhibitor to a warning
+- Handle failing duplicate package check on EL9
+- Always check accessibility of --enablerepo repos
+- Fix missing /etc/yum.repos.d/ directory on EL9
+- Make the check for initramfs validity more robust
+- Make exit codes consistent when inhibitors found
+- Fix the latest RHEL kernel not set as default on CentOS Stream 9
+- Don't update RHSM facts with sub-man not present
+- Handle yum failing on trying to reach inaccessible --enablerepo repos
+
+
 * Wed Aug 21 2024 Preston Watson <prwatson@redhat.com> 2.1.0
 - Use public CDN instead of paywalled CDN and FTP
 - Remove RuntimeWarning caused by bufsize value of run_subprocess
