@@ -291,11 +291,9 @@ adjust+:
                 - proxy-conversion/proxy_conversion
 
     /error-after-ponr:
-        enabled: false
         adjust+:
-          - enabled: true
-            when: distro == alma-9, rocky-9, oracle-9
-            because: It will behave the same anywhere. Too expensive to run it on more hosts.
+          - enabled: false
+            because: The test is very flaky and expensive to maintain. Needs further investigation.
         discover+:
             # Disregarding inheritance in the test discovery.
             # As the conversion fails and the system is left in an undetermined state,

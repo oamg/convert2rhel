@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from conftest import TEST_VARS
+import configparser
 
 
 def setup_test_metering_endpoint():
@@ -39,6 +40,19 @@ write_url=http://localhost:9090/api/v1/write
         )
 
 
+# TODO (danmyway) refactor this into a helper function/class when we move away from the environment variables completely
+def set_the_option_in_config():
+    """
+    Set the configure_host_metering option through the config file.
+    """
+    config_path = "/etc/convert2rhel.ini"
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    config.set("host_metering", "configure_host_metering", "force")
+    with open(config_path, "w") as file:
+        config.write(file)
+
+
 # TODO (danmyway) We might boil this down to just a preparation of the envar and the endpoint
 # and then use whatever basic conversion method for the conversion itself
 # We do not really need to care about the output of the utility
@@ -52,6 +66,7 @@ def test_run_conversion_with_host_metering(shell, convert2rhel):
     service on hyperscalers on RHEL 7.9.
     """
     setup_test_metering_endpoint()
+    set_the_option_in_config()
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
