@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'  # Use Python 3.10
+        python-version: '3.10'
 
     - name: Add Universe Repository
       run: |
@@ -46,12 +46,16 @@ jobs:
         sudo make install
         cd python
         python3 setup.py install
-        sudo ldconfig  # Update library path
+        sudo ldconfig
 
     - name: Verify Python Path
       run: |
         python -c "import sys; print(sys.path)"
         python -c "import pexpect; print('pexpect module is available.')"
+        python -c "import rpm; print('rpm module is available.')"
+
+    - name: Debug CLI Attribute
+      run: |
         python -c "import convert2rhel.cli as cli; print(dir(cli)); print(cli.CLI)" || exit 1
 
     - name: Generate manpages
@@ -86,3 +90,4 @@ jobs:
         else
             echo 'Manpages are up-to-date.'
             exit 0
+        fi
