@@ -44,7 +44,9 @@ def test_custom_invalid_repo_without_rhsm(shell, convert2rhel):
     with invalid repository passed.
     Make sure that after failed repo check there is a kernel installed.
     """
-    with convert2rhel("-y --no-rhsm --enablerepo fake-rhel-8-for-x86_64-baseos-rpms --debug", unregister=True) as c2r:
+    with convert2rhel(
+        "-y --no-rhsm --enablerepo fake-rhel-repo-1 --enablerepo fake-rhel-repo-2 --debug", unregister=True
+    ) as c2r:
         c2r.expect("CUSTOM_REPOSITORIES_ARE_VALID::UNABLE_TO_ACCESS_REPOSITORIES")
 
     assert c2r.exitstatus == 2
