@@ -102,13 +102,12 @@ def test_update_grub(
                         id="GRUB2_CONFIG_CREATION_FAILED",
                         title="The grub2-mkconfig call failed to complete",
                         description=(
-                            "The grub2-mkconfig call failed with output:\n'output'.\nThe conversion will continue but there"
-                            " may be issues with the current grub2 config and image formats."
+                            "There may be issues with the bootloader configuration."
+                            " Follow the recommended remediation before rebooting the system."
                         ),
-                        diagnosis=None,
-                        remediations="If there are issues with the current grub2 config and image we recommend manually "
-                        "re-generating them with 'grub2-mkconfig -o /boot/grub2/grub.cfg' and"
-                        "'grub2-install [block device, e.g. /dev/sda]'.",
+                        diagnosis="The grub2-mkconfig call failed with output:\n'output'",
+                        remediations="Resolve the problem reported in the diagnosis and then run 'grub2-mkconfig -o"
+                        " /boot/grub2/grub.cfg' and 'grub2-install [block device, e.g. /dev/sda]'.",
                     ),
                 )
             ),
@@ -126,13 +125,12 @@ def test_update_grub(
                         id="GRUB2_CONFIG_CREATION_FAILED",
                         title="The grub2-mkconfig call failed to complete",
                         description=(
-                            "The grub2-mkconfig call failed with output:\n'output'.\nThe conversion will continue but there"
-                            " may be issues with the current grub2 config and image formats."
+                            "There may be issues with the bootloader configuration."
+                            " Follow the recommended remediation before rebooting the system."
                         ),
-                        diagnosis=None,
-                        remediations="If there are issues with the current grub2 config and image we recommend manually "
-                        "re-generating them with 'grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg' and"
-                        "'grub2-install [block device, e.g. /dev/sda]'.",
+                        diagnosis="The grub2-mkconfig call failed with output:\n'output'",
+                        remediations="Resolve the problem reported in the diagnosis and then run 'grub2-mkconfig -o"
+                        " /boot/efi/EFI/redhat/grub.cfg' and 'grub2-install [block device, e.g. /dev/sda]'.",
                     ),
                 )
             ),
@@ -150,13 +148,12 @@ def test_update_grub(
                         id="GRUB2_CONFIG_CREATION_FAILED",
                         title="The grub2-mkconfig call failed to complete",
                         description=(
-                            "The grub2-mkconfig call failed with output:\n'output'.\nThe conversion will continue but there"
-                            " may be issues with the current grub2 config and image formats."
+                            "There may be issues with the bootloader configuration."
+                            " Follow the recommended remediation before rebooting the system."
                         ),
-                        diagnosis=None,
-                        remediations="If there are issues with the current grub2 config and image we recommend manually "
-                        "re-generating them with 'grub2-mkconfig -o /boot/grub2/grub.cfg' and"
-                        "'grub2-install [block device, e.g. /dev/sda]'.",
+                        diagnosis="The grub2-mkconfig call failed with output:\n'output'",
+                        remediations="Resolve the problem reported in the diagnosis and then run 'grub2-mkconfig -o"
+                        " /boot/grub2/grub.cfg' and 'grub2-install [block device, e.g. /dev/sda]'.",
                     ),
                 )
             ),
