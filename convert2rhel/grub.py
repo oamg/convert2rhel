@@ -502,6 +502,8 @@ def get_grub_config_file():
     """
     grub_config_path = GRUB2_BIOS_CONFIG_FILE
 
+    # On RHEL 9 the path to the grub config file on UEFI has been unified with the one on BIOS. See:
+    #  https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/9.0_release_notes/index#enhancement_boot-loader
     if is_efi() and systeminfo.system_info.version.major < 9:
         grub_config_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
 
