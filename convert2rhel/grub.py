@@ -502,7 +502,7 @@ def get_grub_config_file():
     """
     grub_config_path = GRUB2_BIOS_CONFIG_FILE
 
-    if is_efi():
+    if is_efi() and systeminfo.system_info.version.major < 9:
         grub_config_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, "grub.cfg")
 
     return grub_config_path
