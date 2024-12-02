@@ -54,12 +54,12 @@ class UpdateGrub(actions.Action):
                 id="GRUB2_CONFIG_CREATION_FAILED",
                 title="The grub2-mkconfig call failed to complete",
                 description=(
-                    "The grub2-mkconfig call failed with output: '{0}'. The conversion will continue but there"
-                    " may be issues with the current grub2 config and image formats.".format(output)
+                    "The grub2-mkconfig call failed with output:\n'{0}'.\nThe conversion will continue but there"
+                    " may be issues with the current grub2 config and image formats.".format(output.rstrip("\n"))
                 ),
                 remediations="If there are issues with the current grub2 config and image we recommend manually "
-                "re-generating them with 'grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg' and"
-                "'grub2-install [block device, e.g. /dev/sda]'.",
+                "re-generating them with 'grub2-mkconfig -o {0}' and"
+                "'grub2-install [block device, e.g. /dev/sda]'.".format(grub2_config_file),
             )
             return
 

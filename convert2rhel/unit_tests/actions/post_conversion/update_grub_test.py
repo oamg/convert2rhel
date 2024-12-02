@@ -87,12 +87,14 @@ def test_update_grub(
 
 
 @pytest.mark.parametrize(
-    ("config_path", "grub2_mkconfig_exit_code", "grub2_install_exit_code", "expected"),
+    ("config_path", "is_efi", "grub2_mkconfig_exit_code", "grub2_install_exit_code", "releasever_major", "expected"),
     (
         (
             "/boot/grub2/grub.cfg",
+            True,
             1,
             0,
+            9,
             set(
                 (
                     actions.ActionMessage(
@@ -100,7 +102,31 @@ def test_update_grub(
                         id="GRUB2_CONFIG_CREATION_FAILED",
                         title="The grub2-mkconfig call failed to complete",
                         description=(
-                            "The grub2-mkconfig call failed with output: 'output'. The conversion will continue but there"
+                            "The grub2-mkconfig call failed with output:\n'output'.\nThe conversion will continue but there"
+                            " may be issues with the current grub2 config and image formats."
+                        ),
+                        diagnosis=None,
+                        remediations="If there are issues with the current grub2 config and image we recommend manually "
+                        "re-generating them with 'grub2-mkconfig -o /boot/grub2/grub.cfg' and"
+                        "'grub2-install [block device, e.g. /dev/sda]'.",
+                    ),
+                )
+            ),
+        ),
+        (
+            "/boot/efi/EFI/redhat/grub.cfg",
+            True,
+            1,
+            0,
+            7,
+            set(
+                (
+                    actions.ActionMessage(
+                        level="WARNING",
+                        id="GRUB2_CONFIG_CREATION_FAILED",
+                        title="The grub2-mkconfig call failed to complete",
+                        description=(
+                            "The grub2-mkconfig call failed with output:\n'output'.\nThe conversion will continue but there"
                             " may be issues with the current grub2 config and image formats."
                         ),
                         diagnosis=None,
@@ -113,8 +139,34 @@ def test_update_grub(
         ),
         (
             "/boot/grub2/grub.cfg",
+            False,
+            1,
+            0,
+            7,
+            set(
+                (
+                    actions.ActionMessage(
+                        level="WARNING",
+                        id="GRUB2_CONFIG_CREATION_FAILED",
+                        title="The grub2-mkconfig call failed to complete",
+                        description=(
+                            "The grub2-mkconfig call failed with output:\n'output'.\nThe conversion will continue but there"
+                            " may be issues with the current grub2 config and image formats."
+                        ),
+                        diagnosis=None,
+                        remediations="If there are issues with the current grub2 config and image we recommend manually "
+                        "re-generating them with 'grub2-mkconfig -o /boot/grub2/grub.cfg' and"
+                        "'grub2-install [block device, e.g. /dev/sda]'.",
+                    ),
+                )
+            ),
+        ),
+        (
+            "/boot/grub2/grub.cfg",
+            False,
             0,
             1,
+            7,
             set(
                 (
                     actions.ActionMessage(
@@ -131,11 +183,21 @@ def test_update_grub(
     ),
 )
 def test_update_grub_action_messages(
-    update_grub_instance, monkeypatch, config_path, grub2_mkconfig_exit_code, grub2_install_exit_code, expected
+    update_grub_instance,
+    monkeypatch,
+    config_path,
+    is_efi,
+    grub2_mkconfig_exit_code,
+    grub2_install_exit_code,
+    releasever_major,
+    expected,
 ):
     monkeypatch.setattr("convert2rhel.grub.get_grub_device", mock.Mock(return_value="/dev/sda"))
-    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=False))
-    monkeypatch.setattr("convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major"])(7))
+    monkeypatch.setattr("convert2rhel.grub.get_grub_config_file", mock.Mock(return_value=config_path))
+    monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=is_efi))
+    monkeypatch.setattr(
+        "convert2rhel.systeminfo.system_info.version", namedtuple("Version", ["major"])(releasever_major)
+    )
     run_subprocess_mocked = RunSubprocessMocked(
         side_effect=run_subprocess_side_effect(
             (

@@ -469,13 +469,16 @@ def test__remove_orig_boot_entry(
 
 
 @pytest.mark.parametrize(
-    ("is_efi", "config_path"),
+    ("is_efi", "config_path", "releasever_major"),
     (
-        (False, "/boot/grub2/grub.cfg"),
-        (True, "/boot/efi/EFI/redhat/grub.cfg"),
+        (False, "/boot/grub2/grub.cfg", 8),
+        (True, "/boot/efi/EFI/redhat/grub.cfg", 8),
+        (True, "/boot/grub2/grub.cfg", 9),
+        (False, "/boot/grub2/grub.cfg", 9),
     ),
 )
-def test_get_grub_config_file(is_efi, config_path, monkeypatch):
+def test_get_grub_config_file(is_efi, config_path, releasever_major, monkeypatch):
+    monkeypatch.setattr("convert2rhel.systeminfo.system_info.version", mock.Mock(major=releasever_major))
     monkeypatch.setattr("convert2rhel.grub.is_efi", mock.Mock(return_value=is_efi))
     config_file = grub.get_grub_config_file()
 
