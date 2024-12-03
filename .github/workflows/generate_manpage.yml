@@ -33,6 +33,11 @@ jobs:
         pip install --upgrade pip
         pip install pexpect argparse-manpage six
 
+    - name: Create /etc/convert2rhel.ini
+      run: |
+        sudo mkdir -p /etc
+        sudo touch /etc/convert2rhel.ini
+
     - name: Download and install RPM
       run: |
         wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.tar.bz2
