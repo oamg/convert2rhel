@@ -1,11 +1,9 @@
-import platform
 import subprocess
 
 from conftest import TEST_VARS
-
+from test_helpers.common_functions import SystemInformationRelease
 
 EFI_BOOT_MOUNTPOINT = "/boot/efi"
-SYSTEM_RELEASE = platform.platform()
 
 # TODO(danmyway): We need to include another test case in this to verify that
 # Convert2RHEL can detect the correct partition even though it will not be in
@@ -45,10 +43,7 @@ def test_detect_correct_boot_partition(convert2rhel):
     boot_device_name = get_device_name(boot_device)
     boot_partition = get_device_partition(boot_device)
 
-    rhel_version = "8"
-
-    if "centos-7" in SYSTEM_RELEASE or "oracle-7" in SYSTEM_RELEASE:
-        rhel_version = "7"
+    rhel_version = SystemInformationRelease.version.major
 
     with convert2rhel(
         "-y --serverurl {} --username {} --password {} --debug".format(
