@@ -54,24 +54,12 @@ class ConfigureHostMetering(actions.Action):
 
         if system_info.version.major != 7 and tool_opts.configure_host_metering == "auto":
             logger.info("Did not perform host metering configuration. Only supported for RHEL 7.")
-            self.add_message(
-                level="INFO",
-                id="CONFIGURE_HOST_METERING_SKIP",
-                title="Did not perform host metering configuration.",
-                description="Host metering is supportted only for RHEL 7.",
-            )
             return False
 
         is_hyperscaler = self.is_running_on_hyperscaler()
 
         if not is_hyperscaler and tool_opts.configure_host_metering == "auto":
             logger.info("Did not perform host-metering configuration.")
-            self.add_message(
-                level="INFO",
-                id="CONFIGURE_HOST_METERING_SKIP",
-                title="Did not perform host metering configuration as not needed.",
-                description="Host metering is not needed on the system.",
-            )
             return False
 
         logger.info("Installing host-metering packages.")
@@ -138,15 +126,7 @@ class ConfigureHostMetering(actions.Action):
         :rtype: bool
         """
         if tool_opts.configure_host_metering is None:
-            logger.debug("Configuration of host metering has not been enabled. Skipping it.")
-            self.add_message(
-                level="INFO",
-                id="CONFIGURE_HOST_METERING_SKIP",
-                title="Did not perform host metering configuration.",
-                description="Configuration of host metering has been skipped.",
-                diagnosis="We haven't detected 'configure_host_metering' in the convert2rhel.ini config file nor"
-                " the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
-            )
+            logger.debug("You have not enabled configuration of host metering. Skipping it.")
             return False
 
         if tool_opts.configure_host_metering not in ("force", "auto"):

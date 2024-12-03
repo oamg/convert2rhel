@@ -194,16 +194,7 @@ def test_configure_host_metering(
             (None, 0),
             ("", ""),
             False,
-            set(
-                (
-                    actions.ActionMessage(
-                        level="INFO",
-                        id="CONFIGURE_HOST_METERING_SKIP",
-                        title="Did not perform host metering configuration.",
-                        description="Host metering is supportted only for RHEL 7.",
-                    ),
-                ),
-            ),
+            None,
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
         ),
         (
@@ -252,16 +243,7 @@ def test_configure_host_metering(
             (None, 0),
             ("", ""),
             None,
-            set(
-                (
-                    actions.ActionMessage(
-                        level="INFO",
-                        id="CONFIGURE_HOST_METERING_SKIP",
-                        title="Did not perform host metering configuration as not needed.",
-                        description="Host metering is not needed on the system.",
-                    ),
-                ),
-            ),
+            None,
             actions.ActionResult(level="SUCCESS", id="SUCCESS"),
         ),
         (
@@ -375,28 +357,18 @@ def test_configure_host_metering_messages_and_results(
     monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
     hostmetering_instance.run()
 
-    assert action_message.issuperset(hostmetering_instance.messages)
-    assert action_message.issubset(hostmetering_instance.messages)
+    if action_message:
+        assert action_message.issuperset(hostmetering_instance.messages)
+        assert action_message.issubset(hostmetering_instance.messages)
     assert action_result == hostmetering_instance.result
 
 
-def test_configure_host_metering_no_env_var(monkeypatch, hostmetering_instance, global_tool_opts):
-    expected = {
-        actions.ActionMessage(
-            level="INFO",
-            id="CONFIGURE_HOST_METERING_SKIP",
-            title="Did not perform host metering configuration.",
-            description="Configuration of host metering has been skipped.",
-            diagnosis="We haven't detected 'configure_host_metering' in the convert2rhel.ini config file nor"
-            " the CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable.",
-        )
-    }
+def test_configure_host_metering_no_env_var(monkeypatch, hostmetering_instance, global_tool_opts, caplog):
     monkeypatch.setattr(hostmetering, "tool_opts", global_tool_opts)
 
     hostmetering_instance.run()
 
-    assert expected.issuperset(hostmetering_instance.messages)
-    assert expected.issubset(hostmetering_instance.messages)
+    assert "You have not enabled configuration of host metering. Skipping it." in caplog.records[-1].message
     assert actions.ActionResult(level="SUCCESS", id="SUCCESS") == hostmetering_instance.result
 
 

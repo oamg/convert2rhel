@@ -45,12 +45,9 @@ class LockReleaseverInRHELRepositories(actions.Action):
         # rhsm is used, otherwise, there's no need to lock the releasever as the subscription-manager won't be
         # available.
         if not system_info.eus_system or tool_opts.no_rhsm:
-            loggerinst.info("Skipping locking RHEL repositories to a specific EUS minor version.")
-            self.add_message(
-                id="SKIPPED_LOCK_RELEASEVER_IN_RHEL_REPOSITORIES",
-                level="INFO",
-                title="Skipped releasever lock",
-                description="Releasever lock is needed only when converting to RHEL EUS using RHSM.",
+            loggerinst.info(
+                "Skipping locking RHEL repositories. Releasever lock is needed only when converting to"
+                "RHEL EUS using RHSM."
             )
             return
         loggerinst.info(
