@@ -36,7 +36,12 @@ jobs:
     - name: Create /etc/convert2rhel.ini
       run: |
         sudo mkdir -p /etc
-        sudo touch /etc/convert2rhel.ini
+        sudo bash -c 'cat <<EOF > /etc/convert2rhel.ini
+        [main]
+        subscription_manager = placeholder_value
+        host_metering = placeholder_value
+        inhibitor_overrides = placeholder_value
+        EOF'
 
     - name: Download and install RPM
       run: |
