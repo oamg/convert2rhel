@@ -204,7 +204,7 @@ class Convert2rhelLatest(actions.Action):
                         )
                     ),
                     remediations="If you want to disregard this check, set the allow_older_version inhibitor"
-                        " override in the /etc/convert2rhel.ini config file to true.",
+                    " override in the /etc/convert2rhel.ini config file to true.",
                 )
                 return
 
