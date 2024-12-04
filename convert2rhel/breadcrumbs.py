@@ -108,26 +108,52 @@ class Breadcrumbs:
 
     def _set_activity(self):
         """Set the activity that convert2rhel is going to perform"""
-        self.activity = tool_opts.activity
+        try:
+            self.activity = tool_opts.activity
+            if not self.activity:
+                raise ValueError("Activity is not set in tool_opts")
+        except Exception as e:
+            logger.logging.warnning(f"Error setting activity: {e}")
 
     def _set_pkg_object(self):
         """Set pkg_object which is used to get information about installed Convert2RHEL"""
-        # the index position is there because get_installed_pkg_objects return list, which is filtered and
-        # should contain just one item
-        self._pkg_object = pkghandler.get_installed_pkg_objects(name="convert2rhel")[0]
+        try:
+            pkg_objects = pkghandler.get_installed_pkg_objects(name="convert2rhel")
+            if not pkg_objects:
+                raise ValueError("No installed package objects found for convert2rhel")
+            self._pkg_object = pkg_objects[0]
+        except Exception as e:
+            logger.logging.warnning(f"Error setting pkg_object: {e}")
 
     def _set_executed(self):
         """Set how was Convert2RHEL executed"""
-        self.executed = " ".join(utils.hide_secrets(args=sys.argv))
+        try:
+            self.executed = " ".join(utils.hide_secrets(args=sys.argv))
+            if not self.executed:
+                raise ValueError("Executed command is not set")
+        except Exception as e:
+            logger.logging.warnning(f"Error setting executed: {e}")
 
     def _set_nevra(self):
         """Set NEVRA of installed Convert2RHEL"""
-        self.nevra = pkghandler.get_pkg_nevra(self._pkg_object, include_zero_epoch=True)
+        try:
+            self.nevra = pkghandler.get_pkg_nevra(self._pkg_object, include_zero_epoch=True)
+            if not self.nevra:
+                raise ValueError("NEVRA is not set")
+        except Exception as e:
+            logger.logging.warnning(f"Error setting nevra: {e}")
 
     def _set_signature(self):
         """Set signature of installed Convert2RHEL"""
-        package = pkghandler.get_installed_pkg_information(str(self._pkg_object))[0]
-        self.signature = package.signature
+        try:
+            package_info = pkghandler.get_installed_pkg_information(str(self._pkg_object))
+            if not package_info:
+                raise ValueError("No package information found for convert2rhel")
+            self.signature = package_info[0].signature
+            if not self.signature:
+                raise ValueError("Signature is not set")
+        except Exception as e:
+            logger.logging.warnning(f"Error setting signature: {e}")
 
     def _set_started(self):
         """Set start time of activity"""
