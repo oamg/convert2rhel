@@ -99,7 +99,6 @@ class Convert2rhelLatest(actions.Action):
         # This loop will determine the latest available convert2rhel version in the yum repo.
         # It assigns the epoch, version, and release ex: ("0", "0.26", "1.el7") to the latest_available_version variable.
         for package_version in convert2rhel_versions:
-            logger.debug("...comparing version {}".format(latest_available_version[1]))
             # rpm.labelCompare(pkg1, pkg2) compare two package version strings and return
             # -1 if latest_version is greater than package_version, 0 if they are equal, 1 if package_version is greater than latest_version
             ver_compare = rpm.labelCompare(
@@ -107,9 +106,6 @@ class Convert2rhelLatest(actions.Action):
             )
 
             if ver_compare > 0:
-                logger.debug(
-                    "...found {} to be newer than {}, updating".format(package_version[2], latest_available_version[1])
-                )
                 latest_available_version = (package_version[1], package_version[2], package_version[3])
 
         logger.debug("Found {} to be latest available version".format(latest_available_version[1]))
