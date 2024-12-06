@@ -1,33 +1,103 @@
-name: Generate Manpages
+name: Update Manpages
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  generate-manpages:
+  update-manpages:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.10.13
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
 
-      - name: Install dependencies
-        run: |
-          pip install argparse-manpage six pexpect
+    - name: Add Universe Repository
+      run: |
+        sudo add-apt-repository universe
+        sudo apt-get update
 
-      - name: Install python3-rpm and python3-dnf package with apt-get
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-rpm python3-dnf
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y python3-pip rpm libnspr4-dev libnss3-dev libpopt-dev libarchive-dev libdb-dev \
+          autoconf automake bison flex gettext libtool pkg-config
+        pip install --upgrade pip
+        pip install pexpect argparse-manpage six
 
-      - name: Generate Manpages
-        run: |
-          chmod +x scripts/manpage_generation.sh
-          bash scripts/manpage_generation.sh
+    - name: Create /etc/convert2rhel.ini
+      run: |
+        sudo mkdir -p /etc
+        sudo bash -c 'cat <<EOF > /etc/convert2rhel.ini
+        [main]
+        subscription_manager = placeholder_value
+        host_metering = placeholder_value
+        inhibitor_overrides = placeholder_value
+        EOF'
+
+    - name: Download and install RPM
+      run: |
+        wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.tar.bz2
+        tar -xjf rpm-4.14.2.tar.bz2
+        cd rpm-4.14.2
+        export PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/3.10.15/x64/lib/pkgconfig
+        export PYTHON_CFLAGS="-I/opt/hostedtoolcache/Python/3.10.15/x64/include/python3.10"
+        export PYTHON_LIBS="-L/opt/hostedtoolcache/Python/3.10.15/x64/lib -lpython3.10"
+        ./configure --disable-nls --enable-python --without-lua
+        make
+        sudo make install
+        cd python
+        python3 setup.py install
+        sudo ldconfig
+
+    - name: Verify Python Path
+      run: |
+        python -c "import sys; print(sys.path)"
+        python -c "import pexpect; print('pexpect module is available.')"
+        python -c "import rpm; print('rpm module is available.')"
+
+    - name: Debug CLI Attribute
+      run: |
+        python -c "import convert2rhel.cli as cli; print(dir(cli)); print(cli.CLI)" || exit 1
+
+    - name: Generate manpages
+      run: |
+        set -e
+
+        # Directory to store the generated manpages
+        MANPAGE_DIR='man'
+
+        # Ensure the manpage directory exists
+        mkdir -p "$MANPAGE_DIR"
+
+        echo 'Generating manpages'
+
+        # Add debug statements
+        python -c 'import convert2rhel.cli as cli; print(dir(cli)); print(cli.CLI)' || exit 1
+
+        # Generate a file with convert2rhel synopsis for argparse-manpage
+        python -c 'from convert2rhel.cli import CLI; print("[synopsis]\n."+CLI.usage())' > "$MANPAGE_DIR/synopsis"
+
+        # Extract the current version from the spec file
+        CURRENT_VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
+        echo 'Current version: $CURRENT_VER'
+
+        # Generate the manpage using argparse-manpage
+        PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title='General Commands Manual' --description='Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux.' --project-name 'convert2rhel $CURRENT_VER' --prog='convert2rhel' --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
+
+        # Check for differences in the generated manpage
+        if ! git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
+            echo 'Manpages are outdated. Please update them.'
+            exit 1
+        else
+            echo 'Manpages are up-to-date.'
+            exit 0
+        fi
