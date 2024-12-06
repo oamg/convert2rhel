@@ -170,7 +170,7 @@ class RemoveSpecialPackages(actions.Action):
             logger.info(message)
             self.add_message(
                 level="INFO",
-                id="SPECIAL_PACKAGES_REMOVED",
+                id="SPECIAL_PACKAGES_TO_REMOVE",
                 title="Special packages to be removed",
                 description=(
                     "We have identified installed packages that match a pre-defined list of packages that are"

@@ -249,7 +249,7 @@ class TestYumTransactionHandler:
         with pytest.raises(exceptions.CriticalError) as execinfo:
             instance._process_transaction(validate_transaction=False)
         assert "Failed to validate the yum transaction." in caplog.records[-1].message
-        assert "FAILED_TO_VALIDATE_TRANSACTION" in execinfo._excinfo[1].id
+        assert "FAILED_TO_VALIDATE_YUM_TRANSACTION" in execinfo._excinfo[1].id
         assert "Failed to validate yum transaction." in execinfo._excinfo[1].title
         assert (
             "During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction."

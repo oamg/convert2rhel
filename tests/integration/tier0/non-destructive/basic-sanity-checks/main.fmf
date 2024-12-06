@@ -68,7 +68,7 @@ tag+:
             Mock newer version of convert2rhel
         description+: |
             Verify that running the newer than the latest GA version of convert2rhel
-            does not raise the CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
+            does not raise the CONVERT2RHEL_LATEST_VERSION.OUTDATED_CONVERT2RHEL_VERSION error.
         tag+:
             - version-latest-or-newer
             - sanity
@@ -80,7 +80,7 @@ tag+:
             Older convert2rhel version without envar
         description+: |
             Verify that running an older version of convert2rhel without CONVERT2RHEL_ALLOW_OLDER_VERSION
-            environment variable in place, raises CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE error.
+            environment variable in place, raises CONVERT2RHEL_LATEST_VERSION.OUTDATED_CONVERT2RHEL_VERSION error.
         tag+:
             - version-older-no-envar
             - inhibitor
@@ -92,7 +92,7 @@ tag+:
             Older convert2rhel version with envar
         description+: |
             Verify that running an older version of convert2rhel with CONVERT2RHEL_ALLOW_OLDER_VERSION
-            environment variable in place, does not raise CONVERT2RHEL_LATEST_VERSION.OUT_OF_DATE.
+            environment variable in place, does not raise CONVERT2RHEL_LATEST_VERSION.OUTDATED_CONVERT2RHEL_VERSION.
         environment+:
             CONVERT2RHEL_ALLOW_OLDER_VERSION: 1
         tag+:
