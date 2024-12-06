@@ -351,7 +351,7 @@ class TestDnfTransactionHandler:
 
         assert pkgmanager.Base.do_transaction.call_count == 1
         assert "Failed to validate the dnf transaction." in caplog.records[-1].message
-        assert "FAILED_TO_VALIDATE_TRANSACTION" in execinfo._excinfo[1].id
+        assert "FAILED_TO_VALIDATE_DNF_TRANSACTION" in execinfo._excinfo[1].id
         assert "Failed to validate dnf transaction." in execinfo._excinfo[1].title
         assert (
             "During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction."

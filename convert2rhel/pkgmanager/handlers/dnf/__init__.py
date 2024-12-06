@@ -233,7 +233,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             logger.debug("Got the following exception message: %s", e)
             logger.critical_no_exit("Failed to validate the dnf transaction.")
             raise exceptions.CriticalError(
-                id_="FAILED_TO_VALIDATE_TRANSACTION",
+                id_="FAILED_TO_VALIDATE_DNF_TRANSACTION",
                 title="Failed to validate dnf transaction.",
                 description="During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction.",
                 diagnosis="Transaction processing failed with error: {}".format(str(e)),

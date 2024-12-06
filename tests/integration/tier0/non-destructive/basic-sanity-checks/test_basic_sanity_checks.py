@@ -133,7 +133,7 @@ def test_c2r_version_latest_inhibitor(convert2rhel, c2r_version, version):
 
         assert (
             c2r.expect_exact(
-                "(OVERRIDABLE) CONVERT2RHEL_LATEST_VERSION::OUT_OF_DATE - Outdated convert2rhel version detected",
+                "(OVERRIDABLE) CONVERT2RHEL_LATEST_VERSION::OUTDATED_CONVERT2RHEL_VERSION - Outdated convert2rhel version detected",
                 timeout=300,
             )
             == 0

@@ -320,7 +320,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             logger.debug("Got the following exception message: %s", e)
             logger.critical_no_exit("Failed to validate the yum transaction.")
             raise exceptions.CriticalError(
-                id_="FAILED_TO_VALIDATE_TRANSACTION",
+                id_="FAILED_TO_VALIDATE_YUM_TRANSACTION",
                 title="Failed to validate yum transaction.",
                 description="During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction.",
                 diagnosis="Transaction processing failed with error: {}".format(" ".join(e.value)),
