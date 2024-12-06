@@ -95,7 +95,7 @@ class TestBackupSystem:
     def test_backup_redhat_release_error_system_release_file(self, backup_redhat_release_action, monkeypatch):
         mock_sys_release_file = RestorableFileBackupMocked(
             id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
-            title="Failed to copy file to the backup directory.",
+            title="Failed to copy file to the backup directory",
             description="Failure while backing up a file.",
             diagnosis="Failed to backup /etc/system-release. Errno: 2, Error: File not found",
         )
@@ -107,7 +107,7 @@ class TestBackupSystem:
             backup_redhat_release_action,
             level="ERROR",
             id="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
-            title="Failed to copy file to the backup directory.",
+            title="Failed to copy file to the backup directory",
             description="Failure while backing up a file.",
             diagnosis="Failed to backup /etc/system-release. Errno: 2, Error: File not found",
         )
@@ -116,7 +116,7 @@ class TestBackupSystem:
         mock_sys_release_file = mock.create_autospec(backup_system.system_release_file.enable)
         mock_os_release_file = RestorableFileBackupMocked(
             id_="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
-            title="Failed to copy file to the backup directory.",
+            title="Failed to copy file to the backup directory",
             description="Failure while backing up a file.",
             diagnosis="Failed to backup /etc/os-release. Errno: 2, Error: File not found",
         )
@@ -130,7 +130,7 @@ class TestBackupSystem:
             backup_redhat_release_action,
             level="ERROR",
             id="FAILED_TO_SAVE_FILE_TO_BACKUP_DIR",
-            title="Failed to copy file to the backup directory.",
+            title="Failed to copy file to the backup directory",
             description="Failure while backing up a file.",
             diagnosis="Failed to backup /etc/os-release. Errno: 2, Error: File not found",
         )
@@ -176,7 +176,7 @@ class TestBackupSystem:
             (
                 "S.5.?..5.      /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
                 [],
-                "Skipping invalid output S.5.?..5.      /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
+                "Skipping invalid output: S.5.?..5.      /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
             ),
             (
                 "               ",
@@ -186,21 +186,21 @@ class TestBackupSystem:
             (
                 "SM5DLUGTP   cd   /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
                 [],
-                "Skipping invalid output SM5DLUGTP   cd   /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
+                "Skipping invalid output: SM5DLUGTP   cd   /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
             ),
             (
                 """c     /etc/yum.repos.d/CentOS-Linux-AppStream.repo
                 S.5.?..T. c
                 """,
                 [],
-                "Skipping invalid output c     /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
+                "Skipping invalid output: c     /etc/yum.repos.d/CentOS-Linux-AppStream.repo",
             ),
             (
                 """
                 S.5.?..T. c
                 """,
                 [],
-                "Skipping invalid output S.5.?..T. c",
+                "Skipping invalid output: S.5.?..T. c",
             ),
         ),
     )
@@ -239,7 +239,7 @@ class TestBackupSystem:
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmp_path))
 
         rpm_va_path = os.path.join(tmp_path, PRE_RPM_VA_LOG_FILENAME)
-        message = "Missing file {} in it's location".format(rpm_va_path)
+        message = "The file {} is missing.".format(rpm_va_path)
 
         with pytest.raises(SystemExit, match=message):
             backup_package_files_action._get_changed_package_files()

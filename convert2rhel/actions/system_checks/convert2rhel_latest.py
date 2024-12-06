@@ -44,7 +44,7 @@ class Convert2rhelLatest(actions.Action):
 
     def run(self):
         """Make sure that we are running the latest downstream version of convert2rhel"""
-        logger.task("Check if this is the latest version of Convert2RHEL")
+        logger.task("Check if this is the latest version of convert2rhel")
 
         super(Convert2rhelLatest, self).run()
 
@@ -74,7 +74,7 @@ class Convert2rhelLatest(actions.Action):
                 level="WARNING",
                 id="CONVERT2RHEL_LATEST_CHECK_SKIP",
                 title="convert2rhel latest version check skip",
-                description="Did not perform the convert2hel latest version check",
+                description="Did not perform the convert2hel latest version check.",
                 diagnosis=diagnosis,
             )
             return
@@ -94,7 +94,7 @@ class Convert2rhelLatest(actions.Action):
                 continue
             convert2rhel_versions.append(parsed_pkg)
 
-        logger.debug("Found {} convert2rhel package(s)".format(len(convert2rhel_versions)))
+        logger.debug("Found {} convert2rhel package(s).".format(len(convert2rhel_versions)))
 
         # This loop will determine the latest available convert2rhel version in the yum repo.
         # It assigns the epoch, version, and release ex: ("0", "0.26", "1.el7") to the latest_available_version variable.
@@ -108,7 +108,7 @@ class Convert2rhelLatest(actions.Action):
             if ver_compare > 0:
                 latest_available_version = (package_version[1], package_version[2], package_version[3])
 
-        logger.debug("Found {} to be latest available version".format(latest_available_version[1]))
+        logger.debug("Found {} to be latest available version.".format(latest_available_version[1]))
         precise_available_version = ("0", latest_available_version[1], "0")
         precise_convert2rhel_version = ("0", running_convert2rhel_version, "0")
         # Get source files that we're running with import convert2rhel ; convert2rhel.__file__
@@ -184,7 +184,7 @@ class Convert2rhelLatest(actions.Action):
                     level="WARNING",
                     id="ALLOW_OLDER_VERSION_OPTION",
                     title="Outdated convert2rhel version detected",
-                    description="An outdated convert2rhel version has been detected",
+                    description="An outdated convert2rhel version has been detected.",
                     diagnosis=diagnosis,
                 )
             else:
@@ -192,7 +192,7 @@ class Convert2rhelLatest(actions.Action):
                     level="OVERRIDABLE",
                     id="OUT_OF_DATE",
                     title="Outdated convert2rhel version detected",
-                    description="An outdated convert2rhel version has been detected",
+                    description="An outdated convert2rhel version has been detected.",
                     diagnosis=(
                         "You are currently running {} and the latest version of convert2rhel is {}.\n"
                         "Only the latest version is supported for conversion.".format(

@@ -238,8 +238,8 @@ class TestFixInvalidGrub2Entries:
                         actions.ActionMessage(
                             level="WARNING",
                             id="UNABLE_TO_GET_GRUB2_BOOT_LOADER_ENTRY",
-                            title="Unable to get the GRUB2 boot loader entry",
-                            description="Couldn't get the default GRUB2 boot loader entry:\nbootloader",
+                            title="Unable to get the GRUB2 bootloader entry",
+                            description="Couldn't get the default GRUB2 bootloader entry:\nbootloader",
                             diagnosis=None,
                             remediations=None,
                         ),
@@ -254,8 +254,8 @@ class TestFixInvalidGrub2Entries:
                         actions.ActionMessage(
                             level="WARNING",
                             id="UNABLE_TO_SET_GRUB2_BOOT_LOADER_ENTRY",
-                            title="Unable to set the GRUB2 boot loader entry",
-                            description="Couldn't set the default GRUB2 boot loader entry:\nbootloader",
+                            title="Unable to set the GRUB2 bootloader entry",
+                            description="Couldn't set the default GRUB2 bootloader entry:\nbootloader",
                             diagnosis=None,
                             remediations=None,
                         ),
@@ -364,9 +364,9 @@ class TestFixInvalidGrub2Entries:
         )
         fix_invalid_grub2_entries_instance.run()
         if expected:
-            assert "Fixing GRUB boot loader" in caplog.text
+            assert "Setting RHEL kernel" in caplog.text
         else:
-            assert "Fixing GRUB boot loader" not in caplog.text
+            assert "Setting RHEL kernel" not in caplog.text
 
 
 class TestFixDefaultKernel:
@@ -421,7 +421,7 @@ class TestFixDefaultKernel:
 
         warning_msgs = [r for r in caplog.records if r.levelname == "WARNING"]
         assert warning_msgs
-        assert "Detected leftover boot kernel, changing to RHEL kernel" in warning_msgs[-1].message
+        assert "Detected default boot kernel {}".format(old_kernel) in warning_msgs[-1].message
 
         (filename, content), _ = utils.store_content_to_file.call_args
         kernel_file_lines = content.splitlines()
@@ -450,7 +450,7 @@ class TestFixDefaultKernel:
         debug_records = [m for m in caplog.records if m.levelname == "DEBUG"]
 
         assert not warning_records
-        assert any("Boot kernel validated." in r.message for r in debug_records)
+        assert any("The default boot kernel is correct." in r.message for r in debug_records)
 
         for record in info_records:
             assert not re.search("Boot kernel [^ ]\\+ was changed to [^ ]\\+", record.message)

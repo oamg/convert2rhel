@@ -30,9 +30,10 @@ class ElsSystemCheck(actions.Action):
     id = "ELS_SYSTEM_CHECK"
 
     def run(self):
-        """Warn the user if their system is under ELS and past the ELS release date without using the --els cli option."""
+        """Warn users if their system is under ELS and past the ELS release date without using the --els cli option."""
         super(ElsSystemCheck, self).run()
 
+        logger.task("Warn about not using --els on a system in the ELS phase")
         if system_info.version.major == 7:
             current_datetime = datetime.date.today()
             # Turn ELS_RELEASE_DATE into a datetime object
@@ -44,7 +45,10 @@ class ElsSystemCheck(actions.Action):
                     level="WARNING",
                     id="ELS_COMMAND_LINE_OPTION_UNUSED",
                     title="The --els command line option is unused",
-                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to consider using the --els"
-                    " command line option to land on a system patched with the latest security errata.",
+                    description="Current system version is under Extended Lifecycle Support (ELS). You may want to"
+                    " consider using the --els command line option to land on a system patched with the latest security"
+                    " errata.",
                 )
+        else:
+            logger.info("Applicable only to conversions to RHEL 7.")
         return

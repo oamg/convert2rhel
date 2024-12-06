@@ -294,7 +294,7 @@ class TestSubscribeSystem:
             level="ERROR",
             id="SYSTEM_NOT_REGISTERED",
             title="Not registered with RHSM",
-            description="This system must be registered with rhsm in order to get access to the RHEL rpms. In this case, the system was not already registered and no credentials were given to convert2rhel to register it.",
+            description="This system must be registered with RHSM in order to get access to RHEL rpms. In this case, the system has not been registered and no credentials were given to convert2rhel to register it.",
             remediations="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
         )
 

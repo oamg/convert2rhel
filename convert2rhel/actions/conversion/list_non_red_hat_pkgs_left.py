@@ -34,7 +34,7 @@ class ListNonRedHatPkgsLeft(actions.Action):
         super(ListNonRedHatPkgsLeft, self).run()
         loggerinst.task("List remaining non-Red Hat packages")
 
-        loggerinst.info("Listing packages not signed by Red Hat")
+        loggerinst.info("Listing packages not signed by Red Hat.")
         non_red_hat_pkgs = get_installed_pkgs_w_different_key_id(system_info.key_ids_rhel)
         if not non_red_hat_pkgs:
             loggerinst.info("All packages are now signed by Red Hat.")

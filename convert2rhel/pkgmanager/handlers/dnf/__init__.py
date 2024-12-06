@@ -111,7 +111,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             logger.critical_no_exit("Failed to populate repository metadata.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_ENABLE_REPOS",
-                title="Failed to enable repositories.",
+                title="Failed to enable repositories",
                 description="We've encountered a failure when accessing repository metadata.",
                 diagnosis="Loading repository metadata failed with error {}.".format(str(e)),
             )
@@ -183,7 +183,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
         :raises SystemExit: If we fail to resolve the dependencies or
             downloading the packages.
         """
-        logger.info("Resolving the dependencies of the packages in the dnf transaction set.")
+        logger.info("Resolving dependencies of the packages in the dnf transaction set.")
         try:
             self._base.resolve(allow_erasing=True)
         except pkgmanager.exceptions.DepsolveError as e:
@@ -191,7 +191,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             logger.critical_no_exit("Failed to resolve dependencies in the transaction.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_RESOLVE_DEPENDENCIES",
-                title="Failed to resolve dependencies.",
+                title="Failed to resolve dependencies",
                 description="During package transaction dnf failed to resolve the necessary dependencies needed for a package replacement.",
                 diagnosis="Resolve dependencies failed with error {}.".format(str(e)),
             )
@@ -204,7 +204,7 @@ class DnfTransactionHandler(TransactionHandlerBase):
             logger.critical_no_exit("Failed to download the transaction packages.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_DOWNLOAD_TRANSACTION_PACKAGES",
-                title="Failed to download packages in the transaction.",
+                title="Failed to download packages in the transaction",
                 description="During package transaction dnf failed to download the necessary packages needed for the transaction.",
                 diagnosis="Package download failed with error {}.".format(str(e)),
             )
@@ -231,11 +231,11 @@ class DnfTransactionHandler(TransactionHandlerBase):
             pkgmanager.exceptions.TransactionCheckError,
         ) as e:
             logger.debug("Got the following exception message: %s", e)
-            logger.critical_no_exit("Failed to validate the dnf transaction.")
+            logger.critical_no_exit("Failed to validate a dnf transaction.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
-                title="Failed to validate dnf transaction.",
-                description="During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction.",
+                title="Failed to validate a dnf transaction",
+                description="During the dnf transaction execution an error occurred and convert2rhel could no longer process the transaction.",
                 diagnosis="Transaction processing failed with error: {}".format(str(e)),
             )
 
