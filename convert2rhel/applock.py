@@ -72,7 +72,7 @@ class ApplicationLock:
             status = "locked"
         else:
             status = "unlocked"
-        return "%s PID %d %s" % (self._pidfile, self._pid, status)
+        return "{} PID {} {}".format(self._pidfile, self._pid, status)
 
     def _try_create(self):
         """Try to create the lock file. If this succeeds, the lock file
@@ -149,10 +149,10 @@ class ApplicationLock:
             raise ApplicationLockedError("Lock file {} is corrupt".format(self._pidfile))
 
         if self._pid_exists(pid):
-            raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
+            raise ApplicationLockedError("{} locked by process {}".format(self._pidfile, pid))
         # The lock file was created by a process that has exited;
         # remove it and try again.
-        logger.info("Cleaning up lock held by exited process %d." % pid)
+        logger.info("Cleaning up lock held by exited process %d.", pid)
         os.unlink(self._pidfile)
         self.try_to_lock(_recursive=True)
 

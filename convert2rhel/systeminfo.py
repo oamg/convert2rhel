@@ -185,10 +185,10 @@ class SystemInfo:
 
     def print_system_information(self):
         """Print system related information."""
-        logger.info("%-20s %s" % ("Name:", self.name))
-        logger.info("%-20s %s" % ("OS version:", self.version))
-        logger.info("%-20s %s" % ("Architecture:", self.arch))
-        logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
+        logger.info("%-20s %s", "Name:", self.name)
+        logger.info("%-20s %s", "OS version:", self.version)
+        logger.info("%-20s %s", "Architecture:", self.arch)
+        logger.info("%-20s %s", "Config filename:", self.cfg_filename)
 
     @staticmethod
     def get_system_release_file_content():
@@ -284,7 +284,7 @@ class SystemInfo:
         return arch
 
     def _get_cfg_filename(self):
-        cfg_filename = "%s-%d-%s.cfg" % (
+        cfg_filename = "{}-{}-{}.cfg".format(
             self.id,
             self.version.major,
             self.arch,
