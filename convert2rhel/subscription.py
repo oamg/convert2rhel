@@ -155,7 +155,7 @@ def register_system():
     while attempt < MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE:
         attempt_msg = ""
         if attempt > 0:
-            attempt_msg = "Attempt %d of %d: " % (
+            attempt_msg = "Attempt {} of {}: ".format(
                 attempt + 1,
                 MAX_NUM_OF_ATTEMPTS_TO_SUBSCRIBE,
             )

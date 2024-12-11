@@ -172,8 +172,9 @@ class RestorablePackage(RestorableChange):
                         "one or more packages that we removed as part of the "
                         "conversion."
                     ),
-                    diagnosis="Couldn't install %s packages. Command: %s Output: %s Status: %d"
-                    % (pkgs_as_str, cmd, output, ret_code),
+                    diagnosis="Couldn't install {} packages. Command: {} Output: {} Status: {}".format(
+                        pkgs_as_str, cmd, output, ret_code
+                    ),
                 )
 
             logger.warning("Couldn't install {} packages.".format(pkgs_as_str))

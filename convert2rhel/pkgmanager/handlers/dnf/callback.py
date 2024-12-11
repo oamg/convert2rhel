@@ -196,7 +196,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
         if status:
             # the error message, no trimming
             if status == pkgmanager.callback.STATUS_DRPM and self.total_drpm > 1:
-                message = "(%d/%d) [%s %d/%d]: %s" % (
+                message = "({}/{}) [{} {}/{}]: {}".format(
                     self.done_files,
                     self.total_files,
                     self._STATUS_MAPPING[status],
@@ -206,7 +206,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                 )
                 message = "{} - {}".format(message, err_msg)
             else:
-                message = "(%d/%d) [%s]: %s" % (
+                message = "({}/{}) [{}]: {}".format(
                     self.done_files,
                     self.total_files,
                     self._STATUS_MAPPING.get(status, "Unknown"),
@@ -214,7 +214,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                 )
         else:
             if self.total_files > 1:
-                message = "(%d/%d): %s" % (self.done_files, self.total_files, package)
+                message = "({}/{}): {}".format(self.done_files, self.total_files, package)
 
         if message:
             logger.info(message)
