@@ -63,7 +63,7 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
             actions.ActionMessage(
                 id="UNSUCCESSFUL_REMOVE_TMP_DIR",
                 level="WARNING",
-                title="Temporary folder {tmp_dir} wasn't removed.".format(tmp_dir=path),
+                title="Temporary folder {tmp_dir} wasn't removed".format(tmp_dir=path),
                 description=expected_message,
             ),
         ),

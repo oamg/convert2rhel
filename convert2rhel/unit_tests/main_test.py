@@ -65,15 +65,24 @@ class TestRollbackChanges:
         assert global_backup_control.pop_all.call_args_list == mock.call()
         assert backup.backup_control.rollback_failed is False
 
-    def test_backup_control_unknown_exception(self, monkeypatch, global_backup_control):
+    @pytest.mark.parametrize(
+        ("index_error_arg", "log_instead_of_raise"),
+        (("Raised because of a bug in the code", False), ("No backups to restore", True)),
+    )
+    def test_backup_control_exceptions(
+        self, monkeypatch, global_backup_control, index_error_arg, log_instead_of_raise, caplog
+    ):
         monkeypatch.setattr(
             global_backup_control,
             "pop_all",
-            mock.Mock(side_effect=IndexError("Raised because of a bug in the code")),
+            mock.Mock(side_effect=IndexError(index_error_arg)),
         )
-
-        with pytest.raises(IndexError, match="Raised because of a bug in the code"):
+        if log_instead_of_raise:
             main.rollback_changes()
+            "During rollback there were no backups to restore." in caplog.records[-1].message
+        else:
+            with pytest.raises(IndexError, match="Raised because of a bug in the code"):
+                main.rollback_changes()
 
     @pytest.mark.parametrize(
         ("pre_conversion_results", "include_all_reports", "rollback_failures", "message", "not_printed_message"),
@@ -186,7 +195,7 @@ def test_initialize_file_logging(exception_type, exception, monkeypatch, caplog)
 
     if exception:
         assert caplog.records[-1].levelname == "WARNING"
-        assert "Unable to archive previous log:" in caplog.records[-1].message
+        assert "Unable to archive the previous log file:" in caplog.records[-1].message
 
     add_file_handler_mock.assert_called_once()
     archive_old_logger_files_mock.assert_called_once()

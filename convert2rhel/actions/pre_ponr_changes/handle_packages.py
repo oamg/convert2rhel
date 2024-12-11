@@ -100,17 +100,18 @@ class RemoveSpecialPackages(actions.Action):
         all_pkgs = []
         pkgs_removed = []
         try:
-            logger.task("Searching for the following excluded packages")
+            logger.task("Remove special packages")
+            logger.info("Searching for the following excluded packages.")
             excluded_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.excluded_pkgs))
 
-            logger.task("Searching for packages containing .repo files or affecting variables in the .repo files")
+            logger.info("Searching for packages containing .repo files or affecting variables in the .repo files.")
             repofile_pkgs = sorted(pkghandler.get_packages_to_remove(system_info.repofile_pkgs))
 
             logger.info("\n")
 
             all_pkgs = excluded_pkgs + repofile_pkgs
             if not all_pkgs:
-                logger.info("No packages to backup and remove.")
+                logger.info("No packages to back up and remove.")
                 return
 
             # We're using the backed up yum repositories to prevent the following:
@@ -146,8 +147,8 @@ class RemoveSpecialPackages(actions.Action):
             self.set_result(
                 level="ERROR",
                 id="SPECIAL_PACKAGE_REMOVAL_FAILED",
-                title="Failed to remove some packages necessary for the conversion.",
-                description="The cause of this error is unknown, please look at the diagnosis for more information.",
+                title="Failed to remove some packages necessary for the conversion",
+                description="The cause of this error is unknown. Look at the diagnosis for more information.",
                 diagnosis=str(e),
             )
             return
@@ -161,7 +162,7 @@ class RemoveSpecialPackages(actions.Action):
                 level="WARNING",
                 id="SPECIAL_PACKAGES_NOT_REMOVED",
                 title="Special packages not removed",
-                description="Special packages which could not be removed",
+                description="Certain packages could not be removed.",
                 diagnosis=message,
             )
 
@@ -197,7 +198,7 @@ def _remove_packages_unless_from_redhat(pkgs_list, disable_repos=None):
     pkghandler.print_pkg_info(pkgs_list, disable_repos)
 
     pkgs_removed = utils.remove_pkgs(pkghandler.get_pkg_nevras(pkgs_list))
-    logger.debug("Successfully removed {} packages".format(len(pkgs_list)))
+    logger.debug("Successfully removed {} packages.".format(len(pkgs_list)))
 
     return pkgs_removed
 

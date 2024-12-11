@@ -42,7 +42,7 @@ class PackageUpdates(actions.Action):
                 level="INFO",
                 id="PACKAGE_UPDATES_CHECK_SKIP_NO_PUBLIC_REPOSITORIES",
                 title="Did not perform the package updates check",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=(
                     "Did not perform the check because there were no publicly available %s %d.%d repositories available."
                     % (system_info.name, system_info.version.major, system_info.version.minor)
@@ -71,7 +71,7 @@ class PackageUpdates(actions.Action):
                 level="WARNING",
                 id="PACKAGE_UP_TO_DATE_CHECK_MESSAGE",
                 title="Package up to date check fail",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=package_up_to_date_error_message,
             )
             return
@@ -79,7 +79,7 @@ class PackageUpdates(actions.Action):
         if len(packages_to_update) > 0:
             package_not_up_to_date_error_message = (
                 "The system has {} package(s) not updated based on repositories defined in the system repositories.\n"
-                "List of packages to update: {}.\n\n"
+                "List of packages to update: {}\n\n"
                 "Not updating the packages may cause the conversion to fail.\n"
                 "Consider updating the packages before proceeding with the conversion.".format(
                     len(packages_to_update), " ".join(packages_to_update)
@@ -90,7 +90,7 @@ class PackageUpdates(actions.Action):
                 level="WARNING",
                 id="OUT_OF_DATE_PACKAGES",
                 title="Outdated packages detected",
-                description="Please refer to the diagnosis for further information",
+                description="Refer to the diagnosis for further information.",
                 diagnosis=package_not_up_to_date_error_message,
                 remediations="Run yum update to update all the packages on the system.",
             )

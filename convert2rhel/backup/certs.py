@@ -122,7 +122,7 @@ class RestorablePEMCert(RestorableChange):
                 logger.critical_no_exit("OSError({0}): {1}".format(err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_CERTIFICATE",
-                    title="Failed to install certificate.",
+                    title="Failed to install a certificate",
                     description="convert2rhel was unable to install a required certificate. This certificate allows the pre-conversion analysis to verify that packages are legitimate RHEL packages.",
                     diagnosis="Failed to install certificate {} to {}. Errno: {}, Error: {}".format(
                         self._get_source_cert_path, self._target_cert_dir, err.errno, err.strerror
@@ -171,7 +171,7 @@ class RestorablePEMCert(RestorableChange):
             if "not owned by any package" in output:
                 file_unowned = True
             elif "No such file or directory" in output:
-                logger.info("Certificate already removed from {}".format(self._target_cert_path))
+                logger.info("Certificate already removed from {}.".format(self._target_cert_path))
             else:
                 logger.warning(
                     "Unable to determine if a package owns certificate {}. Skipping removal.".format(
@@ -190,7 +190,7 @@ class RestorablePEMCert(RestorableChange):
 
         try:
             os.remove(self._target_cert_path)
-            logger.info("Certificate {} removed".format(self._target_cert_path))
+            logger.info("Certificate {} removed.".format(self._target_cert_path))
         except OSError as err:
             if err.errno == errno.ENOENT:
                 # Resolves RHSM error when removing certs, as the system might not have installed any certs yet

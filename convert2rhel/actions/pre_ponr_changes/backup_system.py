@@ -51,8 +51,8 @@ class BackupRedhatRelease(actions.Action):
     id = "BACKUP_REDHAT_RELEASE"
 
     def run(self):
-        """Backup redhat release file before starting conversion process"""
-        logger.task("Backup Redhat Release Files")
+        """Back up redhat release file before starting conversion process"""
+        logger.task("Back up redhat-release files")
 
         super(BackupRedhatRelease, self).run()
 
@@ -79,7 +79,7 @@ class BackupRepository(actions.Action):
 
     def run(self):
         """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
-        logger.task("Backup Repository Files")
+        logger.task("Back up repository files")
 
         super(BackupRepository, self).run()
 
@@ -105,7 +105,7 @@ class BackupYumVariables(actions.Action):
 
     def run(self):
         """Backup varsdir folder in /etc/{yum,dnf}/vars so the variables can be restored on rollback."""
-        logger.task("Backup variables")
+        logger.task("Back up variables")
 
         super(BackupYumVariables, self).run()
 
@@ -146,7 +146,7 @@ class BackupPackageFiles(actions.Action):
         """Backup changed package files"""
         super(BackupPackageFiles, self).run()
 
-        logger.task("Backup package files")
+        logger.task("Back up package files")
 
         package_files_changes = self._get_changed_package_files()
 
@@ -178,7 +178,6 @@ class BackupPackageFiles(actions.Action):
         """Get the output from rpm -Va command from during resolving system info
         to get changes made to package files.
 
-
         :return dict: Return them as a list of dict, for example:
         [{"status":"S5T", "file_type":"c", "path":"/etc/yum.repos.d/CentOS-Linux-AppStream.repo"}]
         """
@@ -199,10 +198,9 @@ class BackupPackageFiles(actions.Action):
                 # Return empty list results in no backup of the files
                 return data
             else:
-                # The file should be there
-                # If missing conversion is in unknown state
+                # The file should be there. If missing, the conversion is in an unknown state.
                 logger.warning("Error({}): {}".format(err.errno, err.strerror))
-                logger.critical("Missing file {rpm_va_output} in it's location".format(rpm_va_output=path))
+                logger.critical("The file {rpm_va_output} is missing.".format(rpm_va_output=path))
 
         lines = output.strip().split("\n")
         for line in lines:
@@ -220,7 +218,7 @@ class BackupPackageFiles(actions.Action):
         if not match:  # line not matching the regex
             if line.strip() != "":
                 # Line is not empty string
-                logger.debug("Skipping invalid output {}".format(line))
+                logger.debug("Skipping invalid output: {}".format(line))
             return {"status": None, "file_type": None, "path": None}
 
         line = line.split()
