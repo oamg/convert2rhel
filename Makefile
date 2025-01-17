@@ -39,7 +39,7 @@ endif
 # Let the user specify PODMAN at the CLI, otherwise try to autodetect a working podman
 ifndef PODMAN
 	PODMAN := $(shell podman run --rm alpine echo podman 2> /dev/null)
-	ifndef PODMAN
+	ifeq ($(strip $(PODMAN)),) # check if PODMAN still empty
 		DUMMY := $(warning podman is not detected. Majority of commands will not work. Please install and verify that podman --version works.)
 	endif
 endif
