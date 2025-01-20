@@ -168,7 +168,7 @@ class TestRemoveSpecialPackages:
     def test_run_no_packages_to_remove(self, monkeypatch, remove_special_packages_instance, caplog):
         monkeypatch.setattr(pkghandler, "get_packages_to_remove", GetPackagesToRemoveMocked(return_value=[]))
         remove_special_packages_instance.run()
-        assert "No packages to backup and remove." in caplog.records[-1].message
+        assert "No packages to back up and remove." in caplog.records[-1].message
 
     def test_run_all_removed(self, monkeypatch, remove_special_packages_instance):
         pkgs_to_remove = [get_centos_logos_pkg_object()]
@@ -212,7 +212,7 @@ class TestRemoveSpecialPackages:
                     level="WARNING",
                     id="SPECIAL_PACKAGES_NOT_REMOVED",
                     title="Special packages not removed",
-                    description="Special packages which could not be removed",
+                    description="Certain packages could not be removed.",
                     diagnosis="The following packages were not removed: gpg-pubkey-1.0.0-1.x86_64, pkg1-None-None.None, pkg2-None-None.None",
                     remediations=None,
                     variables={},
@@ -256,8 +256,8 @@ class TestRemoveSpecialPackages:
             remove_special_packages_instance,
             level="ERROR",
             id="SPECIAL_PACKAGE_REMOVAL_FAILED",
-            title="Failed to remove some packages necessary for the conversion.",
-            description="The cause of this error is unknown, please look at the diagnosis for more information.",
+            title="Failed to remove some packages necessary for the conversion",
+            description="The cause of this error is unknown. Look at the diagnosis for more information.",
             diagnosis="Raising SystemExit",
         )
 

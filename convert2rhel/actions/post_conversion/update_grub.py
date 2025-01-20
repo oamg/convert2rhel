@@ -77,7 +77,7 @@ class UpdateGrub(actions.Action):
                     level="ERROR",
                     id="FAILED_TO_IDENTIFY_GRUB2_BLOCK_DEVICE",
                     title="Failed to identify GRUB2 block device",
-                    description="The block device could not be identified, please look at the diagnosis "
+                    description="The block device could not be identified. Look at the diagnosis "
                     "for more information.",
                     diagnosis=str(e),
                 )

@@ -248,9 +248,9 @@ class TestYumTransactionHandler:
 
         with pytest.raises(exceptions.CriticalError) as execinfo:
             instance._process_transaction(validate_transaction=False)
-        assert "Failed to validate the yum transaction." in caplog.records[-1].message
         assert "FAILED_TO_VALIDATE_TRANSACTION" in execinfo._excinfo[1].id
-        assert "Failed to validate yum transaction." in execinfo._excinfo[1].title
+        assert "Failed to validate a yum transaction." in caplog.records[-1].message
+        assert "Failed to validate a yum transaction" in execinfo._excinfo[1].title
         assert (
             "During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction."
             in execinfo._excinfo[1].description
@@ -364,7 +364,7 @@ class TestYumTransactionHandler:
         with pytest.raises(exceptions.CriticalError):
             instance.run_transaction(True)
 
-        assert "Retrying to resolve dependencies 1" in caplog.records[-2].message
+        assert "Retrying to resolve dependencies - attempt 1." in caplog.records[-2].message
         assert "Failed to resolve dependencies in the transaction." in caplog.records[-1].message
 
     @centos7

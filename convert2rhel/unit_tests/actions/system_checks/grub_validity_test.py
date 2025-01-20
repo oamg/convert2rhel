@@ -30,17 +30,26 @@ def grub_validity_instance():
     return grub_validity.GrubValidity()
 
 
-def test_grub_validity_error(grub_validity_instance, monkeypatch):
-    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=("output", 127)))
+@pytest.mark.parametrize(
+    ("mkconfig_ret_code", "mkconfig_output"),
+    (
+        (0, "generated grub configuration"),
+        (1, "reported errors"),
+    ),
+)
+def test_grub_validity_error(grub_validity_instance, monkeypatch, mkconfig_ret_code, mkconfig_output, caplog):
+    monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_value=(mkconfig_output, mkconfig_ret_code)))
     grub_validity_instance.run()
-    unit_tests.assert_actions_result(
-        grub_validity_instance,
-        level="ERROR",
-        id="INVALID_GRUB_FILE",
-        title="Grub boot entry file is invalid",
-        description="The grub file seems to be invalid leaving the system in a"
-        " non-clean state and must be fixed before continuing the conversion"
-        " to ensure a smooth process.",
-        remediations="Check the grub file inside `/etc/default` directory and remove any "
-        "misconfigurations, then re-run the conversion.",
-    )
+    if mkconfig_ret_code != 0:
+        unit_tests.assert_actions_result(
+            grub_validity_instance,
+            level="ERROR",
+            id="INVALID_GRUB_FILE",
+            title="/etc/default/grub invalid",
+            description="The /etc/default/grub file seems to be invalid and must be fixed before continuing the"
+            "conversion.",
+            diagnosis="Calling grub2-mkconfig failed with:\n{}".format(mkconfig_output),
+            remediations="Fix issues reported by the grub2-mkconfig utility and re-run the conversion.",
+        )
+    else:
+        "No issues found with the /etc/default/grub file." in caplog.records[-1].message

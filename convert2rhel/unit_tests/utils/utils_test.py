@@ -1152,10 +1152,10 @@ def test_remove_epoch_from_yum_nevra_notation(pkg_nevra, nvra_without_epoch):
     (
         (
             "CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK",
-            True,
+            "1",
             "skip_kernel_currency_check",
-            "The environment variable CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
-            "Please, use the configuration file instead.",
+            "The environment variable CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK is deprecated and will be removed in convert2rhel 2.4.0.\n"
+            "Use the skip_kernel_currency_check option in the /etc/convert2rhel.ini configuration file.",
         ),
     ),
 )

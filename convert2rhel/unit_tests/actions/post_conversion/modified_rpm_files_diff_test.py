@@ -50,7 +50,7 @@ def test_modified_rpm_files_diff_with_no_rpm_va(
             actions.ActionMessage(
                 level="INFO",
                 id="SKIPPED_MODIFIED_RPM_FILES_DIFF",
-                title="Skipped comparison of 'rpm -Va' output from before and after the conversion.",
+                title="Skipped comparison of 'rpm -Va' output from before and after the conversion",
                 description="Comparison of 'rpm -Va' output was not performed due to missing output "
                 "of the 'rpm -Va' run before the conversion.",
                 diagnosis="This is caused mainly by using '--no-rpm-va' argument for convert2rhel.",
@@ -81,7 +81,7 @@ def test_modified_rpm_files_diff_with_no_rpm_va(
             actions.ActionMessage(
                 level="INFO",
                 id="FOUND_MODIFIED_RPM_FILES",
-                title="Modified rpm files from before and after the conversion were found.",
+                title="Modified rpm files from before and after the conversion were found",
                 description="Comparison of modified rpm files from before and after the conversion: \n"
                 "--- {path}/rpm_va.log\n"
                 "+++ {path}/rpm_va_after_conversion.log\n"

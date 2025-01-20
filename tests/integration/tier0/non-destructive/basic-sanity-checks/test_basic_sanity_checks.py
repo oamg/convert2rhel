@@ -213,7 +213,7 @@ def test_rhsm_error_logged(convert2rhel):
 
         # Wait until we reach the point where the RHEL certificate has been
         # installed otherwise we won't attempt to remove it.
-        assert c2r.expect("PRE_SUBSCRIPTION has succeeded") == 0
+        assert c2r.expect("The PRE_SUBSCRIPTION action has succeeded.") == 0
 
         # Remove the certificate ourselves
         for potential_cert in ("74.pem", "69.pem", "479.pem"):

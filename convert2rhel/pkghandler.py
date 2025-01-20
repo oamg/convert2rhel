@@ -658,7 +658,7 @@ def replace_non_rhel_installed_kernel(version):
     if not path:
         logger.critical("Unable to download the RHEL kernel package.")
 
-    logger.info("Replacing {} {} with RHEL kernel with the same NEVRA ... ".format(system_info.name, pkg))
+    logger.info("Replacing {} {} with RHEL kernel with the same NEVRA.".format(system_info.name, pkg))
     output, ret_code = utils.run_subprocess(
         # The --nodeps is needed as some kernels depend on system-release (alias for redhat-release) and that package
         # is not installed at this stage.
@@ -683,7 +683,6 @@ def update_rhel_kernel():
     convert2rhel needs to install older RHEL kernel version first. In this function, RHEL kernel is updated to the
     latest available version.
     """
-    logger.info("Updating RHEL kernel.")
     pkgmanager.call_yum_cmd(command="update", args=["kernel"])
 
 
@@ -703,7 +702,7 @@ def clear_versionlock():
 
         backup.backup_control.push(RestorableFile(VERSIONLOCK_FILE_PATH))
 
-        logger.info("Clearing package versions locks...")
+        logger.info("Clearing package versions locks.")
         pkgmanager.call_yum_cmd("versionlock", args=["clear"], print_output=False)
     else:
         logger.info("Usage of YUM/DNF versionlock plugin not detected.")

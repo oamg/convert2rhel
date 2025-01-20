@@ -80,7 +80,7 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        c2r.expect("Validate the {} transaction".format(PKGMANAGER))
+        c2r.expect("Validate the main {} transaction".format(PKGMANAGER))
         c2r.expect("Adding {} packages to the {} transaction set.".format(SERVER_SUB, PKGMANAGER))
 
         if re.match(r"^(centos|oracle)-7$", SYSTEM_RELEASE_ENV):
@@ -129,7 +129,7 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
             os.unlink("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
 
         remove_entitlement_certs()
-        c2r.expect("Failed to validate the yum transaction.", timeout=600)
+        c2r.expect("Failed to validate a yum transaction.", timeout=600)
 
         # Error header first
         c2r.expect("Pre-conversion analysis report", timeout=600)
@@ -195,7 +195,7 @@ def test_packages_with_in_name_period(shell, convert2rhel, packages_with_period)
         c2r.expect("Continue with the system conversion", timeout=300)
         c2r.sendline("y")
 
-        c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
+        c2r.expect("The VALIDATE_PACKAGE_MANAGER_TRANSACTION action has succeeded.")
 
     assert c2r.exitstatus == 0
 
@@ -228,7 +228,7 @@ def test_override_exclude_list_in_yum_config(convert2rhel, outdated_kernel, yum_
                     TEST_VARS["RHSM_SCA_PASSWORD"],
                 )
             ) as c2r:
-                c2r.expect("VALIDATE_PACKAGE_MANAGER_TRANSACTION has succeeded")
+                c2r.expect("The VALIDATE_PACKAGE_MANAGER_TRANSACTION action has succeeded.")
 
             assert c2r.exitstatus == 0
         except (AssertionError, pexpect.exceptions.EOF, pexpect.exceptions.TIMEOUT) as e:

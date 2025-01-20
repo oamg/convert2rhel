@@ -31,17 +31,18 @@ class GrubValidity(actions.Action):
         is invalid.
         """
         super(GrubValidity, self).run()
-        logger.task("Check if the grub file is valid")
+        logger.task("Check validity of /etc/default/grub")
         output, ret_code = utils.run_subprocess(["grub2-mkconfig"], print_output=False)
 
         if ret_code != 0:
             self.set_result(
                 level="ERROR",
                 id="INVALID_GRUB_FILE",
-                title="Grub boot entry file is invalid",
-                description="The grub file seems to be invalid leaving the system in a"
-                " non-clean state and must be fixed before continuing the conversion"
-                " to ensure a smooth process.",
-                remediations="Check the grub file inside `/etc/default` directory and remove any "
-                "misconfigurations, then re-run the conversion.",
+                title="/etc/default/grub invalid",
+                description="The /etc/default/grub file seems to be invalid and must be fixed before continuing the"
+                "conversion.",
+                diagnosis="Calling grub2-mkconfig failed with:\n{}".format(output),
+                remediations="Fix issues reported by the grub2-mkconfig utility and re-run the conversion.",
             )
+        else:
+            logger.info("No issues found with the /etc/default/grub file.")

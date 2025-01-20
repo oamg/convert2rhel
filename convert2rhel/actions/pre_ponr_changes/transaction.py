@@ -42,7 +42,7 @@ class ValidatePackageManagerTransaction(actions.Action):
         super(ValidatePackageManagerTransaction, self).run()
 
         try:
-            logger.task("Validate the %s transaction", pkgmanager.TYPE)
+            logger.task("Validate the main %s transaction", pkgmanager.TYPE)
             transaction_handler = pkgmanager.create_transaction_handler()
             transaction_handler.run_transaction(
                 validate_transaction=True,

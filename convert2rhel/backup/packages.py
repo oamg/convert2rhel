@@ -86,7 +86,7 @@ class RestorablePackage(RestorableChange):
             return
 
         if not os.path.isdir(BACKUP_DIR):
-            logger.warning("Can't access {}".format(BACKUP_DIR))
+            logger.warning("Can't access {}.".format(BACKUP_DIR))
             return
 
         logger.info("Backing up the packages: {}.".format(",".join(self.pkgs)))
@@ -127,15 +127,17 @@ class RestorablePackage(RestorableChange):
 
         logger.task("Install removed packages")
         if not self._backedup_pkgs_paths:
-            logger.warning("Couldn't find a backup for {} package.".format(",".join(self.pkgs)))
+            logger.warning("Couldn't find a backup for the following package(s): {}".format(",".join(self.pkgs)))
             raise exceptions.CriticalError(
                 id_="FAILED_TO_INSTALL_PACKAGES",
-                title="Couldn't find package backup",
+                title="Couldn't find a package backup",
                 description=(
                     "While attempting to roll back changes, we encountered "
                     "an unexpected failure while we cannot find a package backup."
                 ),
-                diagnosis="Couldn't find a backup for {} package.".format(utils.format_sequence_as_message(self.pkgs)),
+                diagnosis="Couldn't find a backup for the following package(s): {}".format(
+                    utils.format_sequence_as_message(self.pkgs)
+                ),
             )
 
         self._install_local_rpms(replace=True, critical=True)
@@ -165,7 +167,7 @@ class RestorablePackage(RestorableChange):
                 logger.critical_no_exit("Error: Couldn't install {} packages.".format(pkgs_as_str))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_PACKAGES",
-                    title="Couldn't install packages.",
+                    title="Couldn't install packages",
                     description=(
                         "While attempting to roll back changes, we encountered "
                         "an unexpected failure while attempting to reinstall "
@@ -250,7 +252,7 @@ class RestorablePackageSet(RestorableChange):
         exit early.
         """
         if not self.pkgs_to_install:
-            logger.info("All packages were already installed")
+            logger.info("All packages were already installed.")
             return
 
         formatted_pkgs_sequence = utils.format_sequence_as_message(self.pkgs_to_install)
@@ -277,7 +279,7 @@ class RestorablePackageSet(RestorableChange):
             )
             raise exceptions.CriticalError(
                 id_="FAILED_TO_INSTALL_SCHEDULED_PACKAGES",
-                title="Failed to install scheduled packages.",
+                title="Failed to install scheduled packages",
                 description="convert2rhel was unable to install scheduled packages.",
                 diagnosis="Failed to install packages {}. Output: {}, Status: {}".format(
                     formatted_pkgs_sequence, output, ret_code
@@ -301,7 +303,7 @@ class RestorablePackageSet(RestorableChange):
             return
 
         logger.task("Remove installed packages")
-        logger.info("Removing set of installed pkgs: {}".format(utils.format_sequence_as_message(self.installed_pkgs)))
+        logger.info("Removing installed packages: {}".format(utils.format_sequence_as_message(self.installed_pkgs)))
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 
         super(RestorablePackageSet, self).restore()

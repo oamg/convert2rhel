@@ -74,7 +74,7 @@ class BackupController:
         # if it is, we skip it
         for r in self._restorables:
             if r == restorable:
-                logger.debug("Skipping: {} has already been backed up".format(restorable.__class__.__name__))
+                logger.debug("Skipping: {} has already been backed up.".format(restorable.__class__.__name__))
                 return
 
         restorable.enable()

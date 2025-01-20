@@ -259,7 +259,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 self.add_message(
                     level="WARNING",
                     id="ALLOW_UNAVAILABLE_KERNEL_MODULES",
-                    title="Did not perform the ensure kernel modules compatibility check",
+                    title="Ignoring the check ensuring kernel module availability in RHEL",
                     diagnosis="You have set the option to allow unavailable kernel modules.",
                     description="We will continue the conversion with the following kernel modules unavailable in RHEL:\n"
                     "{kmods}\n".format(kmods="\n".join(unsupported_kmods)),
@@ -272,7 +272,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
                     level="OVERRIDABLE",
                     id="UNSUPPORTED_KERNEL_MODULES",
                     title="Unsupported kernel modules",
-                    description="Unsupported kernel modules were found",
+                    description="Unsupported kernel modules were found.",
                     diagnosis="The following loaded kernel modules are not available in RHEL:\n{0}\n".format(
                         "\n".join(unsupported_kmods)
                     ),

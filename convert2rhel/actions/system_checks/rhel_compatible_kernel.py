@@ -70,7 +70,7 @@ class RhelCompatibleKernel(actions.Action):
                     level="ERROR",
                     id=e.error_id,
                     title="Incompatible booted kernel version",
-                    description="Please refer to the diagnosis for further information",
+                    description="Refer to the diagnosis for further information.",
                     diagnosis=(
                         "The booted kernel version is incompatible with the standard RHEL kernel. {}".format(
                             bad_kernel_message

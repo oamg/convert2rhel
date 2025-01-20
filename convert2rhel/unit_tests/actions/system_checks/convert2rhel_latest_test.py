@@ -146,7 +146,7 @@ class TestCheckConvert2rhelLatest:
     def test_convert2rhel_latest_outdated_version_inhibitor(
         self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action, monkeypatch, global_tool_opts
     ):
-        """When runnnig on a supported major version, we issue an error = inhibitor."""
+        """When running on a supported major version, we issue an error = inhibitor."""
         monkeypatch.setattr(convert2rhel_latest, "tool_opts", global_tool_opts)
         convert2rhel_latest_action_instance.run()
 
@@ -157,6 +157,7 @@ class TestCheckConvert2rhelLatest:
             level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
+            description="An outdated convert2rhel version has been detected.",
             diagnosis=(
                 "You are currently running {} and the latest version of convert2rhel is {}.\n"
                 "Only the latest version is supported for conversion.".format(running_version, latest_version)
@@ -415,7 +416,7 @@ class TestCheckConvert2rhelLatest:
                 level="WARNING",
                 id="CONVERT2RHEL_LATEST_CHECK_SKIP",
                 title="convert2rhel latest version check skip",
-                description="Did not perform the convert2hel latest version check",
+                description="Did not perform the convert2hel latest version check.",
                 diagnosis=(
                     "Couldn't check if the current installed convert2rhel is the latest version.\n"
                     "repoquery failed with the following output:\nRepoquery did not run"
@@ -475,9 +476,11 @@ class TestCheckConvert2rhelLatest:
         ),
         indirect=True,
     )
-    def ttest_convert2rhel_latest_multiple_packages(
-        self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action
+    def test_convert2rhel_latest_multiple_packages(
+        self, convert2rhel_latest_action_instance, prepare_convert2rhel_latest_action, monkeypatch, global_tool_opts
     ):
+        monkeypatch.setattr(convert2rhel_latest, "tool_opts", global_tool_opts)
+
         convert2rhel_latest_action_instance.run()
 
         running_version, latest_version = prepare_convert2rhel_latest_action
@@ -487,12 +490,13 @@ class TestCheckConvert2rhelLatest:
             level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
-            description="An outdated convert2rhel version has been detected",
+            description="An outdated convert2rhel version has been detected.",
             diagnosis=(
                 "You are currently running {} and the latest version of convert2rhel is {}.\n"
                 "Only the latest version is supported for conversion.".format(running_version, latest_version)
             ),
-            remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
+            remediations="If you want to disregard this check, set the allow_older_version inhibitor"
+            " override in the /etc/convert2rhel.ini config file to true.",
         )
 
     @pytest.mark.parametrize(
@@ -673,7 +677,7 @@ class TestCheckConvert2rhelLatest:
             level="OVERRIDABLE",
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
-            description="An outdated convert2rhel version has been detected",
+            description="An outdated convert2rhel version has been detected.",
             diagnosis=(
                 "You are currently running {} and the latest version of convert2rhel is {}.\n"
                 "Only the latest version is supported for conversion.".format(running_version, latest_version)

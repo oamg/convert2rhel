@@ -174,7 +174,7 @@ def test_config_standard_paths_priority_diff_methods(convert2rhel, c2r_config_se
             "WARNING - Either a password or an activation key can be used for system registration."
             " We're going to use the activation key."
         )
-        c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
+        c2r.expect("The SUBSCRIBE_SYSTEM action has succeeded.")
 
     assert c2r.exitstatus == 0
 
@@ -211,6 +211,6 @@ def test_config_standard_paths_priority(convert2rhel, c2r_config_setup):
     with convert2rhel(f"analyze --serverurl {TEST_VARS['RHSM_SERVER_URL']} -y --debug") as c2r:
         c2r.expect("DEBUG - Found username in subscription_manager")
         c2r.expect("DEBUG - Found password in subscription_manager")
-        c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
+        c2r.expect("The SUBSCRIBE_SYSTEM action has succeeded.")
 
     assert c2r.exitstatus == 0

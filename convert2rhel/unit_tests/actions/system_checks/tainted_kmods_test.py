@@ -71,7 +71,7 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
             level="OVERRIDABLE",
             id="TAINTED_KMODS_DETECTED",
             title="Tainted kernel modules detected",
-            description="Please refer to the diagnosis for further information",
+            description="Refer to the diagnosis for further information.",
             diagnosis=(
                 "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
                 "components are not supported per our software support"
@@ -84,7 +84,7 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
                 " tainted_kernel_module_check_skip inhibitor override in the /etc/convert2rhel.ini"
                 " config file to true. Overriding this check can be dangerous"
                 " so it is recommended that you do a system backup beforehand."
-                " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
+                " For information on what a tainted kernel module is, refer to this documentation {1}".format(
                     LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
                 )
             ),
@@ -128,7 +128,7 @@ def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted
                     level="WARNING",
                     id="TAINTED_KMODS_DETECTED_MESSAGE",
                     title="Tainted kernel modules detected",
-                    description="Please refer to the diagnosis for further information",
+                    description="Refer to the diagnosis for further information.",
                     diagnosis=(
                         "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
                         "components are not supported per our software support"
@@ -137,7 +137,7 @@ def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted
                     remediations=(
                         "Prevent the modules from loading by following {0}"
                         " and run convert2rhel again to continue with the conversion."
-                        " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
+                        " For information on what a tainted kernel module is, refer to this documentation {1}".format(
                             LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
                         )
                     ),
