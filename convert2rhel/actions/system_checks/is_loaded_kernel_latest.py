@@ -39,8 +39,10 @@ class IsLoadedKernelLatest(actions.Action):
 
         if system_info.id == "oracle" and system_info.eus_system:
             logger.info(
-                "Did not perform the check because there were no publicly available %s %d.%d repositories available."
-                % (system_info.name, system_info.version.major, system_info.version.minor)
+                "Did not perform the check because there were no publicly available %s %d.%d repositories available.",
+                system_info.name,
+                system_info.version.major,
+                system_info.version.minor,
             )
             return
 

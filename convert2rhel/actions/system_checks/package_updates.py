@@ -35,8 +35,9 @@ class PackageUpdates(actions.Action):
 
         if system_info.id == "oracle" and system_info.eus_system:
             logger.info(
-                "Did not perform the check because there were no publicly available %s %d.%d repositories available."
-                % (system_info.name, system_info.version.major, system_info.version.minor)
+                "Did not perform the check because there were no publicly available {} {}.{} repositories available.".format(
+                    system_info.name, system_info.version.major, system_info.version.minor
+                )
             )
             self.add_message(
                 level="INFO",
@@ -44,8 +45,9 @@ class PackageUpdates(actions.Action):
                 title="Did not perform the package updates check",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=(
-                    "Did not perform the check because there were no publicly available %s %d.%d repositories available."
-                    % (system_info.name, system_info.version.major, system_info.version.minor)
+                    "Did not perform the check because there were no publicly available {} {}.{} repositories available.".format(
+                        system_info.name, system_info.version.major, system_info.version.minor
+                    )
                 ),
             )
             return

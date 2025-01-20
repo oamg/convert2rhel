@@ -116,8 +116,9 @@ def _bad_kernel_version(kernel_release):
         )
 
     logger.debug(
-        "Booted kernel version '%s' corresponds to the version available in RHEL %d"
-        % (kernel_version, system_info.version.major)
+        "Booted kernel version '{}' corresponds to the version available in RHEL {}".format(
+            kernel_version, system_info.version.major
+        )
     )
     return False
 
