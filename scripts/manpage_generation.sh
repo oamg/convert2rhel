@@ -3,17 +3,26 @@
 # Directory to store the generated manpages
 MANPAGE_DIR="man"
 
-echo Generating manpages
+# Ensure the manpage directory exists
+mkdir -p "$MANPAGE_DIR"
 
-VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
+echo "Generating manpages"
 
-echo Generating for version $VER
 # Generate a file with convert2rhel synopsis for argparse-manpage
-/usr/bin/python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > man/synopsis
+python -c 'from convert2rhel import toolopts; print("[synopsis]\n."+toolopts.CLI.usage())' > "$MANPAGE_DIR/synopsis"
 
-/usr/bin/python -m pip install argparse-manpage six pexpect
+# Extract the current version from the spec file
+CURRENT_VER=$(grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec)
+echo "Current version: $CURRENT_VER"
 
 # Generate the manpage using argparse-manpage
-PYTHONPATH=. /usr/bin/python /home/runner/.local/bin/argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
+PYTHONPATH=. argparse-manpage --pyfile man/__init__.py --function get_parser --manual-title="General Commands Manual" --description="Automates the conversion of Red Hat Enterprise Linux derivative distributions to Red Hat Enterprise Linux." --project-name "convert2rhel $CURRENT_VER" --prog="convert2rhel" --include man/distribution --include man/synopsis > "$MANPAGE_DIR/convert2rhel.8"
 
-git status
+# Check for differences in the generated manpage
+if ! git diff --quiet HEAD -- "$MANPAGE_DIR/convert2rhel.8"; then
+    echo "Manpages are outdated. Please update them."
+    exit 1
+else
+    echo "Manpages are up-to-date."
+    exit 0
+fi

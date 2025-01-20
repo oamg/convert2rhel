@@ -40,7 +40,7 @@ from six import moves
 
 from convert2rhel import exceptions, i18n
 from convert2rhel.logger import root_logger
-from convert2rhel.toolopts import tool_opts
+from convert2rhel.toolopts.__init__ import tool_opts
 
 
 logger = root_logger.getChild(__name__)
