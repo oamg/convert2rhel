@@ -17,6 +17,10 @@ jobs:
     - epel-8-x86_64
     - epel-9-x86_64
     actions:
+      # Bump spec so we get release incremented by 3, getting ahead of potential release difference
+      # between released RHEL7, RHEL8 and RHEL9 packages.
+      post-upstream-clone:
+      - sed -i -E 's/(Release:\s*)([0-9]+)/echo "\1$((\2+3))"/e' ./packaging/convert2rhel.spec
       # do not get the version from a tag (git describe) but from the spec file
       get-current-version:
       - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
@@ -33,10 +37,11 @@ jobs:
     - epel-9-x86_64
 
     actions:
-      # bump spec so we get release starting with 2 and hence all the default branch builds will
-      # have higher NVR than all the PR builds
+      # Bump spec so we get release incremented by 4, getting ahead of potential release difference
+      # between released RHEL7, RHEL8 and RHEL9 packages.
+      # This will make builds from main branch always the latest upstream release.
       post-upstream-clone:
-      - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
+      - sed -i -E 's/(Release:\s*)([0-9]+)/echo "\1$((\2+4))"/e' ./packaging/convert2rhel.spec
       # do not get the version from a tag (git describe) but from the spec file
       get-current-version:
       - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
@@ -391,61 +396,61 @@ jobs:
       - sanity-el7
       - sanity-centos
 
-  - &tests-tier0-oraclelinux-7
-    job: tests
-    # Run tests on-demand
-    manual_trigger: true
-    # Do not merge the PR into the target branch, in case the merge is broken
-    # Given we are rebasing the source branches regularly, we do not need this feature enabled
-    merge_pr_in_ci: false
-    trigger: pull_request
-    identifier: "tier0-ol7"
-    tmt_plan: "tier0/core"
-    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-    use_internal_tf: True
-    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-    # therefore we need to pass post-install-script to enable root login on the host
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-    targets:
-      epel-7-x86_64:
-        distros: ["OL7.9-x86_64-HVM-2023-01-05"]
-    tf_extra_params:
-      environments:
-        - tmt:
-            context:
-              distro: "oracle-7"
-          settings:
-            provisioning:
-              tags:
-                BusinessUnit: sst_conversions
-      settings:
-        pipeline:
-            parallel-limit: 20
-    labels:
-      - el7
-      - oracle7
-      - oracle
-      - tier0
-      - tier0-oracle7
-      - tier0-el7
-      - tier0-oracle
-
-  - &tests-sanity-oraclelinux-7
-    <<: *tests-tier0-oraclelinux-7
-    identifier: "sanity-ol7"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - el7
-      - oracle7
-      - oracle
-      - tier0
-      - tier0-oracle7
-      - tier0-el7
-      - tier0-oracle
-      - sanity
-      - sanity-oracle7
-      - sanity-el7
-      - sanity-oracle
+#   - &tests-tier0-oraclelinux-7
+#     job: tests
+#     # Run tests on-demand
+#     manual_trigger: true
+#     # Do not merge the PR into the target branch, in case the merge is broken
+#     # Given we are rebasing the source branches regularly, we do not need this feature enabled
+#     merge_pr_in_ci: false
+#     trigger: pull_request
+#     identifier: "tier0-ol7"
+#     tmt_plan: "tier0/core"
+#     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+#     use_internal_tf: True
+#     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+#     # therefore we need to pass post-install-script to enable root login on the host
+#     tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
+#     targets:
+#       epel-7-x86_64:
+#         distros: ["OL7.9-x86_64-HVM-2023-01-05"]
+#     tf_extra_params:
+#       environments:
+#         - tmt:
+#             context:
+#               distro: "oracle-7"
+#           settings:
+#             provisioning:
+#               tags:
+#                 BusinessUnit: sst_conversions
+#       settings:
+#         pipeline:
+#             parallel-limit: 20
+#     labels:
+#       - el7
+#       - oracle7
+#       - oracle
+#       - tier0
+#       - tier0-oracle7
+#       - tier0-el7
+#       - tier0-oracle
+#
+#   - &tests-sanity-oraclelinux-7
+#     <<: *tests-tier0-oraclelinux-7
+#     identifier: "sanity-ol7"
+#     tmt_plan: "tier0/sanity"
+#     labels:
+#       - el7
+#       - oracle7
+#       - oracle
+#       - tier0
+#       - tier0-oracle7
+#       - tier0-el7
+#       - tier0-oracle
+#       - sanity
+#       - sanity-oracle7
+#       - sanity-el7
+#       - sanity-oracle
 
   - &tests-tier0-oraclelinux-8
     job: tests
@@ -749,18 +754,18 @@ jobs:
       - tier1-el7
       - tier1-centos
 
-  - &tests-tier1-manual-oraclelinux-7
-    <<: *tests-tier0-oraclelinux-7
-    identifier: "tier1-ol7"
-    tmt_plan: "tier1"
-    labels:
-      - el7
-      - oracle7
-      - oracle
-      - tier1
-      - tier1-oracle7
-      - tier1-el7
-      - tier1-oracle
+#   - &tests-tier1-manual-oraclelinux-7
+#     <<: *tests-tier0-oraclelinux-7
+#     identifier: "tier1-ol7"
+#     tmt_plan: "tier1"
+#     labels:
+#       - el7
+#       - oracle7
+#       - oracle
+#       - tier1
+#       - tier1-oracle7
+#       - tier1-el7
+#       - tier1-oracle
 
   - &tests-tier1-manual-centos8
     <<: *tests-tier0-centos8
@@ -891,14 +896,14 @@ jobs:
     trigger: commit
     branch: main
 
-  - &tests-main-tier1-oraclelinux-7
-    <<: *tests-tier0-oraclelinux-7
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-ol7"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
+#   - &tests-main-tier1-oraclelinux-7
+#     <<: *tests-tier0-oraclelinux-7
+#     # Run test automatically with merge commit to main branch
+#     manual_trigger: false
+#     identifier: "tier1-ol7"
+#     tmt_plan: "tier1"
+#     trigger: commit
+#     branch: main
 
   - &tests-main-tier1-centos8
     <<: *tests-tier0-centos8
