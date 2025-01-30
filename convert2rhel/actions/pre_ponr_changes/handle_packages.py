@@ -155,14 +155,22 @@ class RemoveSpecialPackages(actions.Action):
         # shows which packages were not removed, if false, all packages were removed
         pkgs_not_removed = sorted(frozenset(pkghandler.get_pkg_nevras(all_pkgs)).difference(pkgs_removed))
         if pkgs_not_removed:
-            message = "The following packages were not removed: {}".format(", ".join(pkgs_not_removed))
+            message = "The following packages cannot be removed: {}".format(", ".join(pkgs_not_removed))
             logger.warning(message)
             self.add_message(
                 level="WARNING",
                 id="SPECIAL_PACKAGES_NOT_REMOVED",
-                title="Special packages not removed",
-                description="Special packages which could not be removed",
+                title="Some packages cannot be removed",
                 diagnosis=message,
+                description=(
+                    "The packages in diagnosis match a pre-defined list of packages that are to be removed during the"
+                    " conversion. This list includes packages that are known to cause a conversion failure."
+                ),
+                remediations=(
+                    "Remove the packages manually before running convert2rhel again:\n" "yum remove -y {}".format(
+                        " ".join(pkgs_not_removed)
+                    )
+                ),
             )
 
         if pkgs_removed:
@@ -171,12 +179,13 @@ class RemoveSpecialPackages(actions.Action):
             self.add_message(
                 level="INFO",
                 id="SPECIAL_PACKAGES_REMOVED",
-                title="Special packages to be removed",
-                description=(
+                title="Packages to be removed",
+                description=message,
+                diagnosis=(
                     "We have identified installed packages that match a pre-defined list of packages that are"
-                    " to be removed during the conversion"
+                    " known to cause a conversion failure."
                 ),
-                diagnosis=message,
+                remediations="Check that the system runs correctly without the packages after the conversion.",
             )
 
 
