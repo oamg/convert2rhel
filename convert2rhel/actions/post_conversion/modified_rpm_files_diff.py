@@ -77,7 +77,7 @@ class ModifiedRPMFilesDiff(actions.Action):
                 level="INFO",
                 id="FOUND_MODIFIED_RPM_FILES",
                 title="Modified rpm files from before and after the conversion were found.",
-                description="Comparison of modified rpm files from before and after " "the conversion: \n{}".format(
+                description="Comparison of modified rpm files from before and after the conversion: \n{}".format(
                     modified_rpm_files_diff
                 ),
             )

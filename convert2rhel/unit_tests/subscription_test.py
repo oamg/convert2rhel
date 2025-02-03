@@ -802,9 +802,7 @@ class TestRegistrationCommand:
             utils,
             "run_subprocess",
             RunSubprocessMocked(
-                return_string=(
-                    "system identity: 1234-56-78-9abc\n" "name: abc-123\n" "org name: Test\n" "org ID: 12345678910\n"
-                )
+                return_string=("system identity: 1234-56-78-9abc\nname: abc-123\norg name: Test\norg ID: 12345678910\n")
             ),
         )
 

@@ -143,8 +143,7 @@ class TestTooloptsParseFromCLI:
         cli.CLI()
 
         message = (
-            "Ignoring the --serverurl option. It has no effect when no credentials to"
-            " subscribe the system were given."
+            "Ignoring the --serverurl option. It has no effect when no credentials to subscribe the system were given."
         )
         assert message in caplog.text
 

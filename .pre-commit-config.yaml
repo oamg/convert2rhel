@@ -2,7 +2,7 @@ minimum_pre_commit_version: "2.9.0"
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.7.3
+    rev: v0.9.4
     hooks:
       # Run the linter.
       - id: ruff
@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: "check-json5"
   - repo: "https://github.com/teemtee/tmt.git"
-    rev: "1.38.0"
+    rev: "1.41.0"
     hooks:
       - id: "tmt-tests-lint"
         verbose: false
@@ -37,11 +37,11 @@ repos:
           - https://github.com/oamg/convert2rhel.git
         stages: [manual, pre-push]
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.2
+    rev: v8.23.3
     hooks:
       - id: gitleaks
         stages: [manual, pre-push]
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.13
+    rev: v2.14
     hooks:
       - id: vulture

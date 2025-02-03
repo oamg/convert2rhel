@@ -90,8 +90,7 @@ class ConfigureHostMetering(actions.Action):
                 level="WARNING",
                 id="CONFIGURE_HOST_METERING_FAILURE",
                 title="Failed to enable and start host metering service.",
-                description="The host metering service failed to start"
-                " successfully and won't be able to keep track.",
+                description="The host metering service failed to start successfully and won't be able to keep track.",
                 diagnosis="Command {command} failed with {error_message}".format(
                     command=command, error_message=error_message
                 ),
