@@ -162,7 +162,7 @@ def test_ensure_compatibility_of_kmods(
         ),
         (
             HOST_MODULES_STUB_BAD,
-            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n" "kernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
+            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\nkernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
             ("", 0),
             "CANNOT_COMPARE_PACKAGE_VERSIONS",
             "ERROR",

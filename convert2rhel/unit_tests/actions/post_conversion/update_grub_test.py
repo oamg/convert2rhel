@@ -244,6 +244,6 @@ def test_update_grub_error(update_grub_instance, monkeypatch, get_partition_erro
         level="ERROR",
         id="FAILED_TO_IDENTIFY_GRUB2_BLOCK_DEVICE",
         title="Failed to identify GRUB2 block device",
-        description="The block device could not be identified, please look at the diagnosis " "for more information.",
+        description="The block device could not be identified, please look at the diagnosis for more information.",
         diagnosis=diagnosis,
     )
