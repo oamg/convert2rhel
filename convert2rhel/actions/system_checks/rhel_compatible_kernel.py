@@ -27,6 +27,7 @@ logger = root_logger.getChild(__name__)
 
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {
+    2: "4.14.355",  # Amazon Linux 2
     7: "3.10.0",
     8: "4.18.0",
     9: "5.14.0",
@@ -66,6 +67,9 @@ class RhelCompatibleKernel(actions.Action):
                 bad_kernel_message = str(e)
                 logger.warning(bad_kernel_message)
 
+                if system_info.version.major == 2:
+                    # Temp exception for Amazon Linux 2
+                    return
                 self.set_result(
                     level="ERROR",
                     id=e.error_id,

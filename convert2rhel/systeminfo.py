@@ -59,6 +59,7 @@ RELEASE_VER_MAPPING = {
     "8.4": "8.4",
     "8": "8",  # CentOS Stream and similar
     "7.9": "7Server",
+    "2": "7Server",  # Amazon Linux 2
 }
 
 # Dictionary of EUS minor versions supported and their EUS period start date
