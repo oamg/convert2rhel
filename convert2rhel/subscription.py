@@ -60,6 +60,7 @@ REGISTRATION_TIMEOUT = 180
 RHSM_FACTS_FILE = "/var/lib/rhsm/facts/facts.json"
 
 _CLIENT_TOOLS_REPOFILE_MAPPING = {
+    2: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo",  # Amazon Linux 2
     7: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-7-server.repo",
     8: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-8.repo",
     9: "https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-9.repo",

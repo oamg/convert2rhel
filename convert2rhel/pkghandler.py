@@ -623,7 +623,10 @@ def get_kernel_availability():
     available kernel versions.
     """
     output, _ = pkgmanager.call_yum_cmd(command="list", args=["--showduplicates", "kernel"], print_output=False)
-    return (list(get_kernel(data)) for data in output.split("Available Packages"))
+    if "Available Packages" in output:
+        return (list(get_kernel(data)) for data in output.split("Available Packages"))
+    else:
+        return (list(get_kernel(output)), _)
 
 
 def get_kernel(kernels_raw):
