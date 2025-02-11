@@ -133,6 +133,7 @@ class FileConfig(BaseConfig):
         # (meaning that the user entered something through the `-c` option), we
         # will use only that, as it has a higher priority over the rest
         paths = [os.path.expanduser(path) for path in self._config_files if os.path.exists(os.path.expanduser(path))]
+        print(paths)
 
         if not paths:
             raise FileNotFoundError("No such file or directory: {}".format(", ".join(paths)))
