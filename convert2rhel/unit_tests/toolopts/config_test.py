@@ -86,9 +86,9 @@ username = "correct_username"
             (
                 """\
 [subscription_manager]
-password = correct_password
+password = %correct_password%
                 """,
-                {"password": "correct_password"},
+                {"password": "%correct_password%"},
             ),
             (
                 """\
