@@ -17,8 +17,6 @@
 
 __metaclass__ = type
 
-import hashlib
-import os
 import re
 
 from convert2rhel import backup, exceptions, pkgmanager, utils
@@ -27,7 +25,6 @@ from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_system_packages_for_replacement
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
-from convert2rhel.repo import DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import remove_pkgs
 
@@ -74,7 +71,6 @@ def _resolve_yum_problematic_dependencies(output):
             "\n".join(packages_to_remove),
         )
         backedup_reposdir = backup.get_backedup_system_repos()
-        backedup_yum_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
 
         backup.backup_control.push(
             RestorablePackage(
@@ -82,7 +78,6 @@ def _resolve_yum_problematic_dependencies(output):
                 reposdir=backedup_reposdir,
                 set_releasever=True,
                 custom_releasever=system_info.version.major,
-                varsdir=backedup_yum_varsdir,
             )
         )
         remove_pkgs(pkgs_to_remove=packages_to_remove, critical=True)

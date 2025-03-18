@@ -161,6 +161,7 @@ class TestRemoveSpecialPackages:
             "BACKUP_REPOSITORY",
             "BACKUP_PACKAGE_FILES",
             "BACKUP_REDHAT_RELEASE",
+            "BACKUP_YUM_VARIABLES",
         )
 
         assert expected_dependencies == remove_special_packages_instance.dependencies
