@@ -34,9 +34,7 @@ logger = root_logger.getChild(__name__)
 
 # NOTE: Over time we want to replace this with pkghandler.RestorablePackageSet.
 class RestorablePackage(RestorableChange):
-    def __init__(
-        self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None, disable_repos=None
-    ):
+    def __init__(self, pkgs, reposdir=None, set_releasever=False, custom_releasever=None, disable_repos=None):
         """
         Keep control of system packages before their removal to backup and
         restore in case of rollback.
@@ -48,8 +46,6 @@ class RestorablePackage(RestorableChange):
             downloading the package with yumdownloader.
         :param custom_releasever str: Custom releasever in case it need to be
             overwritten and it differs from the `py:system_info.releasever`.
-        :param varsdir str: Location to the variables directory in case the
-            repository files needs to interpolate variables from those folders.
         """
         super(RestorablePackage, self).__init__()
 
@@ -57,7 +53,6 @@ class RestorablePackage(RestorableChange):
         self.reposdir = reposdir
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
-        self.varsdir = varsdir
 
         # RHELC-884 disable the RHEL repos to avoid downloading pkg from them.
         self.disable_repos = disable_repos or repo.DisableReposDuringAnalysis().get_rhel_repos_to_disable()
@@ -108,7 +103,6 @@ class RestorablePackage(RestorableChange):
                     disable_repos=self.disable_repos,
                     set_releasever=self.set_releasever,
                     custom_releasever=self.custom_releasever,
-                    varsdir=self.varsdir,
                     reposdir=self.reposdir,
                 )
             )

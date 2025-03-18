@@ -198,7 +198,7 @@ def call_yum_cmd(
     :type custom_releasever: str
     :params setopts: List of setopts to override during command execution. This
         can override any configuration defined in /etc/yum.conf. Equivalent as
-        --setopt=varsdir=/tmp.
+        --setopt=reposdir=/tmp.
     :type setopts: list[str]
 
     :raises AssertionError: Raised when custom_releasever is set but

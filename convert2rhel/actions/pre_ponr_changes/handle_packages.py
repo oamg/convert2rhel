@@ -77,6 +77,7 @@ class RemoveSpecialPackages(actions.Action):
         "BACKUP_REPOSITORY",
         "BACKUP_PACKAGE_FILES",
         "BACKUP_REDHAT_RELEASE",
+        "BACKUP_YUM_VARIABLES",
     )
 
     def run(self):

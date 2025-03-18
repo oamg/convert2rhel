@@ -17,7 +17,6 @@
 
 __metaclass__ = type
 
-import hashlib
 import json
 import os
 import re
@@ -33,7 +32,6 @@ from convert2rhel import backup, exceptions, i18n, pkghandler, repo, utils
 from convert2rhel.backup.packages import RestorablePackageSet
 from convert2rhel.logger import root_logger
 from convert2rhel.redhatrelease import os_release_file
-from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils.subscription import _should_subscribe
@@ -610,8 +608,6 @@ def install_rhel_subscription_manager(pkgs_to_install):
         shortcoming by installing the certificate.
     """
     backedup_reposdir = backup.get_backedup_system_repos()
-    varsdir = DEFAULT_YUM_VARS_DIR if system_info.version.major == 7 else DEFAULT_DNF_VARS_DIR
-    backedup_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(varsdir.encode()).hexdigest())
 
     setopts = []
     # Oracle Linux 7 needs to set the exclude option to avoid installing the
@@ -632,7 +628,6 @@ def install_rhel_subscription_manager(pkgs_to_install):
 
     reposdir = [os.path.dirname(client_tools_repofile_path), backedup_reposdir]
     setopts.append("reposdir={}".format(",".join(reposdir)))
-    setopts.append("varsdir={}".format(backedup_varsdir))
     installed_pkg_set = RestorablePackageSet(
         pkgs_to_install,
         custom_releasever=system_info.version.major,

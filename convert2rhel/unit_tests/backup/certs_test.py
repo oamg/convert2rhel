@@ -210,7 +210,7 @@ class TestPEMCert:
         with pytest.raises(exceptions.CriticalError):
             system_cert_with_target_path.enable()
 
-        assert "OSError(13): Permission denied" == caplog.messages[-1]
+        assert "Error(13): Permission denied" == caplog.messages[-1]
 
     def test_restore_cert(self, caplog, monkeypatch, system_cert_with_target_path):
         monkeypatch.setattr(

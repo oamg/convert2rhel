@@ -245,7 +245,6 @@ class TestRestorablePackageSet:
         ("pkgs_to_install", "setopts"),
         (
             (["pkg-1"], []),
-            (["pkg-1"], ["varsdir=test-dir"]),
             ([], []),
             ([], ["reposdir=test-dir"]),
             (["pkg-1"], []),

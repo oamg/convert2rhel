@@ -23,7 +23,7 @@ import pytest
 import six
 
 from convert2rhel import toolopts, unit_tests
-from convert2rhel.actions.pre_ponr_changes import backup_system
+from convert2rhel.actions.pre_ponr_changes import backup_system, yum_variables
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.unit_tests import CriticalErrorCallableObject
@@ -47,7 +47,7 @@ def backup_repository_action():
 
 @pytest.fixture
 def backup_variables_action():
-    return backup_system.BackupYumVariables()
+    return yum_variables.BackUpYumVariables()
 
 
 class RestorableFileBackupMocked(CriticalErrorCallableObject):
@@ -473,13 +473,8 @@ class TestBackupRepository:
 
 class TestBackupVariables:
     @all_systems
-    def test_backup_variables_nonexisting_path(self, tmpdir, monkeypatch, caplog, backup_variables_action, pretend_os):
+    def test_backup_variables_nonexisting_path(self, tmpdir, caplog, backup_variables_action, pretend_os):
         """Test empty paths, nothing for backup."""
-        etc = tmpdir.mkdir("etc")
-
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_VARS_DIR", str(etc))
-        monkeypatch.setattr(backup_system, "DEFAULT_DNF_VARS_DIR", str(etc))
-
         backup_variables = backup_variables_action
 
         backup_variables.run()
@@ -487,14 +482,14 @@ class TestBackupVariables:
         assert "No variables files backed up." in caplog.text
 
     @centos7
-    def test_backup_variables_only_yum(self, pretend_os, monkeypatch, tmpdir, generate_vars, backup_variables_action):
-        """Test when DNF is not present - DNF vars dir is not backed up."""
+    def test_backup_variables_for_both_dnf_and_yum(
+        self, pretend_os, monkeypatch, tmpdir, generate_vars, backup_variables_action
+    ):
+        """All dnf and yum var files are to be backed up, not matter the system or package manager installed."""
         dnf_vars, yum_vars = generate_vars
 
         backup_dir = str(tmpdir.mkdir("backup"))
 
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_VARS_DIR", os.path.dirname(yum_vars))
-        monkeypatch.setattr(backup_system, "DEFAULT_DNF_VARS_DIR", os.path.dirname(dnf_vars))
         monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
 
         backup_variables = backup_variables_action
@@ -502,7 +497,7 @@ class TestBackupVariables:
         backup_variables.run()
 
         # Mapping if the file should be backed up or not
-        orig_path_dict = {dnf_vars: False, yum_vars: True}
+        orig_path_dict = {dnf_vars: True, yum_vars: True}
 
         # Get the target path of backed up file and check presence of the file
         for path, value in orig_path_dict.items():
@@ -522,8 +517,6 @@ class TestBackupVariables:
 
         backup_dir = str(tmpdir.mkdir("backup"))
 
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_VARS_DIR", os.path.dirname(yum_vars))
-        monkeypatch.setattr(backup_system, "DEFAULT_DNF_VARS_DIR", os.path.dirname(dnf_vars))
         monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
 
         backup_variables = backup_variables_action

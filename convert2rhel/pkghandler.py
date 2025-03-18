@@ -293,6 +293,16 @@ def get_installed_pkgs_w_different_key_id(key_ids, name="*"):
 
 
 @utils.run_as_child_process
+def get_files_owned_by_package(installed_pkg_name):
+    """Get a list of files that are owned by an installed package."""
+    output, ret_code = utils.run_subprocess(["/usr/bin/rpm", "-ql", installed_pkg_name])
+    if ret_code != 0:
+        logger.warning("Failed to list files for package {0}: {1}".format(installed_pkg_name, output))
+        return []
+    return output.decode("utf-8").splitlines()
+
+
+@utils.run_as_child_process
 def format_pkg_info(pkgs, disable_repos=None):
     """Format package information.
 
@@ -791,7 +801,7 @@ def _get_packages_to_update_dnf(disable_repos=None):
     # in repo files. See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
     base.conf.read(priority=pkgmanager.conf.PRIO_MAINCONFIG)
-    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
+    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot)
     base.read_all_repos()
     base.fill_sack()
 
