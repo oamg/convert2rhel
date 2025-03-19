@@ -105,7 +105,7 @@ class BackupPackageFiles(actions.Action):
     # Something could be backed up by this function
     # and if the MD5 differs it might be backed up for second time
     # by the BackupPackageFiles
-    dependencies = ("BACKUP_REPOSITORY", "BACKUP_REDHAT_RELEASE")
+    dependencies = ("BACKUP_REPOSITORY", "BACKUP_REDHAT_RELEASE", "BACKUP_YUM_VARIABLES")
 
     def run(self):
         """Backup changed package files"""

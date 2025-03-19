@@ -49,20 +49,22 @@ class BackUpYumVariables(actions.Action):
 
         logger.debug("Getting a list of files owned by packages affecting variables in .repo files.")
         yum_var_affecting_pkgs = get_packages_to_remove(system_info.repofile_pkgs)
-        yum_var_filepaths = self._get_yum_var_files_owned_by_pkgs(
+        yum_var_files_to_back_up = self._get_yum_var_files_owned_by_pkgs(
             [pkg_obj.nevra.name for pkg_obj in yum_var_affecting_pkgs]
         )
-
-        self._back_up_var_files(yum_var_filepaths)
+        self._back_up_var_files(yum_var_files_to_back_up)
 
     def _get_yum_var_files_owned_by_pkgs(self, pkg_names):
         """Get paths of yum var files owned by the packages passed to the method."""
         pkg_owned_files = set()
         for pkg in pkg_names:
-            pkg_owned_files.union(get_files_owned_by_package(pkg))  # using set() and union() to get unique paths
+            # using set() and union() to get unique paths
+            pkg_owned_files = pkg_owned_files.union(get_files_owned_by_package(pkg))
 
         # Out of all the files owned by the packages get just those in yum/dnf var dirs
-        yum_var_filepaths = [path for path in pkg_owned_files if os.path.dirname(path) in self.yum_var_dirs]
+        yum_var_filepaths = [
+            path for path in pkg_owned_files if os.path.normcase(os.path.dirname(path)) in self.yum_var_dirs
+        ]
 
         return yum_var_filepaths
 
@@ -72,7 +74,11 @@ class BackUpYumVariables(actions.Action):
         :param paths: Paths to the variable files to back up
         :type paths: list[str]
         """
-        logger.info("Backing up variables files from {}.".format(" and ".join(self.yum_var_dirs)))
+        logger.info(
+            "Backing up variables files from {} owned by {} packages.".format(
+                " and ".join(self.yum_var_dirs), system_info.name
+            )
+        )
         if not paths:
             logger.info("No variables files backed up.")
 
@@ -107,12 +113,17 @@ class RestoreYumVarFiles(actions.Action):
         backed_up_yum_var_dirs = backup.get_backed_up_yum_var_dirs()
         loggerinst.task("Restoring yum variable files")
         loggerinst.info(
-            "In a previous step we removed a package that might have come with yum variables and in case we"
-            " need to access {} repositories (e.g. when installing dependencies of subscription-manager) we"
-            " need these yum variables available.".format(system_info.name)
+            "We need to restore {0} yum variables as they are oftentimes necessary for accessing the {0} repositories.".format(
+                system_info.name
+            )
         )
         for orig_yum_var_dir in backed_up_yum_var_dirs:
-            for backed_up_yum_var_filepath in os.listdir(backed_up_yum_var_dirs[orig_yum_var_dir]):
+            backed_up_yum_var_dir = backed_up_yum_var_dirs[orig_yum_var_dir]
+            if not os.path.exists(backed_up_yum_var_dir):
+                logger.info("No file from {} backed up. Nothing to restore.".format(orig_yum_var_dir))
+                continue
+            for backed_up_yum_var_filename in os.listdir(backed_up_yum_var_dir):
+                backed_up_yum_var_filepath = os.path.join(backed_up_yum_var_dir, backed_up_yum_var_filename)
                 try:
                     shutil.copy2(backed_up_yum_var_filepath, orig_yum_var_dir)
                     logger.debug("Copied {} from backup to {}.".format(backed_up_yum_var_filepath, orig_yum_var_dir))
