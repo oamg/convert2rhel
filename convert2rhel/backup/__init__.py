@@ -50,8 +50,8 @@ def get_backed_up_yum_var_dirs():
     """
 
     yum_var_dirs = {
-        DEFAULT_YUM_VARS_DIR: hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest(),
-        DEFAULT_DNF_VARS_DIR: hashlib.md5(DEFAULT_DNF_VARS_DIR.encode()).hexdigest(),
+        DEFAULT_YUM_VARS_DIR: os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest()),
+        DEFAULT_DNF_VARS_DIR: os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_DNF_VARS_DIR.encode()).hexdigest()),
     }
     return yum_var_dirs
 

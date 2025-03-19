@@ -473,8 +473,13 @@ class TestBackupRepository:
 
 class TestBackupVariables:
     @all_systems
-    def test_backup_variables_nonexisting_path(self, tmpdir, caplog, backup_variables_action, pretend_os):
+    def test_backup_variables_nonexisting_path(self, tmpdir, monkeypatch, caplog, backup_variables_action, pretend_os):
         """Test empty paths, nothing for backup."""
+        etc = tmpdir.mkdir("etc")
+
+        monkeypatch.setattr(yum_variables, "DEFAULT_YUM_VARS_DIR", str(etc))
+        monkeypatch.setattr(yum_variables, "DEFAULT_DNF_VARS_DIR", str(etc))
+
         backup_variables = backup_variables_action
 
         backup_variables.run()
