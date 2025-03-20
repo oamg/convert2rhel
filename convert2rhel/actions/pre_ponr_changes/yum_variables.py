@@ -85,6 +85,7 @@ class BackUpYumVariables(actions.Action):
         for filepath in paths:
             restorable_file = RestorableFile(filepath)
             backup.backup_control.push(restorable_file)
+        logger.info("Yum variables successfully backed up.")
 
 
 class RestoreYumVarFiles(actions.Action):
