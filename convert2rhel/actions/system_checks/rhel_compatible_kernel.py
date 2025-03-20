@@ -27,7 +27,7 @@ logger = root_logger.getChild(__name__)
 
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {
-    2: "4.14.355",  # Amazon Linux 2
+    2: "4.18.0",  # In Amazon Linux 2 there's no kernel of the same version as in RHEL (there's 4.14 and 5.10)
     7: "3.10.0",
     8: "4.18.0",
     9: "5.14.0",
@@ -68,7 +68,19 @@ class RhelCompatibleKernel(actions.Action):
                 logger.warning(bad_kernel_message)
 
                 if system_info.version.major == 2:
-                    # Temp exception for Amazon Linux 2
+                    logger.warning(
+                        "Ignoring the check result on Amazon Linux 2 as there's no kernel of the same"
+                        " version as in RHEL available."
+                    )
+                    self.add_message(
+                        level="WARNING",
+                        id="INCOMPATIBLE_KERNEL_ON_AL2",
+                        title="Incompatible booted kernel version",
+                        description="On Amazon Linux 2 there's no kernel of the same version as in RHEL available."
+                        " The kernel downgrade during the conversion may cause issues, proceed at your"
+                        " own risk.",
+                        diagnosis=bad_kernel_message,
+                    )
                     return
                 self.set_result(
                     level="ERROR",
@@ -111,11 +123,10 @@ def _bad_kernel_version(kernel_release):
         raise KernelIncompatibleError(
             "INCOMPATIBLE_VERSION",
             "Booted kernel version '{kernel_version}' does not correspond to the version "
-            "'{compatible_version}' available in RHEL {rhel_major_version}",
+            "'{compatible_version}' available in RHEL",
             {
                 "kernel_version": kernel_version,
                 "compatible_version": COMPATIBLE_KERNELS_VERS[system_info.version.major],
-                "rhel_major_version": system_info.version.major,
             },
         )
 
