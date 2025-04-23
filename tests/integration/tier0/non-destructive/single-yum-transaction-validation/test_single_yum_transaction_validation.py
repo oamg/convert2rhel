@@ -135,7 +135,7 @@ def test_transaction_validation_error(convert2rhel, shell, yum_cache):
         c2r.expect("Pre-conversion analysis report", timeout=600)
         c2r.expect("Must fix before conversion")
         c2r.expect_exact(
-            "VALIDATE_PACKAGE_MANAGER_TRANSACTION::FAILED_TO_VALIDATE_TRANSACTION",
+            "VALIDATE_PACKAGE_MANAGER_TRANSACTION::FAILED_TO_VALIDATE_YUM_TRANSACTION",
             timeout=600,
         )
 

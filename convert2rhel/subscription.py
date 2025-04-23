@@ -216,7 +216,7 @@ def register_system():
                 )
             )
             raise exceptions.CriticalError(
-                id_="FAILED_TO_SUBSCRIBE_SYSTEM",
+                id_="FAILED_TO_SUBSCRIBE_SYSTEM_ETC_OS_RELEASE",
                 title="Failed to subscribe system.",
                 description="Failed to restore the /etc/os-release file needed for subscribing the system.",
                 diagnosis="The restore failed with error {}.".format(str(e)),

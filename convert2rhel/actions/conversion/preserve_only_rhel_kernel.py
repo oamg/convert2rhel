@@ -147,7 +147,7 @@ class FixDefaultKernel(actions.Action):
             loggerinst.warning(description)
             self.add_message(
                 level="WARNING",
-                id="LEFTOVER_BOOT_KERNEL_DETECTED",
+                id="LEFTOVER_DEFAULT_BOOT_KERNEL_DETECTED",
                 title="Leftover boot kernel detected",
                 description=description,
             )
