@@ -23,3 +23,4 @@ TAGS
 !.vscode/extensions.json
 docs/build/*
 docs/source/_autosummary
+*.code-workspace
