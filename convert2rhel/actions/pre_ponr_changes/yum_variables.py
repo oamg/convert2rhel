@@ -22,7 +22,7 @@ from convert2rhel import actions
 from convert2rhel import backup
 from convert2rhel.backup.files import InstalledFile, RestorableFile
 from convert2rhel.logger import root_logger
-from convert2rhel.pkghandler import get_files_owned_by_package, get_packages_to_remove
+from convert2rhel import pkghandler
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts.config import loggerinst
@@ -48,10 +48,16 @@ class BackUpYumVariables(actions.Action):
         super(BackUpYumVariables, self).run()
 
         logger.debug("Getting a list of files owned by packages affecting variables in .repo files.")
-        yum_var_affecting_pkgs = get_packages_to_remove(system_info.repofile_pkgs)
-        yum_var_files_to_back_up = self._get_yum_var_files_owned_by_pkgs(
-            [pkg_obj.nevra.name for pkg_obj in yum_var_affecting_pkgs]
-        )
+        yum_var_affecting_pkgs = []
+        for pkg in system_info.repofile_pkgs:
+            # We use get_installed_pkg_objects() to have yum find installed packages even when a glob (*) is useed
+            yum_var_affecting_pkgs.extend(pkghandler.get_installed_pkg_objects(pkg))
+
+        # Get just the names of the packages affecting yum variables
+        yum_var_affecting_pkg_names = [pkg.name for pkg in yum_var_affecting_pkgs]
+        logger.debug("Packages affecting yum variables: {0}".format(", ".join(yum_var_affecting_pkg_names)))
+
+        yum_var_files_to_back_up = self._get_yum_var_files_owned_by_pkgs(yum_var_affecting_pkg_names)
         self._back_up_var_files(yum_var_files_to_back_up)
 
     def _get_yum_var_files_owned_by_pkgs(self, pkg_names):
@@ -59,7 +65,7 @@ class BackUpYumVariables(actions.Action):
         pkg_owned_files = set()
         for pkg in pkg_names:
             # using set() and union() to get unique paths
-            pkg_owned_files = pkg_owned_files.union(get_files_owned_by_package(pkg))
+            pkg_owned_files = pkg_owned_files.union(pkghandler.get_files_owned_by_package(pkg))
 
         # Out of all the files owned by the packages get just those in yum/dnf var dirs
         yum_var_filepaths = [
@@ -69,18 +75,19 @@ class BackUpYumVariables(actions.Action):
         return yum_var_filepaths
 
     def _back_up_var_files(self, paths):
-        """Back up yum variable files.
+        """Back up yum/dnf variable files.
 
         :param paths: Paths to the variable files to back up
         :type paths: list[str]
         """
         logger.info(
-            "Backing up variables files from {} owned by {} packages.".format(
+            "Backing up yum variable files from {} owned by {} packages.".format(
                 " and ".join(self.yum_var_dirs), system_info.name
             )
         )
         if not paths:
-            logger.info("No variables files backed up.")
+            logger.info("No variable files to back up detected.")
+            return
 
         for filepath in paths:
             restorable_file = RestorableFile(filepath)

@@ -200,8 +200,8 @@ def get_rpm_header(pkg_obj):
 
 
 def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
-    """Return list with installed package objects. The packages can be
-    optionally filtered by name.
+    """Return list with installed package objects (yum.rpmsack.RPMInstalledPackage objects in case
+    of yum and hawkey.Package objects in case of dnf). The packages can be optionally filtered.
     """
     if pkgmanager.TYPE == "yum":
         return _get_installed_pkg_objects_yum(name, version, release, arch)
