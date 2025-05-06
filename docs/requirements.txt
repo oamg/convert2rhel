@@ -1,2 +1,2 @@
 Sphinx==7.4.7 # need to use this version as Sphinx 8+ requires py3.11+ and CentOS Stream 9 we use for building docs has py3.9
-sphinx_autodoc_typehints==2.3.0  # can't use newer due to the Sphinx 7.4.7 requirement
+sphinx_autodoc_typehints==3.2.0  # can't use newer due to the Sphinx 7.4.7 requirement
