@@ -59,7 +59,7 @@ def setup_rhsm_parts(opts):
                 # security practice.
                 loggerinst.critical(
                     "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
-                    "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
+                    "Check for typos and run convert2rhel again with a corrected --serverurl.\n"
                     "Supplied serverurl: {}\nError: {}".format(opts.serverurl, e)
                 )
 

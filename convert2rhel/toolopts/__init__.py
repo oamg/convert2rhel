@@ -67,13 +67,13 @@ class ToolOpts:
 
         if (cli_config.password or file_config.password) and not (cli_config.username or file_config.username):
             loggerinst.warning(
-                "You have passed the RHSM password without an associated username. Please provide a username together"
+                "You have passed the RHSM password without an associated username. Provide a username together"
                 " with the password."
             )
 
         if (cli_config.username or file_config.username) and not (cli_config.password or file_config.password):
             loggerinst.warning(
-                "You have passed the RHSM username without an associated password. Please provide a password together"
+                "You have passed the RHSM username without an associated password. Provide a password together"
                 " with the username."
             )
 

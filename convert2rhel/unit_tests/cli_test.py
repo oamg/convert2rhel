@@ -121,7 +121,7 @@ class TestTooloptsParseFromCLI:
 
         message = (
             "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
-            "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
+            "Check for typos and run convert2rhel again with a corrected --serverurl.\n"
             "Supplied serverurl: {}\nError: ".format(serverurl)
         )
         assert message in caplog.records[-1].message
@@ -267,7 +267,7 @@ password = conf_pass
 activation_key = conf_key
             """,
             {"password": "password"},
-            "You have passed the RHSM password without an associated username. Please provide a username together with the password.",
+            "You have passed the RHSM password without an associated username. Provide a username together with the password.",
         ),
         (
             mock_cli_arguments(["-o", "org"]),
@@ -597,11 +597,11 @@ incomplete_rollback = 1
         (mock_cli_arguments(["-u", "user", "-p", "pass"]), "-u ***** -p *****"),
         (
             mock_cli_arguments(["-p", "pass"]),
-            "You have passed the RHSM password without an associated username. Please provide a username together with the password",
+            "You have passed the RHSM password without an associated username. Provide a username together with the password",
         ),
         (
             mock_cli_arguments(["-u", "user"]),
-            "You have passed the RHSM username without an associated password. Please provide a password together with the username",
+            "You have passed the RHSM username without an associated password. Provide a password together with the username",
         ),
     ),
 )

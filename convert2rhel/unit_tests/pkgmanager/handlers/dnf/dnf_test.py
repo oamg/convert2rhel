@@ -293,7 +293,7 @@ class TestDnfTransactionHandler:
 
         assert pkgmanager.Base.resolve.call_count == 1
         assert pkgmanager.Base.download_packages.call_count == 1
-        assert "Resolving the dependencies of the packages in the dnf transaction set." in caplog.records[-2].message
+        assert "Resolving dependencies of the packages in the dnf transaction set." in caplog.records[-2].message
 
     @centos8
     def test_resolve_dependencies_resolve_exception(self, pretend_os, caplog, monkeypatch):
@@ -350,11 +350,11 @@ class TestDnfTransactionHandler:
             instance._process_transaction(validate_transaction=False)
 
         assert pkgmanager.Base.do_transaction.call_count == 1
-        assert "Failed to validate the dnf transaction." in caplog.records[-1].message
         assert "FAILED_TO_VALIDATE_TRANSACTION" in execinfo._excinfo[1].id
-        assert "Failed to validate dnf transaction." in execinfo._excinfo[1].title
+        assert "Failed to validate a dnf transaction." in caplog.records[-1].message
+        assert "Failed to validate a dnf transaction" in execinfo._excinfo[1].title
         assert (
-            "During the dnf transaction execution an error occured and convert2rhel could no longer process the transaction."
+            "During the dnf transaction execution an error occurred and convert2rhel could no longer process the transaction."
             in execinfo._excinfo[1].description
         )
         assert (
@@ -364,7 +364,7 @@ class TestDnfTransactionHandler:
 
     @centos8
     @pytest.mark.parametrize(
-        ("validate_transaction"),
+        "validate_transaction",
         ((True), (False)),
     )
     def test_run_transaction(self, pretend_os, validate_transaction, caplog, monkeypatch):

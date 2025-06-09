@@ -51,9 +51,7 @@ def test_invalid_changes_to_grub_file(convert2rhel, grub_file_invalid):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        assert c2r.expect_exact("Prepare: Check if the grub file is valid") == 0
-        assert (
-            c2r.expect_exact("ERROR - (ERROR) GRUB_VALIDITY::INVALID_GRUB_FILE - Grub boot entry file is invalid") == 0
-        )
+        assert c2r.expect_exact("Prepare: Check validity of /etc/default/grub") == 0
+        assert c2r.expect_exact("ERROR - (ERROR) GRUB_VALIDITY::INVALID_GRUB_FILE - /etc/default/grub invalid") == 0
 
     assert c2r.exitstatus == 2

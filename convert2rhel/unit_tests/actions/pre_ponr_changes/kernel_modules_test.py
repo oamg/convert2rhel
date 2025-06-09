@@ -162,7 +162,7 @@ def test_ensure_compatibility_of_kmods(
         ),
         (
             HOST_MODULES_STUB_BAD,
-            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n" "kernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
+            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\nkernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
             ("", 0),
             "CANNOT_COMPARE_PACKAGE_VERSIONS",
             "ERROR",
@@ -238,7 +238,7 @@ def test_ensure_compatibility_of_kmods_check_env_and_message(
     message = ensure_kernel_modules_compatibility_instance.messages[0]
     assert STATUS_CODE["WARNING"] == message.level
     assert "ALLOW_UNAVAILABLE_KERNEL_MODULES" == message.id
-    assert "Did not perform the ensure kernel modules compatibility check" == message.title
+    assert "Ignoring the check ensuring kernel module availability in RHEL" == message.title
     assert (
         "We will continue the conversion with the following kernel modules unavailable in RHEL:" in message.description
     )
@@ -315,7 +315,7 @@ def test_ensure_compatibility_of_kmods_excluded(
             level="OVERRIDABLE",
             id="UNSUPPORTED_KERNEL_MODULES",
             title="Unsupported kernel modules",
-            description="Unsupported kernel modules were found",
+            description="Unsupported kernel modules were found.",
             diagnosis="The following loaded kernel modules are not available in RHEL:",
             remediations="Ensure you have updated the kernel to the latest available version and rebooted the system.",
         )

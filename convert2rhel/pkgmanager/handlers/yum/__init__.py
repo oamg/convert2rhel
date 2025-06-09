@@ -168,7 +168,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             logger.critical_no_exit("Failed to populate repository metadata.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_ENABLE_REPOS",
-                title="Failed to enable repositories.",
+                title="Failed to enable repositories",
                 description="We've encountered a failure when accessing repository metadata.",
                 diagnosis="Loading repository metadata failed with error {}.".format(str(e)),
             )
@@ -236,7 +236,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             logger.critical_no_exit("There are no suitable mirrors available for the loaded repositories.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_LOAD_REPOSITORIES",
-                title="Failed to find suitable mirrors for the load repositories.",
+                title="Failed to find suitable mirrors for the load repositories",
                 description="All available mirrors were tried and none were available.",
                 diagnosis="Repository mirrors failed with error {}.".format(str(e)),
             )
@@ -270,7 +270,7 @@ class YumTransactionHandler(TransactionHandlerBase):
             return that message, otherwise, return None.
         :rtype: str | None
         """
-        logger.info("Resolving the dependencies of the packages in the yum transaction set.")
+        logger.info("Resolving dependencies of the packages in the yum transaction set.")
         ret_code, msg = self._base.resolveDeps()
 
         if ret_code == 1:
@@ -318,10 +318,10 @@ class YumTransactionHandler(TransactionHandlerBase):
             #  - pkgmanager.Errors.YumBaseError
             #  - pkgmanager.Errors.YumGPGCheckError
             logger.debug("Got the following exception message: %s", e)
-            logger.critical_no_exit("Failed to validate the yum transaction.")
+            logger.critical_no_exit("Failed to validate a yum transaction.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_VALIDATE_TRANSACTION",
-                title="Failed to validate yum transaction.",
+                title="Failed to validate a yum transaction",
                 description="During the yum transaction execution an error occurred and convert2rhel could no longer process the transaction.",
                 diagnosis="Transaction processing failed with error: {}".format(" ".join(e.value)),
             )
@@ -354,7 +354,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                     if "Depsolving loop limit reached" not in messages and validate_transaction:
                         _resolve_yum_problematic_dependencies(messages)
 
-                    logger.info("Retrying to resolve dependencies %s", attempts)
+                    logger.info("Retrying to resolve dependencies - attempt %s.", attempts)
                     attempts += 1
                 else:
                     resolve_deps_finished = True
@@ -364,7 +364,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                 logger.critical_no_exit("Failed to resolve dependencies in the transaction.")
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_RESOLVE_DEPENDENCIES",
-                    title="Failed to resolve dependencies.",
+                    title="Failed to resolve dependencies",
                     description="During package transaction yum failed to resolve the necessary dependencies needed for a package replacement.",
                 )
         finally:

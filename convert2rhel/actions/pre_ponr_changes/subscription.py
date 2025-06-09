@@ -100,7 +100,7 @@ class PreSubscription(actions.Action):
             logger.task("Subscription Manager - Check for installed packages")
             subscription_manager_pkgs = subscription.needed_subscription_manager_pkgs()
             if not subscription_manager_pkgs:
-                logger.info("Subscription Manager is already present")
+                logger.info("Subscription Manager is already present.")
             else:
                 logger.task("Subscription Manager - Install packages")
                 subscription.install_rhel_subscription_manager(subscription_manager_pkgs)
@@ -118,7 +118,7 @@ class PreSubscription(actions.Action):
                 level="ERROR",
                 id="UNKNOWN_ERROR",
                 title="Unknown error",
-                description="The cause of this error is unknown, please look at the diagnosis for more information.",
+                description="The cause of this error is unknown. Look at the diagnosis for more information.",
                 diagnosis=str(e),
             )
         except exceptions.CriticalError as e:
@@ -177,7 +177,7 @@ class SubscribeSystem(actions.Action):
                         level="ERROR",
                         id="SYSTEM_NOT_REGISTERED",
                         title="Not registered with RHSM",
-                        description="This system must be registered with rhsm in order to get access to the RHEL rpms. In this case, the system was not already registered and no credentials were given to convert2rhel to register it.",
+                        description="This system must be registered with RHSM in order to get access to RHEL rpms. In this case, the system has not been registered and no credentials were given to convert2rhel to register it.",
                         remediations="You may either register this system via subscription-manager before running convert2rhel or give convert2rhel credentials to do that for you. The credentials convert2rhel would need are either activation_key and organization or username and password. You can set these in a config file and then pass the file to convert2rhel with the --config-file option.",
                     )
                     return
@@ -226,7 +226,7 @@ class SubscribeSystem(actions.Action):
                 level="ERROR",
                 id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
                 title="Missing subscription-manager binary",
-                description="There is a missing subscription-manager binary",
+                description="There is a missing subscription-manager binary.",
                 diagnosis="Failed to execute command: {}".format(e),
             )
         except exceptions.CriticalError as e:
@@ -246,7 +246,7 @@ class SubscribeSystem(actions.Action):
                 level="ERROR",
                 id="UNKNOWN_ERROR",
                 title="Unknown error",
-                description="The cause of this error is unknown, please look at the diagnosis for more information.",
+                description="The cause of this error is unknown. Look at the diagnosis for more information.",
                 diagnosis=str(e),
             )
         except ValueError as e:
@@ -254,7 +254,7 @@ class SubscribeSystem(actions.Action):
                 level="ERROR",
                 id="MISSING_REGISTRATION_COMBINATION",
                 title="Missing registration combination",
-                description="There are missing registration combinations",
+                description="There are missing registration combinations.",
                 diagnosis="One or more combinations were missing for subscription-manager parameters: {}".format(
                     str(e)
                 ),
