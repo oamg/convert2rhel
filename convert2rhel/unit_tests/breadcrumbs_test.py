@@ -267,10 +267,101 @@ def test_save_migration_results(tmpdir, monkeypatch, caplog):
     assert write_obj_to_array_json_mock.call_count == 1
 
 
-def test_set_pkg_object(_mock_pkg_obj, monkeypatch):
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_objects", lambda name: [_mock_pkg_obj])
-    breadcrumbs.breadcrumbs._set_pkg_object()
-    assert breadcrumbs.breadcrumbs._pkg_object.name == "convert2rhel"
+@pytest.mark.parametrize(
+    ("attribute", "value", "expected", "exception"),
+    [
+        ("tool_opts.activity", "Test Activity", "Test Activity", None),
+        ("tool_opts.activity", None, None, ValueError("Activity is not set in tool_opts")),
+        (
+            "tool_opts.activity",
+            mock.Mock(side_effect=Exception("Test Exception")),
+            None,
+            Exception("Error setting activity: Test Exception"),
+        ),
+    ],
+)
+def test_set_activity(monkeypatch, attribute, value, expected, exception, caplog):
+    monkeypatch.setattr(*attribute.split("."), value)
+    if exception:
+        with pytest.raises(type(exception), match=str(exception)):
+            breadcrumbs.breadcrumbs._set_activity()
+        if isinstance(exception, ValueError):
+            assert str(exception) in caplog.text
+    else:
+        breadcrumbs.breadcrumbs._set_activity()
+        assert breadcrumbs.breadcrumbs.activity == expected
+
+
+@pytest.mark.parametrize(
+    ("method", "attribute", "value", "expected", "exception"),
+    [
+        ("_set_pkg_object", "pkghandler.get_installed_pkg_objects", [_mock_pkg_obj], "convert2rhel", None),
+        (
+            "_set_pkg_object",
+            "pkghandler.get_installed_pkg_objects",
+            [],
+            None,
+            ValueError("No installed package objects found for convert2rhel"),
+        ),
+        (
+            "_set_pkg_object",
+            "pkghandler.get_installed_pkg_objects",
+            mock.Mock(side_effect=Exception("Test Exception")),
+            None,
+            Exception("Error setting pkg_object: Test Exception"),
+        ),
+    ],
+)
+def test_set_pkg_object(monkeypatch, method, attribute, value, expected, exception, caplog):
+    monkeypatch.setattr(*attribute.split("."), value)
+    if exception:
+        with pytest.raises(type(exception), match=str(exception)):
+            getattr(breadcrumbs.breadcrumbs, method)()
+            if isinstance(exception, ValueError):
+                assert str(exception) in caplog.text
+
+            else:
+                getattr(breadcrumbs.breadcrumbs, method)()
+                assert breadcrumbs.breadcrumbs._pkg_object.name == expected
+
+
+@pytest.mark.parametrize(
+    ("method", "attribute", "value", "expected", "exception"),
+    [
+        (
+            "_set_nevra",
+            "pkghandler.get_pkg_nevra",
+            lambda obj, include_zero_epoch: "convert2rhel-1:2-3.x86_64",
+            "convert2rhel-1:2-3.x86_64",
+            None,
+        ),
+        (
+            "_set_nevra",
+            "pkghandler.get_pkg_nevra",
+            lambda obj, include_zero_epoch: None,
+            None,
+            ValueError("NEVRA is not set"),
+        ),
+        (
+            "_set_nevra",
+            "pkghandler.get_pkg_nevra",
+            mock.Mock(side_effect=Exception("Test Exception")),
+            None,
+            Exception("Error setting nevra: Test Exception"),
+        ),
+    ],
+)
+def test_set_nevra(monkeypatch, method, attribute, value, expected, exception, caplog, _mock_pkg_obj):
+    monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
+    monkeypatch.setattr(*attribute.split("."), value)
+    if exception:
+        with pytest.raises(type(exception), match=str(exception)):
+            getattr(breadcrumbs.breadcrumbs, method)()
+        if isinstance(exception, ValueError):
+            assert str(exception) in caplog.text
+    else:
+        getattr(breadcrumbs.breadcrumbs, method)()
+        assert breadcrumbs.breadcrumbs.nevra == expected
 
 
 @pytest.mark.skipif(
@@ -295,12 +386,44 @@ def test_set_nevra_yum(monkeypatch, _mock_pkg_obj):
     assert breadcrumbs.breadcrumbs.nevra == "1:convert2rhel-2-3.x86_64"
 
 
-def test_set_signature(monkeypatch, _mock_pkg_obj, _mock_pkg_information):
+@pytest.mark.parametrize(
+    ("method", "attribute", "value", "expected", "exception"),
+    [
+        (
+            "_set_signature",
+            "pkghandler.get_installed_pkg_information",
+            lambda name: [_mock_pkg_information],
+            "73bde98381b46521",
+            None,
+        ),
+        (
+            "_set_signature",
+            "pkghandler.get_installed_pkg_information",
+            lambda name: [_mock_pkg_obj],
+            None,
+            ValueError("Signature is not set"),
+        ),
+        (
+            "_set_signature",
+            "pkghandler.get_installed_pkg_information",
+            mock.Mock(side_effect=Exception("Test Exception")),
+            None,
+            Exception("Error setting signature: Test Exception"),
+        ),
+    ],
+)
+def test_set_signature(monkeypatch, method, attribute, value, expected, exception, caplog, _mock_pkg_obj):
     monkeypatch.setattr(pkgmanager, "TYPE", "yum")
     monkeypatch.setattr(breadcrumbs.breadcrumbs, "_pkg_object", _mock_pkg_obj)
-    monkeypatch.setattr(pkghandler, "get_installed_pkg_information", lambda name: [_mock_pkg_information])
-    breadcrumbs.breadcrumbs._set_signature()
-    assert "73bde98381b46521" in breadcrumbs.breadcrumbs.signature
+    monkeypatch.setattr(*attribute.split("."), value)
+    if exception:
+        with pytest.raises(type(exception), match=str(exception)):
+            getattr(breadcrumbs.breadcrumbs, method)()
+        if isinstance(exception, ValueError):
+            assert str(exception) in caplog.text
+    else:
+        getattr(breadcrumbs.breadcrumbs, method)()
+        assert breadcrumbs.breadcrumbs.signature == expected
 
 
 def test_set_started():
