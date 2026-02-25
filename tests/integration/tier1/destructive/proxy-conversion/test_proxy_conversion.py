@@ -1,5 +1,6 @@
 import socket
 
+import pytest
 from conftest import TEST_VARS, SubscriptionManager
 
 
@@ -111,6 +112,7 @@ def setup_rhsm(shell):
     shell(f"subscription-manager config --rhsm.baseurl=https://{TEST_VARS['RHSM_STAGECDN']}", silent=True)
 
 
+@pytest.mark.no_configure_proxy
 def test_proxy_conversion(shell, convert2rhel):
     """
     System is connected to the internet through a proxy server.

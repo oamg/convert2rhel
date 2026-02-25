@@ -24,7 +24,7 @@ except ImportError:
 #
 pytest.register_assert_rewrite("test_helpers")
 
-from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
+from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title, log_file
 from test_helpers.satellite import Satellite
 from test_helpers.shell import live_shell
 from test_helpers.subscription_manager import SubscriptionManager
@@ -543,3 +543,39 @@ def backup_directory(shell, request):
     yield backup_path
 
     shell(f"rm -rf {backup_path}")
+
+
+@pytest.fixture(autouse=True)
+def configure_proxy(shell, request):
+    """
+    Configure proxy to use with RHSM and CDN endpoints globally.
+    """
+    if request.node.get_closest_marker("no_configure_proxy"):
+        return
+
+    assert (
+        shell(
+            f"curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://security.access.redhat.com/data/fd431d51.txt \
+                  --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}",
+            silent=True,
+        ).returncode
+        == 0
+    )
+
+    # Add the client tools repository and install subscription-manager
+    subman = SubscriptionManager()
+    subman.remove_package(package_name="rhn-client-tools")
+    subman.add_client_tools_repo()
+    subman.install_package()
+
+    shell(
+        f"subscription-manager config "
+        f"--server.proxy_hostname={TEST_VARS['PROXY_SERVER']} "
+        f"--server.proxy_port={TEST_VARS['PROXY_PORT']} "
+        f"--rhsm.baseurl=https://{TEST_VARS['RHSM_STAGECDN']}",
+        silent=True,
+    )
+    log_file("/etc/rhsm/rhsm.conf", "proxy_setup", "rhsm.conf")
+
+    shell(f"echo 'proxy=http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}' >> /etc/yum.conf", silent=True)
+    log_file("/etc/yum.conf", "proxy_setup", "yum.conf")

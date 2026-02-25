@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import shutil
+import tarfile
 
 from collections import namedtuple
 
@@ -124,3 +126,40 @@ def get_log_file_data():
         log_data = logfile.read()
 
         return log_data
+
+
+def log_file(
+    filename,
+    subdir=None,
+    new_name=None,
+    skip_nonexistent=False,
+    overwrite=False,
+    compress_dirs=True,
+    compress_file=False,
+):
+    if not os.path.lexists(filename):
+        if skip_nonexistent:
+            return
+        raise FileNotFoundError(f"Source '{filename}' does not exist.")
+    if subdir is None:
+        subdir = "common"
+    if new_name is None:
+        new_name = os.path.basename(filename)
+    new_name = new_name.lstrip("/")
+    dest_path = os.path.join(os.environ.get("TMT_TEST_DATA", "."), subdir, new_name)
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    if os.path.exists(dest_path) and not overwrite:
+        raise FileExistsError(f"File at path '{dest_path}' already exists.")
+    if os.path.isdir(filename):
+        if compress_dirs:
+            shutil.make_archive(f"{dest_path}.DIR", "gztar", filename)
+        else:
+            shutil.copytree(filename, dest_path, symlinks=True)
+    elif os.path.isfile(filename):
+        if compress_file:
+            with tarfile.open(f"{dest_path}.tar.gz", "w:gz") as tf:
+                tf.add(filename)
+        else:
+            shutil.copy(filename, dest_path)
+    else:
+        shutil.copy(filename, dest_path)
