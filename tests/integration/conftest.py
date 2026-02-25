@@ -277,7 +277,7 @@ def remove_repositories(shell, backup_directory):
 
 
 @pytest.fixture
-def pre_registered(shell, request, fixture_subman):
+def pre_registered(shell, request, configure_proxy, fixture_subman):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.

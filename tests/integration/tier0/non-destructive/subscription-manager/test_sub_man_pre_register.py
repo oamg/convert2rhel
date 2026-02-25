@@ -83,7 +83,6 @@ def test_unregistered_no_credentials(shell, convert2rhel):
     assert c2r.exitstatus == 2
 
 
-@pytest.mark.parametrize("pre_registered", [("RHSM_USERNAME", "RHSM_PASSWORD")], indirect=True)
 def test_no_sca_not_subscribed(shell, pre_registered, convert2rhel):
     """
     This test verifies that running conversion on pre-registered system
