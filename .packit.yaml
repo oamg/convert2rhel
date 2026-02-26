@@ -17,6 +17,10 @@ jobs:
     - epel-8-x86_64
     - epel-9-x86_64
     actions:
+      # bump spec so we get release starting with 5 and hence all the PR builds will
+      # have higher NVR than all the GA builds
+      post-upstream-clone:
+      - bash -c "VER=$(grep -oP '^Version:\s+\K\S+' ./packaging/convert2rhel.spec) && rpmdev-bumpspec --new=${VER}-5 --comment='latest upstream PR build' ./packaging/convert2rhel.spec"
       # do not get the version from a tag (git describe) but from the spec file
       get-current-version:
       - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
@@ -33,10 +37,10 @@ jobs:
     - epel-9-x86_64
 
     actions:
-      # bump spec so we get release starting with 2 and hence all the default branch builds will
+      # bump spec so we get release starting with 10 and hence all the default branch builds will
       # have higher NVR than all the PR builds
       post-upstream-clone:
-      - rpmdev-bumpspec --comment='latest upstream build' ./packaging/convert2rhel.spec
+      - bash -c "VER=$(grep -oP '^Version:\s+\K\S+' ./packaging/convert2rhel.spec) && rpmdev-bumpspec --new=${VER}-10 --comment='latest upstream build' ./packaging/convert2rhel.spec"
       # do not get the version from a tag (git describe) but from the spec file
       get-current-version:
       - grep -oP '^Version:\s+\K\S+' packaging/convert2rhel.spec
