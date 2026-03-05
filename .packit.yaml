@@ -787,10 +787,6 @@ jobs:
       - tier0-alma8
       - tier0-el8
       - tier0-alma
-      - sanity
-      - sanity-alma8
-      - sanity-el8
-      - sanity-alma
 
   - &tests-sanity-almalinux-8
     <<: *tests-tier0-almalinux-8
@@ -804,6 +800,10 @@ jobs:
       - tier0-alma8
       - tier0-el8
       - tier0-alma
+      - sanity
+      - sanity-alma8
+      - sanity-el8
+      - sanity-alma
 
   - &tests-tier0-rockylinux-8
     job: tests

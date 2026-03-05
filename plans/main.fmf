@@ -20,14 +20,8 @@ adjust+:
         SYSTEM_RELEASE_ENV: oracle-8-latest
       when: distro == oracle-8-latest
     - environment+:
-        SYSTEM_RELEASE_ENV: alma-8.8
-      when: distro == alma-8.8
-    - environment+:
         SYSTEM_RELEASE_ENV: alma-8-latest
       when: distro == alma-8-latest
-    - environment+:
-        SYSTEM_RELEASE_ENV: rocky-8.8
-      when: distro == rocky-8.8
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8-latest
       when: distro == rocky-8-latest
@@ -41,8 +35,20 @@ adjust+:
         SYSTEM_RELEASE_ENV: alma-9-latest
       when: distro == alma-9-latest
     - environment+:
+        SYSTEM_RELEASE_ENV: alma-9.6
+      when: distro == alma-9.6
+    - environment+:
+        SYSTEM_RELEASE_ENV: alma-9.4
+      when: distro == alma-9.4
+    - environment+:
         SYSTEM_RELEASE_ENV: rocky-9-latest
       when: distro == rocky-9-latest
+    - environment+:
+        SYSTEM_RELEASE_ENV: rocky-9.6
+      when: distro == rocky-9.6
+    - environment+:
+        SYSTEM_RELEASE_ENV: rocky-9.4
+      when: distro == rocky-9.4
     - environment+:
         SYSTEM_RELEASE_ENV: stream-9-latest
       when: distro == stream-9-latest
@@ -58,6 +64,16 @@ prepare+:
       package:
         - rpmdevtools
         - yum-utils
+    - name: Install newer python - el7
+      when: distro == centos-7, oracle-7
+      how: install
+      package:
+        - python3.9
+    - name: Install newer python - el8
+      when: distro == alma-8, rocky-8, oracle-8, stream-8
+      how: install
+      package:
+        - python3.11
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml
