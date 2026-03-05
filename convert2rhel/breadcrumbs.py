@@ -26,7 +26,7 @@ from datetime import datetime
 
 from convert2rhel import pkghandler, utils
 from convert2rhel.logger import root_logger
-from convert2rhel.systeminfo import system_info
+from convert2rhel.systeminfo import system_info, SystemInfo
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import files
 
@@ -170,8 +170,8 @@ class Breadcrumbs:
     def _set_target_os(self):
         """Set the target os release information."""
         # Reading the system-release file again to get the target os information.
-        system_release_content = system_info.get_system_release_file_content()
-        self.target_os = system_info.get_system_release_info(system_release_content)
+        system_release_data = SystemInfo.parse_system_release_content(SystemInfo.get_system_release_file_content())
+        self.target_os = system_info.get_system_release_info(system_release_data)
         if self.target_os["id"] is None:
             # rhsm facts can only be strings or booleans
             self.target_os["id"] = "null"
