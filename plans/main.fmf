@@ -52,6 +52,12 @@ adjust+:
     - environment+:
         SYSTEM_RELEASE_ENV: stream-9-latest
       when: distro == stream-9-latest
+    - prepare+:
+        extra_args: '-e ansible_python_interpreter=/usr/bin/python3.11'
+      when: distro == alma-8, rocky-8, oracle-8, stream-8
+    - prepare+:
+        extra_args: '-e ansible_python_interpreter=/usr/bin/python3.9'
+      when: distro == centos-7, oracle-7
 
 prepare+:
     - name: install latest copr build
@@ -64,16 +70,16 @@ prepare+:
       package:
         - rpmdevtools
         - yum-utils
-    - name: Install newer python - el7
-      when: distro == centos-7, oracle-7
-      how: install
-      package:
-        - python3.9
-    - name: Install newer python - el8
-      when: distro == alma-8, rocky-8, oracle-8, stream-8
-      how: install
-      package:
-        - python3.11
+#    - name: Install newer python - el7
+#      when: distro == centos-7, oracle-7
+#      how: install
+#      package:
+#        - python3.9
+#    - name: Install newer python - el8
+#      when: distro == alma-8, rocky-8, oracle-8, stream-8
+#      how: install
+#      package:
+#        - python3.11
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml

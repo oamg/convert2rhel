@@ -1,5 +1,9 @@
 ---
 - name: Update system
+#   command: dnf update -y --exclude=convert2rhel
+#   register: update
+
+# TODO: Uncomment when the python3-dnf issue fixed
   yum:
     name: "*"
     state: latest

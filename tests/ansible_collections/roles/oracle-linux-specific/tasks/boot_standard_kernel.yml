@@ -3,9 +3,11 @@
   ansible.builtin.setup:
 
 - name: Install standard kernel
-  yum:
-    name: "kernel.*"
-    state: latest
+#  yum:
+#    name: "kernel.*"
+#    state: latest
+  command: dnf -y install kernel
+
 
 - name: Get installed kernel version
   shell: rpm -q --last kernel | head -1 | cut -d " " -f1 | sed 's/kernel-//'

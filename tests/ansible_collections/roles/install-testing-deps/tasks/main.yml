@@ -7,6 +7,7 @@
       - gcc
       - python3-devel
     state: present
+#   command: dnf -y install python3 gcc python3-devel python3-packaging
 
 - name: Install pip if not present
   # ensurepip is available in python-3.4+
