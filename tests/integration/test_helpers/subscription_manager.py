@@ -22,7 +22,11 @@ class SubscriptionManager:
         """
         Add the client tools repository to install subscription manager from.
         """
-        version = "7-server" if SystemInformationRelease.version.major == 7 else SystemInformationRelease.version.major
+        version = (
+            "7-server"
+            if SystemInformationRelease.version.major == 7 or SystemInformationRelease.version.major == 2
+            else SystemInformationRelease.version.major
+        )
         repo_url = f"https://cdn-public.redhat.com/content/public/repofiles/client-tools-for-rhel-{version}.repo"
 
         self.shell(f"yum-config-manager --add-repo {repo_url}")
@@ -39,6 +43,14 @@ class SubscriptionManager:
         :type package_name: str
         """
         command = f"yum install -y {package_name}"
+
+        # Amazon Linux 2 has an older version of python-dmidecode than required by subscription-manager
+        # Install the required dependency beforehand
+        if SystemInformationRelease.distribution == "amazon":
+            command = (
+                "yum install -y https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/x86_64/os/Packages/p/python-dmidecode-3.12.2-4.el7.x86_64.rpm && "
+                + command
+            )
         # rhn-client-tools package obsoletes subscription-manager on Oracle Linux
         # set the obsoletes option to 0 to be able to install the package
         if SystemInformationRelease.distribution == "oracle":

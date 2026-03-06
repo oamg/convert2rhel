@@ -28,6 +28,7 @@ class SystemInformationRelease:
         system_release_content = file.read()
         # Evaluate if we're looking at CentOS Stream
         is_stream = re.match("stream", system_release_content.split()[1].lower())
+        is_amazon = re.match("amazon", system_release_content.split()[0].lower())
         distribution = system_release_content.split()[0].lower()
         if distribution == "ol":
             distribution = "oracle"
@@ -38,8 +39,9 @@ class SystemInformationRelease:
         if not match_version:
             pytest.fail("Something is wrong with the /etc/system-release, cowardly refusing to continue.")
 
-        if is_stream:
-            distribution = "stream"
+        if is_stream or is_amazon:
+            if is_stream:
+                distribution = "stream"
             version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), "latest")
             system_release = "{}-{}-{}".format(distribution, version.major, version.minor)
         else:

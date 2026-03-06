@@ -219,66 +219,6 @@ jobs:
       - sanity-el9
       - sanity-alma
 
-  - &tests-tier0-almalinux-94
-    job: tests
-    # Run tests on-demand
-    manual_trigger: true
-    # Do not merge the PR into the target branch, in case the merge is broken
-    # Given we are rebasing the source branches regularly, we do not need this feature enabled
-    merge_pr_in_ci: false
-    targets:
-      epel-9-x86_64:
-        distros: ["AlmaLinux OS 9.4.20240805 x86_64"] # Owner ID for Alma Linux images 764336703387
-    trigger: pull_request
-    identifier: "tier0-al94"
-    tmt_plan: "tier0/core"
-    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-    use_internal_tf: True
-    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-    # therefore we need to pass post-install-script to enable root login on the host
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-    tf_extra_params:
-      environments:
-        - tmt:
-            context:
-              distro: alma-9.4
-          settings:
-            provisioning:
-              tags:
-                BusinessUnit: sst_conversions
-      settings:
-        pipeline:
-            parallel-limit: 20
-    labels:
-      - el9
-      - alma9
-      - alma94
-      - alma
-      - tier0
-      - tier0-alma9
-      - tier0-alma94
-      - tier0-el9
-      - tier0-alma
-
-  - &tests-sanity-almalinux-94
-    <<: *tests-tier0-almalinux-94
-    identifier: "sanity-al94"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - el9
-      - alma9
-      - alma94
-      - tier0
-      - tier0-alma9
-      - tier0-alma94
-      - tier0-el9
-      - tier0-alma
-      - sanity
-      - sanity-alma9
-      - sanity-alma94
-      - sanity-el9
-      - sanity-alma
-
   - &tests-tier0-rockylinux-9
     job: tests
     # Run tests on-demand
@@ -396,67 +336,6 @@ jobs:
       - sanity-el9
       - sanity-rocky
 
-  - &tests-tier0-rockylinux-94
-    job: tests
-    # Run tests on-demand
-    manual_trigger: true
-    # Do not merge the PR into the target branch, in case the merge is broken
-    # Given we are rebasing the source branches regularly, we do not need this feature enabled
-    merge_pr_in_ci: false
-    targets:
-      epel-9-x86_64:
-        distros: ["Rocky-9-EC2-Base-9.4-20240523.0.x86_64"] # Owner ID for Rocky Linux images 792107900819
-    trigger: pull_request
-    identifier: "tier0-rl94"
-    tmt_plan: "tier0/core"
-    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-    use_internal_tf: True
-    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-    # therefore we need to pass post-install-script to enable root login on the host
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys'
-    tf_extra_params:
-      environments:
-        - tmt:
-            context:
-              distro: rocky-9.4
-          settings:
-            provisioning:
-              tags:
-                BusinessUnit: sst_conversions
-      settings:
-        pipeline:
-            parallel-limit: 20
-    labels:
-      - el9
-      - rocky9
-      - rocky94
-      - rocky
-      - tier0
-      - tier0-rocky9
-      - tier0-rocky94
-      - tier0-el9
-      - tier0-rocky
-
-  - &tests-sanity-rockylinux-94
-    <<: *tests-tier0-rockylinux-94
-    identifier: "sanity-rl94"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - el9
-      - rocky9
-      - rocky94
-      - rocky
-      - tier0
-      - tier0-rocky9
-      - tier0-rocky94
-      - tier0-el9
-      - tier0-rocky
-      - sanity
-      - sanity-rocky9
-      - sanity-rocky94
-      - sanity-el9
-      - sanity-rocky
-
   - &tests-stream-9
     job: tests
     # Run tests on-demand
@@ -529,59 +408,59 @@ jobs:
       - stream8
       - stream
 
-  - &tests-tier0-centos8
-    job: tests
-    # Run tests on-demand
-    manual_trigger: true
-    # Do not merge the PR into the target branch, in case the merge is broken
-    # Given we are rebasing the source branches regularly, we do not need this feature enabled
-    merge_pr_in_ci: false
-    targets:
-      epel-8-x86_64:
-        distros: [centos-8-latest]
-    trigger: pull_request
-    identifier: "tier0-centos8"
-    tmt_plan: "tier0/core"
-    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
-    use_internal_tf: True
-    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
-    # therefore we need to pass post-install-script to enable root login on the host
-    # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
-    tf_extra_params:
-      environments:
-        - settings:
-            provisioning:
-              tags:
-                BusinessUnit: sst_conversions
-      settings:
-        pipeline:
-            parallel-limit: 20
-    labels:
-      - el8
-      - centos8
-      - centos
-      - tier0
-      - tier0-centos8
-      - tier0-el8
-      - tier0-centos
-
-  - &tests-sanity-centos8
-    <<: *tests-tier0-centos8
-    identifier: "sanity-centos8"
-    tmt_plan: "tier0/sanity"
-    labels:
-      - el8
-      - centos8
-      - centos
-      - tier0
-      - tier0-centos8
-      - tier0-el8
-      - tier0-centos
-      - sanity
-      - sanity-centos8
-      - sanity-el8
-      - sanity-centos
+#   - &tests-tier0-centos8
+#     job: tests
+#     # Run tests on-demand
+#     manual_trigger: true
+#     # Do not merge the PR into the target branch, in case the merge is broken
+#     # Given we are rebasing the source branches regularly, we do not need this feature enabled
+#     merge_pr_in_ci: false
+#     targets:
+#       epel-8-x86_64:
+#         distros: [centos-8-latest]
+#     trigger: pull_request
+#     identifier: "tier0-centos8"
+#     tmt_plan: "tier0/core"
+#     # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+#     use_internal_tf: True
+#     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+#     # therefore we need to pass post-install-script to enable root login on the host
+#     # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
+#     tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*; yum-config-manager --disable beaker-client'
+#     tf_extra_params:
+#       environments:
+#         - settings:
+#             provisioning:
+#               tags:
+#                 BusinessUnit: sst_conversions
+#       settings:
+#         pipeline:
+#             parallel-limit: 20
+#     labels:
+#       - el8
+#       - centos8
+#       - centos
+#       - tier0
+#       - tier0-centos8
+#       - tier0-el8
+#       - tier0-centos
+#
+#   - &tests-sanity-centos8
+#     <<: *tests-tier0-centos8
+#     identifier: "sanity-centos8"
+#     tmt_plan: "tier0/sanity"
+#     labels:
+#       - el8
+#       - centos8
+#       - centos
+#       - tier0
+#       - tier0-centos8
+#       - tier0-el8
+#       - tier0-centos
+#       - sanity
+#       - sanity-centos8
+#       - sanity-el8
+#       - sanity-centos
 
   - &tests-tier0-centos7
     job: tests
@@ -601,7 +480,7 @@ jobs:
     # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
     # therefore we need to pass post-install-script to enable root login on the host
     # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
-    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*'
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*; yum-config-manager --disable beaker-client'
     tf_extra_params:
       environments:
         - settings:
@@ -636,6 +515,58 @@ jobs:
       - sanity-centos7
       - sanity-el7
       - sanity-centos
+
+  - &tests-tier0-amzn2
+    job: tests
+    # Run tests on-demand
+    manual_trigger: true
+    # Do not merge the PR into the target branch, in case the merge is broken
+    # Given we are rebasing the source branches regularly, we do not need this feature enabled
+    merge_pr_in_ci: false
+    targets:
+      epel-7-x86_64:
+        distros: [amzn2-ami-ecs-hvm-2.0.20260414-x86_64-ebs]
+    trigger: pull_request
+    identifier: "tier0-amzn2"
+    tmt_plan: "tier0/core"
+    # Run on Red Testing Farm Hat Ranch, tag resources to sst_conversions
+    use_internal_tf: True
+    # For some targets we use official AWS marketplace images, those do not support root ssh login as default,
+    # therefore we need to pass post-install-script to enable root login on the host
+    # Additionally we rewrite the URLs in the repofiles to point to the vault, given CentOS(Stream) 8 is EOL
+    tf_post_install_script: '#!/bin/bash\nsudo sed -i "s/^.*ssh-rsa/ssh-rsa/" /root/.ssh/authorized_keys; sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-*; yum install -y yum-utils; yum-config-manager --disable beaker-client'
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              distro: "amazon2"
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: sst_conversions
+      settings:
+        pipeline:
+            parallel-limit: 20
+    labels:
+      - el7
+      - amzn2
+      - tier0
+      - tier0-amzn2
+      - tier0-el7
+
+  - &tests-sanity-amzn2
+    <<: *tests-tier0-amzn2
+    identifier: "sanity-amzn2"
+    tmt_plan: "tier0/sanity"
+    labels:
+      - el7
+      - amzn2
+      - tier0
+      - tier0-amzn2
+      - tier0-el7
+      - sanity
+      - sanity-amzn2
+      - sanity-el7
 
 #   - &tests-tier0-oraclelinux-7
 #     job: tests
@@ -875,6 +806,17 @@ jobs:
       - tier1-el7
       - tier1-centos
 
+  - &tests-tier1-manual-amzn2
+    <<: *tests-tier0-amzn2
+    identifier: "tier1-amzn2"
+    tmt_plan: "tier1"
+    labels:
+      - el7
+      - amzn2
+      - tier1
+      - tier1-amzn2
+      - tier1-el7
+
 #   - &tests-tier1-manual-oraclelinux-7
 #     <<: *tests-tier0-oraclelinux-7
 #     identifier: "tier1-ol7"
@@ -888,18 +830,18 @@ jobs:
 #       - tier1-el7
 #       - tier1-oracle
 
-  - &tests-tier1-manual-centos8
-    <<: *tests-tier0-centos8
-    identifier: "tier1-centos8"
-    tmt_plan: "tier1"
-    labels:
-      - el8
-      - centos8
-      - centos
-      - tier1
-      - tier1-centos8
-      - tier1-el8
-      - tier1-centos
+#   - &tests-tier1-manual-centos8
+#     <<: *tests-tier0-centos8
+#     identifier: "tier1-centos8"
+#     tmt_plan: "tier1"
+#     labels:
+#       - el8
+#       - centos8
+#       - centos
+#       - tier1
+#       - tier1-centos8
+#       - tier1-el8
+#       - tier1-centos
 
 #   - &tests-tier1-manual-oraclelinux-8
 #     <<: *tests-tier0-oraclelinux-8
@@ -953,6 +895,21 @@ jobs:
       - tier1-rocky9
       - tier1-rocky
 
+  - &tests-tier1-manual-rockylinux-96
+    <<: *tests-tier0-rockylinux-96
+    identifier: "tier1-rl96"
+    tmt_plan: "tier1"
+    labels:
+      - el9
+      - rocky9
+      - rocky96
+      - rocky
+      - tier1
+      - tier1-el9
+      - tier1-rocky9
+      - tier1-rocky96
+      - tier1-rocky
+
   - &tests-tier1-manual-almalinux-9
     <<: *tests-tier0-almalinux-9
     identifier: "tier1-al9"
@@ -964,6 +921,21 @@ jobs:
       - tier1
       - tier1-el9
       - tier1-alma9
+      - tier1-alma
+
+  - &tests-tier1-manual-almalinux-96
+    <<: *tests-tier0-almalinux-96
+    identifier: "tier1-al96"
+    tmt_plan: "tier1"
+    labels:
+      - el9
+      - alma9
+      - alma96
+      - alma
+      - tier1
+      - tier1-el9
+      - tier1-alma9
+      - tier1-alma96
       - tier1-alma
 
 #   - &tests-tier1-manual-oraclelinux-9
@@ -989,6 +961,15 @@ jobs:
     trigger: commit
     branch: main
 
+  - &tests-main-tier1-amzn2
+    <<: *tests-tier0-amzn2
+    # Run test automatically with merge commit to main branch
+    manual_trigger: false
+    identifier: "tier1-amzn2"
+    tmt_plan: "tier1"
+    trigger: commit
+    branch: main
+
 #   - &tests-main-tier1-oraclelinux-7
 #     <<: *tests-tier0-oraclelinux-7
 #     # Run test automatically with merge commit to main branch
@@ -998,14 +979,14 @@ jobs:
 #     trigger: commit
 #     branch: main
 
-  - &tests-main-tier1-centos8
-    <<: *tests-tier0-centos8
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-centos8"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
+#   - &tests-main-tier1-centos8
+#     <<: *tests-tier0-centos8
+#     # Run test automatically with merge commit to main branch
+#     manual_trigger: false
+#     identifier: "tier1-centos8"
+#     tmt_plan: "tier1"
+#     trigger: commit
+#     branch: main
 
 #   - &tests-main-tier1-oraclelinux-8
 #     <<: *tests-tier0-oraclelinux-8
@@ -1060,15 +1041,6 @@ jobs:
     trigger: commit
     branch: main
 
-  - &tests-main-tier1-rockylinux-94
-    <<: *tests-tier0-rockylinux-94
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-rl94"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
-
   - &tests-main-tier1-almalinux-9
     <<: *tests-tier0-almalinux-9
     # Run test automatically with merge commit to main branch
@@ -1083,15 +1055,6 @@ jobs:
     # Run test automatically with merge commit to main branch
     manual_trigger: false
     identifier: "tier1-al96"
-    tmt_plan: "tier1"
-    trigger: commit
-    branch: main
-
-  - &tests-main-tier1-almalinux-94
-    <<: *tests-tier0-almalinux-94
-    # Run test automatically with merge commit to main branch
-    manual_trigger: false
-    identifier: "tier1-al94"
     tmt_plan: "tier1"
     trigger: commit
     branch: main

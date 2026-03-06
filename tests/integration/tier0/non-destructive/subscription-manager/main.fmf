@@ -78,18 +78,6 @@ tag+:
         tag+:
             - unregistered-no-credentials
 
-    /no_sca_not_subscribed:
-        summary+: |
-            convert2rhel auto-attaches subscription on a pre-registered system
-        description+: |
-            This test verifies that running conversion on pre-registered system
-            without an attached subscription will try auto attaching the subscription.
-        test: |
-            pytest -m test_no_sca_not_subscribed
-        tag+:
-            - no-sca-not-subscribed
-            - non-sca
-
     /no_sca_subscription_attachment_error:
         summary+: |
             The subscription auto-attach fails

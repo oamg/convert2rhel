@@ -30,9 +30,12 @@ def workaround_missing_os_release_package(shell):
     # The envar is added by tmt and is defined in main.fmf for non-destructive tests.
     if "C2R_TESTS_NONDESTRUCTIVE" in os.environ:
         os_name = SystemInformationRelease.distribution
-        os_ver = SystemInformationRelease.version.major
+        os_major = SystemInformationRelease.version.major
+        os_ver = f"{os_major}" + (
+            f".{SystemInformationRelease.version.minor}" if SystemInformationRelease.version.minor != "latest" else ""
+        )
         if "centos" in os_name:
-            os_key = f"{os_name}-{os_ver}"
+            os_key = f"{os_name}-{os_major}"
         else:
             os_key = os_name
 
@@ -44,6 +47,10 @@ def workaround_missing_os_release_package(shell):
         for pkg in system_release_pkgs:
             installed = shell(f"rpm -q {pkg}").returncode
             if installed == 1:
+                # Remove os-release files left orphaned by incomplete rollback.
+                # Their file type (symlink vs regular) may not match what the
+                # release package expects, causing RPM unpacking errors.
+                shell("rm -f /etc/os-release /usr/lib/os-release", silent=True)
                 shell(f"yum install -y --releasever={os_ver} {pkg}")
 
         # Since we try to mitigate any damage caused by the incomplete rollback

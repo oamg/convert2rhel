@@ -4,7 +4,7 @@
 
     - role: hardcode-eus-version-repos
       when: >
-        ansible_facts['distribution_version'] ==  "8.8"
+        ansible_facts['distribution_version'] in ["9.2", "9.4", "9.6", "9.8"]
         and ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
 
     - role: remove-tf-artifact-leftovers

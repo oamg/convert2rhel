@@ -1,14 +1,11 @@
 ---
+# Using shell instead of the yum module because the yum module requires
+# dnf/yum Python bindings only available in the system Python, which is
+# too old for the Ansible version used (requires Python 3.7+).
 - name: Update system
-#   command: dnf update -y --exclude=convert2rhel
-#   register: update
-
-# TODO: Uncomment when the python3-dnf issue fixed
-  yum:
-    name: "*"
-    state: latest
-    # In case the package is already installed on the system (by user or CI system)
-    # and the version of the package is not the latest in copr repo it would be
-    # updated at this point. The package version would then differ from the intended one.
-    exclude: convert2rhel
+  shell: yum -y update --exclude=convert2rhel
   register: update
+
+- name: Show update results
+  debug:
+    var: update.stdout_lines

@@ -208,7 +208,7 @@ def convert2rhel(shell):
     return factory
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def fixture_subman():
     """
     Fixture.
@@ -232,7 +232,7 @@ def fixture_subman():
         subman.clean_up()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def fixture_satellite(request):
     """
     Fixture.
@@ -545,13 +545,17 @@ def backup_directory(shell, request):
     shell(f"rm -rf {backup_path}")
 
 
-@pytest.fixture(autouse=True)
-def configure_proxy(shell, request):
+@pytest.fixture(autouse=True, scope="session")
+def configure_proxy(request):
     """
     Configure proxy to use with RHSM and CDN endpoints globally.
+    Runs once per session. Skipped when any collected test carries
+    the ``no_configure_proxy`` marker.
     """
-    if request.node.get_closest_marker("no_configure_proxy"):
+    if any(item.get_closest_marker("no_configure_proxy") for item in request.session.items):
         return
+
+    shell = live_shell()
 
     assert (
         shell(
@@ -568,14 +572,18 @@ def configure_proxy(shell, request):
     subman.add_client_tools_repo()
     subman.install_package()
 
+    # Assign static IP for the proxy configuration
+    proxy_ip = shell(f"getent hosts {TEST_VARS['PROXY_SERVER']} | cut -d ' ' -f 1").output.strip()
+
     shell(
         f"subscription-manager config "
-        f"--server.proxy_hostname={TEST_VARS['PROXY_SERVER']} "
+        f"--server.proxy_hostname={proxy_ip} "
         f"--server.proxy_port={TEST_VARS['PROXY_PORT']} "
+        f"--server.hostname={TEST_VARS['RHSM_SERVER_URL']} "
         f"--rhsm.baseurl=https://{TEST_VARS['RHSM_STAGECDN']}",
         silent=True,
     )
-    log_file("/etc/rhsm/rhsm.conf", "proxy_setup", "rhsm.conf")
+    log_file("/etc/rhsm/rhsm.conf", "proxy_setup", "rhsm.conf", overwrite=True)
 
-    shell(f"echo 'proxy=http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}' >> /etc/yum.conf", silent=True)
-    log_file("/etc/yum.conf", "proxy_setup", "yum.conf")
+    shell(f"echo 'proxy=http://{proxy_ip}:{TEST_VARS['PROXY_PORT']}' >> /etc/yum.conf", silent=True)
+    log_file("/etc/yum.conf", "proxy_setup", "yum.conf", overwrite=True)

@@ -15,7 +15,4 @@
         enabled: no
         gpgcheck: no
     - name: Install a package which isn't in CentOS 8.5 anymore
-      yum:
-        name: subscription-manager-initial-setup-addon
-        enablerepo: "appstream-84,baseos-84"
-        state: present
+      shell: yum -y install --enablerepo=appstream-84,baseos-84 subscription-manager-initial-setup-addon

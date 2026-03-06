@@ -41,11 +41,14 @@ class Satellite:
             self.shell(
                 rf"sed -i 's/$PKG_MANAGER_UPGRADE subscription-manager/& --setopt=exclude=rhn-client-tools/' {self._sat_script_location}"
             )
+        self.shell(
+            rf"sed -i '/--server.hostname\|--rhsm.baseurl/s/satellite/satellite-stage/' {self._sat_script_location}"
+        )
 
     def _run_satellite_reg_script(self):
         assert (
             self.shell(f"chmod +x {self._sat_script_location} && /bin/bash {self._sat_script_location}").returncode == 0
-        ), "Falied to run the satellite registration script."
+        ), "Failed to run the satellite registration script."
 
     def register(self):
         curl_command = self.get_satellite_curl_command()
