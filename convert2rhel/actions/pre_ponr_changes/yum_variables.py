@@ -32,7 +32,7 @@ logger = root_logger.getChild(__name__)
 
 class BackUpYumVariables(actions.Action):
     id = "BACKUP_YUM_VARIABLES"
-    # We don't make a distinction between /etc/yum/vars/ and /etc/yum/vars/ in this Action. Wherever the files are we
+    # We don't make a distinction between /etc/yum/vars/ and /etc/dnf/vars/ in this Action. Wherever the files are we
     # back them up.
     yum_var_dirs = [DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR]
 
@@ -50,7 +50,7 @@ class BackUpYumVariables(actions.Action):
         logger.debug("Getting a list of files owned by packages affecting variables in .repo files.")
         yum_var_affecting_pkgs = []
         for pkg in system_info.repofile_pkgs:
-            # We use get_installed_pkg_objects() to have yum find installed packages even when a glob (*) is useed
+            # We use get_installed_pkg_objects() to have yum find installed packages even when a glob (*) is used
             yum_var_affecting_pkgs.extend(pkghandler.get_installed_pkg_objects(pkg))
 
         # Get just the names of the packages affecting yum variables
@@ -109,7 +109,7 @@ class RestoreYumVarFiles(actions.Action):
         derivatives. For the sake of using just one approach to simplify the codebase, we are restoring the yum variable
         files no matter the package manager.
         We use the backup controller to record that we've restored the variable files meaning that upon rollback the
-        files get removed. As part of the rollback we also install beck the packages that include these files so they'll
+        files get removed. As part of the rollback we also install back the packages that include these files so they'll
         be present.
         TODO: These restored variable files should not be present after a successful conversion. One option is to
         enhance the backup controller to indicate that a certain activity should be rolled back not only during a rollback

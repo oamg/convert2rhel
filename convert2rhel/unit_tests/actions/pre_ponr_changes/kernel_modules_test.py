@@ -292,7 +292,8 @@ def test_ensure_compatibility_of_kmods_excluded(
         side_effect=run_subprocess_side_effect(
             (("uname",), ("5.8.0-7642-generic\n", 0)),
             (("yum", "makecache"), ("", 0)),
-            (("repoquery", "-f"), (REPOQUERY_F_STUB_GOOD, 0)),
+            # EL7 uses name-based query (kernel*, kmod*) instead of -f
+            (("repoquery", "kernel*"), (REPOQUERY_F_STUB_GOOD, 0)),
             (("repoquery", "-l"), (REPOQUERY_L_STUB_GOOD, 0)),
         )
     )

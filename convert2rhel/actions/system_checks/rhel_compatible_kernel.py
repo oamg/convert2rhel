@@ -27,7 +27,7 @@ logger = root_logger.getChild(__name__)
 
 # The kernel version stays the same throughout a RHEL major version
 COMPATIBLE_KERNELS_VERS = {
-    2: "4.18.0",  # In Amazon Linux 2 there's no kernel of the same version as in RHEL (there's 4.14 and 5.10)
+    2: "4.18.0",  # In Amazon Linux 2 there's no kernel of the same version as in RHEL (there's 4.14, 5.10, and 5.15)
     7: "3.10.0",
     8: "4.18.0",
     9: "5.14.0",
