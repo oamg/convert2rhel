@@ -636,7 +636,7 @@ def get_kernel_availability():
     if "Available Packages" in output:
         return (list(get_kernel(data)) for data in output.split("Available Packages"))
     else:
-        return (list(get_kernel(output)), _)
+        return (list(get_kernel(output)), [])
 
 
 def get_kernel(kernels_raw):

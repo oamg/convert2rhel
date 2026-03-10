@@ -41,14 +41,16 @@ class FixGrubSettingsOnAL2(actions.Action):
         old_value = 'GRUB_TERMINAL="ec2-console"'
         new_value = 'GRUB_TERMINAL="console"'
 
+        backup.backup_control.push(RestorableFile(file_path))
+
         content = utils.get_file_content(file_path)
         if old_value in content:
             updated_content = content.replace(old_value, new_value)
 
-            with open("/etc/default/grub", "w") as file:
+            with open(file_path, "w") as file:
                 file.write(updated_content)
             logger.debug("Replaced {} with {} in {}.".format(old_value, new_value, file_path))
-            logger.info("Successfully updated /etc/default/grub.")
+            logger.info("Successfully updated {}.".format(file_path))
         else:
             logger.info("{} not found in {}. Nothing to do.".format(old_value, file_path))
 

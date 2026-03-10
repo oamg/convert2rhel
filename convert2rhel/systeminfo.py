@@ -471,7 +471,7 @@ class SystemInfo:
         :rtype: bool
         """
         # This check will be dropped once 7 is no longer supported under ELS
-        if tool_opts.els and self.version.major == 7:
+        if tool_opts.els and self.version.major in (7, 2):
             return True
         return False
 
@@ -516,13 +516,18 @@ class SystemInfo:
         :rtype: dict[str, str]
         """
 
-        release_info = {
+        if system_release_data:
+            return {
+                "id": system_release_data.get("distribution_id"),
+                "name": system_release_data["name"],
+                "version": repr(system_release_data["version"]),
+            }
+
+        return {
             "id": self.distribution_id,
             "name": self.name,
             "version": repr(self.version),
         }
-
-        return release_info
 
 
 def is_systemd_managed_service_running(service):
