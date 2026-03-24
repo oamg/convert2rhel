@@ -134,6 +134,7 @@ def test_rhel_compatible_kernel_success(monkeypatch, caplog, rhel_compatible_ker
     (
         ("3.10.0-1160.24.1.el7.x86_64", 7, False),
         ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
+        ("4.18.0-250.540.amzn2.x86_64", 2, False),
     ),
 )
 def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monkeypatch):
@@ -163,6 +164,14 @@ def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monke
             "Booted kernel version '{kernel_version}' does not correspond to the version "
             "'{compatible_version}' available in RHEL",
             {"kernel_version": "5.4.17", "compatible_version": COMPATIBLE_KERNELS_VERS[8]},
+        ),
+        (
+            "4.14.330-250.540.amzn2.x86_64",
+            2,
+            "INCOMPATIBLE_VERSION",
+            "Booted kernel version '{kernel_version}' does not correspond to the version "
+            "'{compatible_version}' available in RHEL",
+            {"kernel_version": "4.14.330", "compatible_version": COMPATIBLE_KERNELS_VERS[2]},
         ),
     ),
 )

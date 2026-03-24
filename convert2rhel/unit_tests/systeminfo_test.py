@@ -38,7 +38,7 @@ from six.moves import mock
 def register_system_info_logger(monkeypatch):
     # Have to initialize the logger since we are not constructing the
     # system_info object properly i.e: we are not calling `resolve_system_info()`
-    monkeypatch.setattr(system_info, "logger", logging.getLogger(__name__))
+    monkeypatch.setattr(systeminfo, "logger", logging.getLogger(__name__))
 
 
 class TestGenerateRPMVA:
@@ -47,6 +47,7 @@ class TestGenerateRPMVA:
         monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
         monkeypatch.setattr(utils, "run_subprocess", RunSubprocessMocked(return_string="rpmva\n"))
         monkeypatch.setattr(logger, "LOG_DIR", str(tmpdir))
+        monkeypatch.setattr(systeminfo, "LOG_DIR", str(tmpdir))
         rpmva_output_file = str(tmpdir / "rpm_va.log")
 
         system_info.generate_rpm_va()
@@ -90,7 +91,7 @@ def test_system_info_has_rpm(pkg_name, present_on_system, expected_return, monke
 
 @all_systems
 def test_get_release_ver(pretend_os):
-    """Test if all pretended OSes presented in theh RELEASE_VER_MAPPING."""
+    """Test if all pretended OSes presented in the RELEASE_VER_MAPPING."""
     assert system_info.releasever in RELEASE_VER_MAPPING.values()
 
 
@@ -222,6 +223,10 @@ def test_corresponds_to_rhel_eus_release_eus_override(major, minor, expected, mo
         ("CentOS Stream release 8", "version", Version(8, None)),
         ("Red Hat Enterprise Linux release 8.10 Beta (Ootpa)", "version", Version(8, 10)),
         ("CentOS Stream release 9", "version", Version(9, None)),
+        ("Amazon Linux release 2 (Karoo)", "name", "Amazon Linux"),
+        ("Amazon Linux release 2 (Karoo)", "id", "amazon"),
+        ("Amazon Linux release 2 (Karoo)", "version", Version(2, None)),
+        ("Amazon Linux release 2 (Karoo)", "distribution_id", "Karoo"),
     ),
 )
 def test_parse_system_release_content_from_string(system_release_content, key, value):
@@ -344,6 +349,7 @@ def test_get_swap_pkgs(monkeypatch, file_content, tmpdir, expected, message, cap
 @pytest.mark.parametrize(
     ("major", "minor", "expected"),
     (
+        (2, None, "2"),
         (7, 9, "7.9"),
         (8, None, "8"),
         (8, 5, "8.5"),
@@ -358,3 +364,35 @@ def test_get_version_repr(major, minor, expected, monkeypatch):
     version = Version(major, minor)
     monkeypatch.setattr(system_info, "version", version)
     assert repr(system_info.version) == expected
+
+
+def test_al2_releasever_mapping():
+    """Amazon Linux 2 (version '2') should map to '7Server' releasever."""
+    assert RELEASE_VER_MAPPING["2"] == "7Server"
+
+
+@pytest.mark.parametrize(
+    ("major", "els_flag", "expected"),
+    (
+        (2, True, True),
+        (2, False, False),
+        (7, True, True),
+        (7, False, False),
+        (8, True, False),
+    ),
+)
+def test_corresponds_to_rhel_els_release(major, els_flag, expected, monkeypatch, global_tool_opts):
+    monkeypatch.setattr(system_info, "version", Version(major, None))
+    monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
+    global_tool_opts.els = els_flag
+
+    assert system_info.corresponds_to_rhel_els_release() == expected
+
+
+def test_al2_cfg_filename(monkeypatch):
+    """AL2 should resolve to the amazon-2-x86_64.cfg config file."""
+    monkeypatch.setattr(system_info, "id", "amazon")
+    monkeypatch.setattr(system_info, "version", Version(2, None))
+    monkeypatch.setattr(system_info, "arch", "x86_64")
+
+    assert system_info._get_cfg_filename() == "amazon-2-x86_64.cfg"

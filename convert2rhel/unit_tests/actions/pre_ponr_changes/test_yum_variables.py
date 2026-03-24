@@ -45,10 +45,7 @@ def test_get_yum_var_files_owned_by_pkgs(monkeypatch, pkg_names, owned_files, ex
     def mock_get_files_owned_by_package(pkg):
         return [file for file in owned_files if "/{}_".format(pkg) in file]
 
-    monkeypatch.setattr(
-        "convert2rhel.actions.pre_ponr_changes.yum_variables.get_files_owned_by_package",
-        mock_get_files_owned_by_package,
-    )
+    monkeypatch.setattr(pkghandler, "get_files_owned_by_package", mock_get_files_owned_by_package)
 
     result = action._get_yum_var_files_owned_by_pkgs(pkg_names)
 

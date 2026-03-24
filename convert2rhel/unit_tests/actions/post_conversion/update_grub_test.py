@@ -268,7 +268,7 @@ def test_fix_grub_settings_on_al2(releasever_major, file_content, expected_log, 
         namedtuple("Version", ["major"])(releasever_major),
     )
     mock_open = mock.mock_open(read_data=file_content)
-    monkeypatch.setattr("builtins.open", mock_open)
+    monkeypatch.setattr(six.moves.builtins, "open", mock_open)
     monkeypatch.setattr("convert2rhel.utils.get_file_content", mock.Mock(return_value=file_content))
 
     action = update_grub.FixGrubSettingsOnAL2()
