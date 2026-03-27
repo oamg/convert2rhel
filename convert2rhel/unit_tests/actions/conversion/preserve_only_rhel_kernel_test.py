@@ -410,6 +410,7 @@ class TestFixDefaultKernel:
         monkeypatch.setattr(system_info, "name", system_name)
         monkeypatch.setattr(system_info, "arch", "x86_64")
         monkeypatch.setattr(system_info, "version", version)
+        monkeypatch.setattr(os.path, "exists", lambda _: True)
         monkeypatch.setattr(
             utils,
             "get_file_content",
@@ -436,6 +437,7 @@ class TestFixDefaultKernel:
     def test_fix_default_kernel_with_no_incorrect_kernel(
         self, caplog, monkeypatch, fix_default_kernel_instance, pretend_os
     ):
+        monkeypatch.setattr(os.path, "exists", lambda _: True)
         monkeypatch.setattr(
             utils,
             "get_file_content",
@@ -454,6 +456,37 @@ class TestFixDefaultKernel:
 
         for record in info_records:
             assert not re.search("Boot kernel [^ ]\\+ was changed to [^ ]\\+", record.message)
+
+    @pytest.mark.parametrize(
+        ("version", "expected_default_kernel"),
+        (
+            (Version(2, 0), "kernel"),
+            (Version(7, 9), "kernel"),
+            (Version(8, 5), "kernel-core"),
+            (Version(9, 0), "kernel-core"),
+        ),
+    )
+    def test_fix_default_kernel_creates_missing_file(
+        self, caplog, monkeypatch, fix_default_kernel_instance, version, expected_default_kernel
+    ):
+        monkeypatch.setattr(system_info, "version", version)
+        monkeypatch.setattr(os.path, "exists", lambda _: False)
+        monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
+
+        fix_default_kernel_instance.run()
+
+        warning_msgs = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert warning_msgs
+        assert "does not exist" in warning_msgs[0].message
+
+        (filename, content), _ = utils.store_content_to_file.call_args
+        assert filename == "/etc/sysconfig/kernel"
+        assert "DEFAULTKERNEL={}".format(expected_default_kernel) in content
+        assert "UPDATEDEFAULT=yes" in content
+
+        assert any(
+            m.id == "MISSING_KERNEL_SYSCONFIG_CREATED" for m in fix_default_kernel_instance.messages
+        )
 
 
 class TestUpdateKernel:
