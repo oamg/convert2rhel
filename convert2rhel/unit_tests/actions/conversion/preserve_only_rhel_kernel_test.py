@@ -437,7 +437,11 @@ class TestFixDefaultKernel:
     def test_fix_default_kernel_with_no_incorrect_kernel(
         self, caplog, monkeypatch, fix_default_kernel_instance, pretend_os
     ):
-        monkeypatch.setattr(os.path, "exists", lambda _: True)
+        def exists_mocked(path):
+            assert path == preserve_only_rhel_kernel.FixDefaultKernel.KERNEL_SYSCONFIG_PATH
+            return True
+
+        monkeypatch.setattr(os.path, "exists", exists_mocked)
         monkeypatch.setattr(
             utils,
             "get_file_content",
@@ -470,7 +474,12 @@ class TestFixDefaultKernel:
         self, caplog, monkeypatch, fix_default_kernel_instance, version, expected_default_kernel
     ):
         monkeypatch.setattr(system_info, "version", version)
-        monkeypatch.setattr(os.path, "exists", lambda _: False)
+
+        def exists_mocked(path):
+            assert path == preserve_only_rhel_kernel.FixDefaultKernel.KERNEL_SYSCONFIG_PATH
+            return False
+
+        monkeypatch.setattr(os.path, "exists", exists_mocked)
         monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
 
         fix_default_kernel_instance.run()
@@ -484,9 +493,7 @@ class TestFixDefaultKernel:
         assert "DEFAULTKERNEL={}".format(expected_default_kernel) in content
         assert "UPDATEDEFAULT=yes" in content
 
-        assert any(
-            m.id == "MISSING_KERNEL_SYSCONFIG_CREATED" for m in fix_default_kernel_instance.messages
-        )
+        assert any(m.id == "MISSING_KERNEL_SYSCONFIG_CREATED" for m in fix_default_kernel_instance.messages)
 
 
 class TestUpdateKernel:

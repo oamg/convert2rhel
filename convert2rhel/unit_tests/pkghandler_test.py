@@ -78,6 +78,10 @@ kernel.x86_64    4.7.4-200.fc24   @updates
 Available Packages
 kernel.x86_64    4.7.4-200.fc24   @updates"""
 
+YUM_KERNEL_LIST_WITHOUT_AVAILABLE_SECTION = """Installed Packages
+kernel.x86_64    4.7.2-201.fc24   @updates
+kernel.x86_64    4.7.4-200.fc24   @updates"""
+
 
 class FakeDnfQuery:
     def __init__(self, *args, **kwargs):
@@ -247,6 +251,11 @@ class TestGetKernelAvailability:
                 YUM_KERNEL_LIST_OLDER_NOT_AVAILABLE_MULTIPLE_INSTALLED,
                 ["4.7.2-201.fc24", "4.7.4-200.fc24"],
                 ["4.7.4-200.fc24"],
+            ),
+            (
+                YUM_KERNEL_LIST_WITHOUT_AVAILABLE_SECTION,
+                ["4.7.2-201.fc24", "4.7.4-200.fc24"],
+                [],
             ),
         ),
     )
@@ -1809,6 +1818,22 @@ def test_get_package_repositories_repoquery_failure(pretend_os, monkeypatch, cap
     for package, package_repo in result.items():
         assert package in packages
         assert package_repo == "N/A"
+
+
+def test_get_files_owned_by_package(monkeypatch):
+    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=(b"/etc/yum.conf\n/etc/yum.repos.d", 0)))
+
+    result = pkghandler.get_files_owned_by_package.__wrapped__("yum")
+
+    assert result == ["/etc/yum.conf", "/etc/yum.repos.d"]
+
+
+def test_get_files_owned_by_package_failure(monkeypatch):
+    monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=("rpm query failed", 1)))
+
+    result = pkghandler.get_files_owned_by_package.__wrapped__("yum")
+
+    assert result == []
 
 
 @pytest.mark.parametrize(

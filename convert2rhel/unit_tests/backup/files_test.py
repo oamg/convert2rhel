@@ -7,7 +7,7 @@ import pytest
 
 from convert2rhel import exceptions
 from convert2rhel.backup import files
-from convert2rhel.backup.files import MissingFile, RestorableFile
+from convert2rhel.backup.files import InstalledFile, MissingFile, RestorableFile
 from convert2rhel.unit_tests.conftest import centos7, centos8
 
 
@@ -438,3 +438,50 @@ class TestMissingFile:
         # earlier in the `enable()` function. Not the strongest comparision,
         # but this should do.
         assert len(caplog.records) == 2
+
+
+class TestInstalledFile:
+    def test_enable_marks_file_as_installed(self, caplog):
+        installed_file = InstalledFile("/tmp/c2r-installed")
+        installed_file.enable()
+
+        assert installed_file.enabled
+        assert "Marking file /tmp/c2r-installed as installed on the system." in caplog.records[-1].message
+
+    def test_enable_with_file_already_enabled(self, caplog):
+        installed_file = InstalledFile("/tmp/c2r-installed")
+        installed_file.enable()
+        assert installed_file.enabled
+        assert len(caplog.records) == 1
+
+        installed_file.enable()
+        assert installed_file.enabled
+        # No extra log means we returned early from enable()
+        assert len(caplog.records) == 1
+
+    @pytest.mark.parametrize(
+        ("exists", "enabled", "expected_message"),
+        (
+            (True, True, "File {filepath} removed."),
+            (False, True, "File {filepath} wasn't installed during conversion."),
+            (True, False, None),
+        ),
+    )
+    def test_restore(self, tmpdir, exists, enabled, expected_message, caplog):
+        path = tmpdir.join("installed-file")
+        if exists:
+            path.write("data")
+
+        installed_file = InstalledFile(str(path))
+        installed_file.enabled = enabled
+        installed_file.restore()
+
+        if enabled and exists:
+            assert not os.path.exists(str(path))
+        else:
+            assert os.path.exists(str(path)) == exists
+
+        if expected_message:
+            assert expected_message.format(filepath=str(path)) == caplog.records[-1].message
+        else:
+            assert not caplog.records
