@@ -149,13 +149,11 @@ class FixDefaultKernel(actions.Action):
             self.add_message(
                 level="WARNING",
                 id="MISSING_KERNEL_SYSCONFIG_CREATED",
-                title="/etc/sysconfig/kernel missing",
+                title="{} missing".format(self.KERNEL_SYSCONFIG_PATH),
                 description=(
                     "The {} file was missing on the system, likely because the original OS"
-                    " (e.g. Amazon Linux 2) does not ship it. The file has been created with"
-                    " DEFAULTKERNEL={} to ensure RHEL compatibility.".format(
-                        self.KERNEL_SYSCONFIG_PATH, default_kernel
-                    )
+                    " does not ship it. The file has been created with"
+                    " DEFAULTKERNEL={} to ensure RHEL compatibility.".format(self.KERNEL_SYSCONFIG_PATH, default_kernel)
                 ),
             )
             content = (

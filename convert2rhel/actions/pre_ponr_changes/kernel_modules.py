@@ -109,8 +109,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
         cmd = basecmd[:]
 
         if system_info.version.major >= 8:
-            cmd.append("-f")
-            cmd.append("/lib/modules/*.ko*")
+            cmd.extend(["-f", "/lib/modules/*.ko*"])
         else:
             # On EL7, `repoquery -f` uses yum's searchPackageProvides which
             # loads all package provides into memory. For large repos like

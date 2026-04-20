@@ -15,6 +15,8 @@
 
 # GitHub Copilot assisted in writing this file.
 
+import os
+
 import pytest
 import six
 
@@ -122,3 +124,69 @@ def test_run(monkeypatch, installed_pkgs, owned_files, global_system_info, caplo
     assert "Getting a list of files owned by packages affecting variables in .repo files." in caplog.text
     assert "Packages affecting yum variables: {0}".format(", ".join(installed_pkgs)) in caplog.text
     action._back_up_var_files.assert_called_once_with(owned_files)
+
+
+def test_get_yum_var_files_owned_by_pkgs_skips_directories(monkeypatch):
+    action = yum_variables.BackUpYumVariables()
+    owned_files = ["/etc/yum/vars/system", "/etc/yum/vars"]
+
+    monkeypatch.setattr(pkghandler, "get_files_owned_by_package", mock.Mock(return_value=owned_files))
+    monkeypatch.setattr(os.path, "isdir", lambda path: path == "/etc/yum/vars")
+
+    result = action._get_yum_var_files_owned_by_pkgs(["system-release"])
+
+    assert result == ["/etc/yum/vars/system"]
+
+
+def test_restore_yum_var_files_pushes_installed_files(monkeypatch, global_system_info):
+    action = yum_variables.RestoreYumVarFiles()
+    backed_up_dir = "/backup/yum-vars"
+    orig_dir = "/etc/yum/vars"
+    filenames = ["releasever", "infra"]
+
+    monkeypatch.setattr(yum_variables, "system_info", global_system_info)
+    global_system_info.name = "Amazon Linux"
+    monkeypatch.setattr(yum_variables, "loggerinst", mock.Mock(task=mock.Mock(), info=mock.Mock()))
+    monkeypatch.setattr(
+        yum_variables.backup,
+        "get_backed_up_yum_var_dirs",
+        mock.Mock(return_value={orig_dir: backed_up_dir}),
+    )
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(os, "listdir", mock.Mock(return_value=filenames))
+    monkeypatch.setattr(yum_variables.shutil, "copy2", mock.Mock())
+    push_mock = mock.Mock()
+    monkeypatch.setattr(yum_variables.backup.backup_control, "push", push_mock)
+
+    action.run()
+
+    assert push_mock.call_count == len(filenames)
+    pushed_paths = []
+    for call_args in push_mock.call_args_list:
+        pushed_obj = call_args[0][0]
+        pushed_paths.append(pushed_obj.filepath if hasattr(pushed_obj, "filepath") else pushed_obj)
+    for filename in filenames:
+        assert os.path.join(orig_dir, filename) in pushed_paths
+
+
+def test_restore_yum_var_files_handles_copy_error(monkeypatch, global_system_info, caplog):
+    action = yum_variables.RestoreYumVarFiles()
+    backed_up_dir = "/backup/yum-vars"
+    orig_dir = "/etc/yum/vars"
+    err = OSError(13, "Permission denied")
+
+    monkeypatch.setattr(yum_variables, "system_info", global_system_info)
+    global_system_info.name = "Amazon Linux"
+    monkeypatch.setattr(yum_variables, "loggerinst", mock.Mock(task=mock.Mock(), info=mock.Mock()))
+    monkeypatch.setattr(
+        yum_variables.backup,
+        "get_backed_up_yum_var_dirs",
+        mock.Mock(return_value={orig_dir: backed_up_dir}),
+    )
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(os, "listdir", mock.Mock(return_value=["releasever"]))
+    monkeypatch.setattr(yum_variables.shutil, "copy2", mock.Mock(side_effect=err))
+
+    action.run()
+
+    assert "Couldn't copy /backup/yum-vars/releasever to /etc/yum/vars." in caplog.text

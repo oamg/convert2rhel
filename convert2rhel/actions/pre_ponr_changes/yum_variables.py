@@ -67,9 +67,12 @@ class BackUpYumVariables(actions.Action):
             # using set() and union() to get unique paths
             pkg_owned_files = pkg_owned_files.union(pkghandler.get_files_owned_by_package(pkg))
 
-        # Out of all the files owned by the packages get just those in yum/dnf var dirs
+        # Out of all the files owned by the packages get just those in yum/dnf var dirs.
+        # rpm -ql lists directories too; RestorableFile rejects directories.
         yum_var_filepaths = [
-            path for path in pkg_owned_files if os.path.normcase(os.path.dirname(path)) in self.yum_var_dirs
+            path
+            for path in pkg_owned_files
+            if os.path.normcase(os.path.dirname(path)) in self.yum_var_dirs and not os.path.isdir(path)
         ]
 
         return yum_var_filepaths
@@ -125,8 +128,7 @@ class RestoreYumVarFiles(actions.Action):
                 system_info.name
             )
         )
-        for orig_yum_var_dir in backed_up_yum_var_dirs:
-            backed_up_yum_var_dir = backed_up_yum_var_dirs[orig_yum_var_dir]
+        for orig_yum_var_dir, backed_up_yum_var_dir in backed_up_yum_var_dirs.items():
             if not os.path.exists(backed_up_yum_var_dir):
                 logger.info("No file from {} backed up. Nothing to restore.".format(orig_yum_var_dir))
                 continue
