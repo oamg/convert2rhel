@@ -8,6 +8,9 @@ environment+:
 
 adjust+:
     - environment+:
+        SYSTEM_RELEASE_ENV: amazon2
+      when: distro == amazon2
+    - environment+:
         SYSTEM_RELEASE_ENV: centos-7
       when: distro == centos-7
     - environment+:
@@ -20,14 +23,8 @@ adjust+:
         SYSTEM_RELEASE_ENV: oracle-8-latest
       when: distro == oracle-8-latest
     - environment+:
-        SYSTEM_RELEASE_ENV: alma-8.8
-      when: distro == alma-8.8
-    - environment+:
         SYSTEM_RELEASE_ENV: alma-8-latest
       when: distro == alma-8-latest
-    - environment+:
-        SYSTEM_RELEASE_ENV: rocky-8.8
-      when: distro == rocky-8.8
     - environment+:
         SYSTEM_RELEASE_ENV: rocky-8-latest
       when: distro == rocky-8-latest
@@ -41,11 +38,29 @@ adjust+:
         SYSTEM_RELEASE_ENV: alma-9-latest
       when: distro == alma-9-latest
     - environment+:
+        SYSTEM_RELEASE_ENV: alma-9.6
+      when: distro == alma-9.6
+    - environment+:
         SYSTEM_RELEASE_ENV: rocky-9-latest
       when: distro == rocky-9-latest
     - environment+:
+        SYSTEM_RELEASE_ENV: rocky-9.6
+      when: distro == rocky-9.6
+    - environment+:
         SYSTEM_RELEASE_ENV: stream-9-latest
       when: distro == stream-9-latest
+    - prepare+:
+        extra_args: '-e ansible_python_interpreter=/usr/bin/python3.9'
+      when: distro == centos-8
+    - prepare+:
+        extra_args: '-e ansible_python_interpreter=/usr/bin/python3.11'
+      when: distro == alma-8, rocky-8, oracle-8, stream-8
+    - prepare+:
+        extra_args: '-e ansible_python_interpreter=/opt/rh/rh-python38/root/usr/bin/python3.8'
+      when: distro == centos-7, oracle-7
+    - prepare+:
+        extra_args: '-e ansible_python_interpreter=/usr/bin/python3.8'
+      when: distro == amazon2
 
 prepare+:
     - name: install latest copr build
@@ -58,6 +73,34 @@ prepare+:
       package:
         - rpmdevtools
         - yum-utils
+    - name: Install newer python - centos7
+      when: distro == centos-7
+      how: shell
+      script: |
+        yum install -y centos-release-scl
+        # The repository uses mirrorlist, while we need to use a vault url at this point in time
+        sed -i -e "s|^\(mirrorlist=.*\)|#\1|" -e "s|^baseurl=\(.*\)|#baseurl=\1|" -e "s|^#baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" -e "s|^# baseurl=http://mirror\(.*\)|baseurl=http://vault\1|" /etc/yum.repos.d/CentOS-SCLo-*.repo
+        yum install -y rh-python38-python
+    - name: Install newer python - oracle7
+      when: distro == oracle-7
+      how: shell
+      script: |
+          yum install -y oracle-softwarecollection-release-el7
+          yum install -y rh-python38-python
+    - name: Install newer python - amazon
+      when: distro == amazon2
+      how: shell
+      script: amazon-linux-extras install -y python3.8
+    - name: Install newer python - centos-8
+      when: distro == centos-8
+      how: install
+      package:
+        - python39
+    - name: Install newer python - el8
+      when: distro == alma-8, rocky-8, oracle-8, stream-8
+      how: install
+      package:
+        - python3.11
     - name: main preparation step
       how: ansible
       playbook: tests/ansible_collections/main.yml

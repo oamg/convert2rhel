@@ -15,6 +15,7 @@ DISTRO_CONVERSION_MAPPING = {
     "Red Hat Enterprise Linux Server release 7.9 (Maipo)": (
         {"id": "Core", "name": "CentOS Linux", "version": "7.9"},
         {"id": "null", "name": "Oracle Linux Server", "version": "7.9"},
+        {"id": "Karoo", "name": "Amazon Linux", "version": "2"},
     ),
     "Red Hat Enterprise Linux release 8.5 (Ootpa)": ({"id": "null", "name": "CentOS Linux", "version": "8.5"},),
     "Red Hat Enterprise Linux release 8.8 (Ootpa)": (
@@ -33,11 +34,17 @@ DISTRO_CONVERSION_MAPPING = {
         {"id": "Seafoam Ocelot", "name": "AlmaLinux", "version": "9.4"},
         {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.4"},
     ),
-    "Red Hat Enterprise Linux release 9.5 (Plow)": (
-        {"id": "null", "name": "Oracle Linux Server", "version": "9.5"},
+    "Red Hat Enterprise Linux release 9.6 (Plow)": (
+        {"id": "null", "name": "Oracle Linux Server", "version": "9.6"},
         {"id": "null", "name": "CentOS Stream", "version": "9"},
-        {"id": "Teal Serval", "name": "AlmaLinux", "version": "9.5"},
-        {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.5"},
+        {"id": "Sage Margay", "name": "AlmaLinux", "version": "9.6"},
+        {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.6"},
+    ),
+    "Red Hat Enterprise Linux release 9.7 (Plow)": (
+        {"id": "null", "name": "Oracle Linux Server", "version": "9.7"},
+        {"id": "null", "name": "CentOS Stream", "version": "9"},
+        {"id": "Moss Jungle Cat", "name": "AlmaLinux", "version": "9.7"},
+        {"id": "Blue Onyx", "name": "Rocky Linux", "version": "9.7"},
     ),
 }
 

@@ -24,7 +24,7 @@ except ImportError:
 #
 pytest.register_assert_rewrite("test_helpers")
 
-from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title
+from test_helpers.common_functions import SystemInformationRelease, get_full_kernel_title, log_file
 from test_helpers.satellite import Satellite
 from test_helpers.shell import live_shell
 from test_helpers.subscription_manager import SubscriptionManager
@@ -208,7 +208,7 @@ def convert2rhel(shell):
     return factory
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def fixture_subman():
     """
     Fixture.
@@ -232,7 +232,7 @@ def fixture_subman():
         subman.clean_up()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def fixture_satellite(request):
     """
     Fixture.
@@ -277,7 +277,7 @@ def remove_repositories(shell, backup_directory):
 
 
 @pytest.fixture
-def pre_registered(shell, request, fixture_subman):
+def pre_registered(shell, request, configure_proxy, fixture_subman):
     """
     A fixture to install subscription manager and pre-register the system prior to the convert2rhel run.
     We're using the client-tools-for-rhel-<version>-rpms repository to install the subscription-manager package from.
@@ -543,3 +543,47 @@ def backup_directory(shell, request):
     yield backup_path
 
     shell(f"rm -rf {backup_path}")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def configure_proxy(request):
+    """
+    Configure proxy to use with RHSM and CDN endpoints globally.
+    Runs once per session. Skipped when any collected test carries
+    the ``no_configure_proxy`` marker.
+    """
+    if any(item.get_closest_marker("no_configure_proxy") for item in request.session.items):
+        return
+
+    shell = live_shell()
+
+    assert (
+        shell(
+            f"curl -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release https://security.access.redhat.com/data/fd431d51.txt \
+                  --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']}",
+            silent=True,
+        ).returncode
+        == 0
+    )
+
+    # Add the client tools repository and install subscription-manager
+    subman = SubscriptionManager()
+    subman.remove_package(package_name="rhn-client-tools")
+    subman.add_client_tools_repo()
+    subman.install_package()
+
+    # Assign static IP for the proxy configuration
+    proxy_ip = shell(f"getent hosts {TEST_VARS['PROXY_SERVER']} | cut -d ' ' -f 1").output.strip()
+
+    shell(
+        f"subscription-manager config "
+        f"--server.proxy_hostname={proxy_ip} "
+        f"--server.proxy_port={TEST_VARS['PROXY_PORT']} "
+        f"--server.hostname={TEST_VARS['RHSM_SERVER_URL']} "
+        f"--rhsm.baseurl=https://{TEST_VARS['RHSM_STAGECDN']}",
+        silent=True,
+    )
+    log_file("/etc/rhsm/rhsm.conf", "proxy_setup", "rhsm.conf", overwrite=True)
+
+    shell(f"echo 'proxy=http://{proxy_ip}:{TEST_VARS['PROXY_PORT']}' >> /etc/yum.conf", silent=True)
+    log_file("/etc/yum.conf", "proxy_setup", "yum.conf", overwrite=True)

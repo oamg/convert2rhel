@@ -27,6 +27,7 @@ def configure_connection():
         f.write("nameserver 127.0.0.1")
 
 
+@pytest.mark.no_configure_proxy
 @pytest.mark.prepare_isolated_system
 def test_prepare_system(shell, fixture_satellite):
     """

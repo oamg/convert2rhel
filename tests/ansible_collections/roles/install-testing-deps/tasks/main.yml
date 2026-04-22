@@ -1,12 +1,7 @@
 ---
 - name: Ensure python3
-  yum:
-    # gcc and python3-devel are needed for psutil
-    name:
-      - python3
-      - gcc
-      - python3-devel
-    state: present
+  # gcc and python3-devel are needed for psutil
+  shell: yum -y install python3 gcc python3-devel
 
 - name: Install pip if not present
   # ensurepip is available in python-3.4+
@@ -18,15 +13,4 @@
   command: python3 -m pip install --upgrade pip
 
 - name: Install pytest framework dependencies
-  pip:
-    name:
-      - "pytest"
-      - "pytest-cov"
-      - "python-dotenv"
-      - "click"
-      - "pexpect"
-      - "dataclasses"
-      - "jsonschema"
-      - "psutil"
-    # Use pip3 in case pip was installed via rpm package on this system
-    executable: pip3
+  shell: pip3 install pytest pytest-cov python-dotenv click pexpect dataclasses jsonschema psutil

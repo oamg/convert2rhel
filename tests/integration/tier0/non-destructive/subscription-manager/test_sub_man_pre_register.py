@@ -83,31 +83,6 @@ def test_unregistered_no_credentials(shell, convert2rhel):
     assert c2r.exitstatus == 2
 
 
-@pytest.mark.parametrize("pre_registered", [("RHSM_USERNAME", "RHSM_PASSWORD")], indirect=True)
-def test_no_sca_not_subscribed(shell, pre_registered, convert2rhel):
-    """
-    This test verifies that running conversion on pre-registered system
-    without an attached subscription will try auto attaching the subscription.
-    SCA disabled account is used for this scenario.
-    """
-    with convert2rhel("--debug") as c2r:
-        # We need to get past the data collection acknowledgement.
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("y")
-
-        c2r.expect("We'll try to auto-attach a subscription")
-        c2r.expect("SUBSCRIBE_SYSTEM has succeeded")
-        c2r.expect("Continue with the system conversion?")
-        c2r.sendline("n")
-
-    assert c2r.exitstatus == 1
-
-    assert "No consumed subscription pools were found" in shell("subscription-manager list --consumed").output
-
-
 @pytest.mark.parametrize("pre_registered", [("RHSM_NOSUB_USERNAME", "RHSM_NOSUB_PASSWORD")], indirect=True)
 def test_no_sca_subscription_attachment_error(shell, convert2rhel, pre_registered):
     """

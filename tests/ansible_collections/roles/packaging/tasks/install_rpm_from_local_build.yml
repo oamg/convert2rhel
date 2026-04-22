@@ -20,17 +20,11 @@
   when: ansible_facts['virtualization_type'] != "docker"
 
 - name: Install el8 convert2rhel package
-  yum:
-    name: ".rpms/convert2rhel-{{ pkg_version.stdout }}.el8.noarch.rpm"
-    state: present
-    disable_gpg_check: true
+  shell: yum -y install --nogpgcheck .rpms/convert2rhel-{{ pkg_version.stdout }}.el8.noarch.rpm
   when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "8") or
         (ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "8")
 
 - name: Install el7 convert2rhel package
-  yum:
-    name: ".rpms/convert2rhel-{{ pkg_version.stdout }}.el7.noarch.rpm"
-    state: present
-    disable_gpg_check: true
+  shell: yum -y install --nogpgcheck .rpms/convert2rhel-{{ pkg_version.stdout }}.el7.noarch.rpm
   when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7") or
         (ansible_facts['distribution'] == "OracleLinux" and ansible_facts['distribution_major_version'] == "7")

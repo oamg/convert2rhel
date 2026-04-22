@@ -26,7 +26,7 @@ def _cross_vendor_kernel():
         "oracle-8-kernel": "https://yum.oracle.com/repo/OracleLinux/OL8/5/baseos/base/x86_64/",
         "centos-8-kernel": "https://vault.centos.org/centos/8.5.2111/BaseOS/x86_64/os/",
         "stream-9-kernel": "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/",
-        "alma-9-kernel": "https://repo.almalinux.org/almalinux/9.4/BaseOS/x86_64/os/",
+        "alma-9-kernel": "https://vault.almalinux.org/9.4/BaseOS/x86_64/os/",
     }
 
     distro = f"{SystemInformationRelease.distribution}-{SystemInformationRelease.version.major}"

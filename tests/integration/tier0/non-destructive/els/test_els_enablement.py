@@ -103,8 +103,8 @@ def test_rhsm_non_els_account(convert2rhel):
         "analyze -y --serverurl {} --username {} --password {} --debug --els".format(
             TEST_VARS["RHSM_SERVER_URL"],
             # We're deliberately using SCA disabled account for this
-            TEST_VARS["RHSM_USERNAME"],
-            TEST_VARS["RHSM_PASSWORD"],
+            TEST_VARS["RHSM_NOSUB_USERNAME"],
+            TEST_VARS["RHSM_NOSUB_PASSWORD"],
         )
     ) as c2r:
         c2r.expect_exact(ELS_REPOID_MSG)
