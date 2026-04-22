@@ -9,6 +9,9 @@ environment+:
 adjust+:
     - environment+:
         SYSTEM_RELEASE_ENV: amazon2
+        CONVERT2RHEL_CONFIGURE_HOST_METERING: auto
+        CONVERT2RHEL_ALLOW_UNAVAILABLE_KMODS: 1
+        CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK: 1
       when: distro == amazon2
     - environment+:
         SYSTEM_RELEASE_ENV: centos-7
