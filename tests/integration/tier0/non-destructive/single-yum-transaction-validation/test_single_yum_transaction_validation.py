@@ -83,7 +83,7 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
         c2r.expect("Validate the {} transaction".format(PKGMANAGER))
         c2r.expect("Adding {} packages to the {} transaction set.".format(SERVER_SUB, PKGMANAGER))
 
-        if re.match(r"^(centos|oracle)-7$", SYSTEM_RELEASE_ENV):
+        if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7", "amazon2"):
             # Remove the repomd.xml for rhel-7-server-rpms repo
             os.unlink("/var/cache/yum/x86_64/7Server/rhel-7-server-rpms/repomd.xml")
 

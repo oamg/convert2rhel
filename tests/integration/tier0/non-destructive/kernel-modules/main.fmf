@@ -7,6 +7,11 @@ tag+:
     - kernel-modules
     - kmods
 
+adjust+:
+    - enabled: false
+      when: distro == amazon2
+      because: We skip kernel modules check anyway, there is no point to run the tests.
+
 
 /unsupported_kernel_module:
     summary+: |

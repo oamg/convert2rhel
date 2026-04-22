@@ -40,7 +40,8 @@ adjust+:
             /satellite_conversion:
                 adjust+:
                   - enabled: false
-                    when: distro == amazon
+                    when: distro == amazon2
+                    because: There is no feasible way to sync amzn2 repos to our sat instance.
                 discover+:
                     test+<:
                         - conversion-method/satellite_conversion
@@ -96,7 +97,7 @@ adjust+:
                 adjust+:
                     - enabled: true
                       when: >
-                        distro == centos-7, oracle-7
+                        distro == centos-7, oracle-7, amazon2
                       because: The ELS offering is applicable to EL7 only.
                 discover+:
                     test+<:
@@ -119,6 +120,10 @@ adjust+:
 
         /single_yum_transaction:
             /packages_upgraded_after_conversion:
+                adjust+:
+                  - enabled: false
+                    when: distro == amazon2
+                    because: There are not any rpms reported for this OS.
                 discover+:
                     test+<:
                         - single-yum-transaction/packages_upgraded_after_conversion
@@ -178,8 +183,8 @@ adjust+:
             /yum_distro_sync:
                 adjust+:
                   - enabled: false
-                    when: distro == stream-9, oracle-9, alma-9, rocky-9
-                    because: We don't have any reported/reproduced problematic package for EL9
+                    when: distro == stream-9, oracle-9, alma-9, rocky-9, amazon2
+                    because: We don't have any reported/reproduced problematic package for EL9 or amzn2
                 prepare+:
                       - name: enable CentOS' extras repo
                         how: ansible
@@ -193,6 +198,10 @@ adjust+:
 
 
         /isolated_system_conversion:
+            adjust+:
+              - enabled: false
+                when: distro == amazon2
+                because: There is no feasible way to sync amzn2 repos to our sat instance.
             environment+:
                 TESTS_DONT_UPDATE_SYSTEM: 1
             prepare+:
