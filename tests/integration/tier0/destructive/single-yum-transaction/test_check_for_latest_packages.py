@@ -12,6 +12,7 @@ def test_packages_upgraded_after_conversion(convert2rhel, shell):
     """
 
     enable_repos_mapping = {
+        2: ["rhel-7-server-rpms"],
         7: ["rhel-7-server-rpms"],
         8: ["rhel-8-for-x86_64-appstream-rpms", "rhel-8-for-x86_64-baseos-rpms"],
         9: ["rhel-9-for-x86_64-appstream-rpms", "rhel-9-for-x86_64-baseos-rpms"],

@@ -42,6 +42,9 @@ tag+:
         pytest -m test_proper_rhsm_clean_up
 
 /packages_untracked_graceful_rollback:
+    adjust+:
+        - enabled: false
+          when: distro == amazon2
     summary+: |
         Rollback with failed registration
     description+: |

@@ -1,4 +1,5 @@
 from test_helpers.common_functions import SystemInformationRelease, get_custom_repos_names
+from test_helpers.vars import SYSTEM_RELEASE_ENV
 
 
 def test_system_conversion_using_custom_repositories(shell, convert2rhel):
@@ -21,3 +22,10 @@ def test_system_conversion_using_custom_repositories(shell, convert2rhel):
 
     enable_repo_opt_yum = " ".join(f"--enable {repo}" for repo in get_custom_repos_names())
     shell("yum-config-manager {}".format(enable_repo_opt_yum))
+
+    if SYSTEM_RELEASE_ENV == "amazon2":
+        # The conversion transaction may remove or replace python3,
+        # python3-pip and pytest which the test framework needs to
+        # continue running. Reinstall them as a safety net.
+        shell("yum install -y python3 python3-pip python3-devel gcc --enablerepo rhel-7-server-optional-rpms")
+        shell("python3 -m pip install pytest pytest-cov python-dotenv click pexpect dataclasses jsonschema psutil")

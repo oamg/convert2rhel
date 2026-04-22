@@ -28,6 +28,7 @@ def assign_packages():
     os_key = f"{os_distribution}-{os_version}" if os_distribution == "centos" else os_distribution
 
     release_mapping = {
+        "amazon2": ["system-release", "generic-logos"],
         "centos-7": ["centos-release", "centos-logos"],
         "centos-8": ["centos-linux-release", "centos-logos"],
         "oracle": [f"oraclelinux-release-el{os_version}", "oracle-logos"],
@@ -41,7 +42,7 @@ def assign_packages():
     packages = release_mapping.get(os_key, []) + ["usermode"]
     # The packages 'python-syspurpose' and 'python3-syspurpose' were removed in Oracle Linux 7.9
     # and Oracle Linux 8.2 respectively, the package is also not present in EL9 systems, same as the rhn-setup
-    if os_distribution != "oracle" and os_version != 9:
+    if os_distribution not in ["oracle", "amazon"] and os_version != 9:
         packages.extend(["rhn-setup", f"python{python_ver}-syspurpose"])
 
     return packages

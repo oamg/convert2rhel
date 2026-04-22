@@ -47,9 +47,8 @@ class SubscriptionManager:
         # Amazon Linux 2 has an older version of python-dmidecode than required by subscription-manager
         # Install the required dependency beforehand
         if SystemInformationRelease.distribution == "amazon":
-            command = (
-                "yum install -y https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/x86_64/os/Packages/p/python-dmidecode-3.12.2-4.el7.x86_64.rpm && "
-                + command
+            self.shell(
+                "yum install -y https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi/server/7/7Server/x86_64/os/Packages/p/python-dmidecode-3.12.2-4.el7.x86_64.rpm"
             )
         # rhn-client-tools package obsoletes subscription-manager on Oracle Linux
         # set the obsoletes option to 0 to be able to install the package
