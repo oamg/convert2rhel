@@ -26,6 +26,7 @@ from convert2rhel.systeminfo import system_info
 
 
 logger = root_logger.getChild(__name__)
+AMZN2_EXTRAS_REPOFILE_PATH = "/etc/yum.repos.d/amzn2-extras.repo"
 
 
 class ListThirdPartyPackages(actions.Action):
@@ -140,6 +141,7 @@ class RemoveSpecialPackages(actions.Action):
             # doesn't expect this and without the directory the redhat.repo isn't re-created. This results in an inability
             # to access any repositories as the repository directory doesn't exist.
             _fix_repos_directory()
+            _cleanup_amzn2_extras_repofile()
         except SystemExit as e:
             # TODO(r0x0d): Places where we raise SystemExit and need to be
             # changed to something more specific.
@@ -218,3 +220,37 @@ def _fix_repos_directory():
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
         logger.debug("Recreated repository directory {} as it was removed with some special package.".format(repo_dir))
+
+
+def _cleanup_amzn2_extras_repofile():
+    """Remove a leftover AL2 extras repo file after package cleanup.
+
+    The amzn2-extras repo should disappear once amazon-linux-extras package is removed.
+    In rare cases the file may remain, so remove it only if amazon-linux-extras is not
+    installed and no package claims ownership of the file.
+    """
+    if "amazon-linux-extras" not in system_info.repofile_pkgs:
+        return
+
+    if not os.path.exists(AMZN2_EXTRAS_REPOFILE_PATH):
+        return
+
+    _, package_installed = utils.run_subprocess(["rpm", "-q", "amazon-linux-extras"], print_output=False)
+    if package_installed == 0:
+        logger.debug("Keeping %s as amazon-linux-extras is still installed.", AMZN2_EXTRAS_REPOFILE_PATH)
+        return
+
+    output, file_owned = utils.run_subprocess(["rpm", "-qf", AMZN2_EXTRAS_REPOFILE_PATH], print_output=False)
+    if file_owned == 0:
+        logger.debug(
+            "Keeping %s as it is still owned by %s.",
+            AMZN2_EXTRAS_REPOFILE_PATH,
+            output.strip(),
+        )
+        return
+
+    try:
+        os.remove(AMZN2_EXTRAS_REPOFILE_PATH)
+        logger.info("Removed leftover repository file %s.", AMZN2_EXTRAS_REPOFILE_PATH)
+    except OSError as exc:
+        logger.warning("Failed to remove leftover repository file %s: %s", AMZN2_EXTRAS_REPOFILE_PATH, exc)
