@@ -318,24 +318,22 @@ def format_pkg_info(pkgs, disable_repos=None):
     max_nvra_length = max(len(nvra) for nvra in package_info)
 
     header = (
-        "%-*s  %-*s  %s"
-        % (
-            max_nvra_length,
+        "{:{nvra}} {:{pkgr}} {}".format(
             "Package",
-            max_packager_length,
             "Vendor/Packager",
             "Repository",
+            nvra=max_nvra_length,
+            pkgr=max_packager_length,
         )
         + "\n"
     )
     header_underline = (
-        "%-*s  %-*s  %s"
-        % (
-            max_nvra_length,
+        "{:{nvra}} {:{pkgr}} {}".format(
             "-" * len("Package"),
-            max_packager_length,
             "-" * len("Vendor/Packager"),
             "-" * len("Repository"),
+            nvra=max_nvra_length,
+            pkgr=max_packager_length,
         )
         + "\n"
     )
@@ -348,13 +346,12 @@ def format_pkg_info(pkgs, disable_repos=None):
     pkg_list = ""
     for package, info in package_info.items():
         pkg_list += (
-            "%-*s  %-*s  %s"
-            % (
-                max_nvra_length,
+            "{:{nvra}} {:{pkgr}} {}".format(
                 package,
-                max_packager_length,
                 info["packager"],
                 info["repoid"],
+                nvra=max_nvra_length,
+                pkgr=max_packager_length,
             )
             + "\n"
         )
