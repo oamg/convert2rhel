@@ -1803,6 +1803,8 @@ def test_get_package_repositories(pretend_os, packages, subprocess_output, expec
 
     result = pkghandler._get_package_repositories(packages)
     assert expected_result == result
+    assert utils.run_subprocess.cmd[0] == "repoquery"
+    assert "--installed" in utils.run_subprocess.cmd
     if caplog.records[-1].message:
         assert "Got a line without the C2R identifier" in caplog.records[-1].message
 
