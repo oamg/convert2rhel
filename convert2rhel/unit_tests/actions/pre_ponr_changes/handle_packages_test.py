@@ -37,6 +37,9 @@ six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
 
+AMZN2_EXTRAS_REPOFILE_PATH = "/etc/yum.repos.d/amzn2-extras.repo"
+
+
 class RemovePkgsUnlessFromRedhatMocked(MockFunctionObject):
     spec = handle_packages._remove_packages_unless_from_redhat
 
@@ -285,3 +288,102 @@ def test_fix_repos_directory(monkeypatch, tmpdir, dir_exists):
     handle_packages._fix_repos_directory()
 
     assert os.path.exists(str(repo_dir))
+
+
+def test_cleanup_amzn2_extras_repofile_not_amazon_system(monkeypatch):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["system-release"])
+    run_subprocess_mock = mock.Mock()
+    monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
+
+    handle_packages._cleanup_amzn2_extras_repofile()
+
+    assert run_subprocess_mock.call_count == 0
+
+
+def test_cleanup_amzn2_extras_repofile_skips_when_repofile_missing(monkeypatch):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["amazon-linux-extras"])
+    monkeypatch.setattr(handle_packages, "AMZN2_EXTRAS_REPOFILE_PATH", AMZN2_EXTRAS_REPOFILE_PATH)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=False))
+    run_subprocess_mock = mock.Mock()
+    monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mock)
+    remove_mock = mock.Mock()
+    monkeypatch.setattr(os, "remove", remove_mock)
+
+    handle_packages._cleanup_amzn2_extras_repofile()
+
+    assert run_subprocess_mock.call_count == 0
+    remove_mock.assert_not_called()
+
+
+def test_cleanup_amzn2_extras_repofile_kept_when_pkg_installed(monkeypatch):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["amazon-linux-extras"])
+    monkeypatch.setattr(handle_packages, "AMZN2_EXTRAS_REPOFILE_PATH", AMZN2_EXTRAS_REPOFILE_PATH)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(return_value=("amazon-linux-extras-2.0.3-1.amzn2.noarch", 0)),
+    )
+    remove_mock = mock.Mock()
+    monkeypatch.setattr(os, "remove", remove_mock)
+
+    handle_packages._cleanup_amzn2_extras_repofile()
+
+    assert utils.run_subprocess.call_count == 1
+    remove_mock.assert_not_called()
+
+
+def test_cleanup_amzn2_extras_repofile_kept_when_file_owned(monkeypatch, caplog):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["amazon-linux-extras"])
+    monkeypatch.setattr(handle_packages, "AMZN2_EXTRAS_REPOFILE_PATH", AMZN2_EXTRAS_REPOFILE_PATH)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(side_effect=[("package amazon-linux-extras is not installed", 1), ("amazon-linux-extras-2.0.3", 0)]),
+    )
+    remove_mock = mock.Mock()
+    monkeypatch.setattr(os, "remove", remove_mock)
+
+    handle_packages._cleanup_amzn2_extras_repofile()
+
+    assert utils.run_subprocess.call_count == 2
+    assert (
+        "Keeping {} as it is still owned by amazon-linux-extras-2.0.3.".format(AMZN2_EXTRAS_REPOFILE_PATH)
+        in caplog.text
+    )
+    remove_mock.assert_not_called()
+
+
+def test_cleanup_amzn2_extras_repofile_removed_when_unowned(monkeypatch):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["amazon-linux-extras"])
+    monkeypatch.setattr(handle_packages, "AMZN2_EXTRAS_REPOFILE_PATH", AMZN2_EXTRAS_REPOFILE_PATH)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(side_effect=[("package amazon-linux-extras is not installed", 1), ("file is not owned", 1)]),
+    )
+    remove_mock = mock.Mock()
+    monkeypatch.setattr(os, "remove", remove_mock)
+
+    handle_packages._cleanup_amzn2_extras_repofile()
+
+    assert utils.run_subprocess.call_count == 2
+    remove_mock.assert_called_once_with(AMZN2_EXTRAS_REPOFILE_PATH)
+
+
+def test_cleanup_amzn2_extras_repofile_remove_failure(monkeypatch, caplog):
+    monkeypatch.setattr(system_info, "repofile_pkgs", ["amazon-linux-extras"])
+    monkeypatch.setattr(handle_packages, "AMZN2_EXTRAS_REPOFILE_PATH", AMZN2_EXTRAS_REPOFILE_PATH)
+    monkeypatch.setattr(os.path, "exists", mock.Mock(return_value=True))
+    monkeypatch.setattr(
+        utils,
+        "run_subprocess",
+        mock.Mock(side_effect=[("package amazon-linux-extras is not installed", 1), ("file is not owned", 1)]),
+    )
+    monkeypatch.setattr(os, "remove", mock.Mock(side_effect=OSError("permission denied")))
+
+    handle_packages._cleanup_amzn2_extras_repofile()
+
+    assert "Failed to remove leftover repository file {}".format(AMZN2_EXTRAS_REPOFILE_PATH) in caplog.text
