@@ -124,6 +124,12 @@ def convert2rhel(shell):
         timeout: int = 60 * 60,
         unregister: bool = False,
     ) -> ContextManager[pexpect.spawn]:
+        if SYSTEM_RELEASE_ENV == "amazon2":
+            options += (
+                " --enablerepo rhel-7-server-rpms"
+                " --enablerepo rhel-7-server-extras-rpms "
+                "--enablerepo rhel-7-server-optional-rpms"
+            )
         c2r_runtime = pexpect.spawn(
             f"convert2rhel {options}",
             encoding="utf-8",
