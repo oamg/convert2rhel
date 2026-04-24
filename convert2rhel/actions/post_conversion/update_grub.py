@@ -15,6 +15,7 @@
 
 __metaclass__ = type
 
+
 from convert2rhel import actions, backup, grub, utils
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.logger import root_logger
@@ -29,6 +30,8 @@ class FixGrubSettingsOnAL2(actions.Action):
     def run(self):
         """On Amazon Linux 2 the GRUB_TERMINAL setting in /etc/default/grub is set to "ec2-console". Leaving it there
         prevents us from successfully executing grub2-mkconfig - we need to change that to "console".
+        Additionally the GRUB_DISTRIBUTOR and GRAB_DISABLE_SUBMENU are missing causing the GRUB menu to be in
+        an unsatisfactory format. Ensure the options to yield correct values.
         """
         super(FixGrubSettingsOnAL2, self).run()
 
@@ -40,19 +43,38 @@ class FixGrubSettingsOnAL2(actions.Action):
         file_path = "/etc/default/grub"
         old_value = 'GRUB_TERMINAL="ec2-console"'
         new_value = 'GRUB_TERMINAL="console"'
+        missing_grub_opts = (
+            "GRUB_DISTRIBUTOR=\"$(sed 's, release .*$,,g' /etc/system-release)\"",
+            'GRUB_DISABLE_SUBMENU="true"',
+        )
 
         backup.backup_control.push(RestorableFile(file_path))
 
         content = utils.get_file_content(file_path)
-        if old_value in content:
-            updated_content = content.replace(old_value, new_value)
+        content_modified = False
 
-            with open(file_path, "w") as file:
-                file.write(updated_content)
+        if old_value in content:
+            content = content.replace(old_value, new_value)
             logger.debug("Replaced {} with {} in {}.".format(old_value, new_value, file_path))
-            logger.info("Successfully updated {}.".format(file_path))
+            content_modified = True
         else:
             logger.info("{} not found in {}. Nothing to do.".format(old_value, file_path))
+
+        for opt in missing_grub_opts:
+            key = opt.split("=", 1)[0]
+            lines = content.splitlines()
+            if any(line.startswith(key + "=") for line in lines):
+                content = "\n".join(opt if line.startswith(key + "=") else line for line in lines) + "\n"
+                logger.debug("Replaced existing {} entry in {}.".format(key, file_path))
+            else:
+                content = content.rstrip("\n") + "\n" + opt + "\n"
+                logger.debug("Added {} to {}.".format(opt, file_path))
+            content_modified = True
+
+        if content_modified:
+            with open(file_path, "w") as file:
+                file.write(content)
+            logger.info("Successfully updated {}.".format(file_path))
 
 
 class UpdateGrub(actions.Action):
