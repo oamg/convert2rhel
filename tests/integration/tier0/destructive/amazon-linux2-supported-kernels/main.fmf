@@ -1,0 +1,7 @@
+summary+: |
+    Amazon Linux 2 supported kernel
+
+description+: |
+    Plans boot into Amazon Linux 2 kernel 5.4, 5.10 or 5.15 (extras); 4.14 is covered by the default
+    test AMI and other tier0 scenarios. Each plan performs a full RHSM conversion with the usual
+    destructive reboot and post-conversion checks.

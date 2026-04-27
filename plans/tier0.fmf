@@ -117,6 +117,46 @@ adjust+:
                     exclude:
                         - checks-after-conversion/rhel_subman
 
+        /amazon_linux2_supported_kernels:
+            summary+: |
+                RHSM conversion on Amazon Linux 2 kernel 5.10 and 5.15
+            description+: |
+                Two plans set C2R_AL2_TARGET_KERNEL to 5.10 or 5.15; prepare installs that line and reboots.
+                Kernel 4.14 is omitted: the test AMI already boots 4.14, so other tier0 runs cover that line.
+            adjust+:
+              - enabled: false
+                when: distro != amazon2
+                because: The matrix applies only to Amazon Linux 2.
+            prepare+:
+              - name: Install and boot the target Amazon Linux 2 kernel
+                how: shell
+                script: pytest tests/integration/*/destructive/amazon-linux2-supported-kernels/prepare_boot_target_kernel.py
+              - name: Reboot into the selected kernel
+                how: ansible
+                playbook: tests/ansible_collections/roles/reboot/main.yml
+            /kernel_5_4:
+                summary+: Boot into kernel-5.4 then convert
+                environment+:
+                    C2R_AL2_TARGET_KERNEL: "kernel-5.4"
+                discover+:
+                    test+<:
+                        - conversion-method/activation_key_conversion
+            /kernel_5_10:
+                summary+: Boot into kernel-5.10 then convert
+                environment+:
+                    C2R_AL2_TARGET_KERNEL: "kernel-5.10"
+                discover+:
+                    test+<:
+                        - conversion-method/activation_key_conversion
+
+            /kernel_5_15:
+                summary+: Boot into kernel-5.15 then convert
+                environment+:
+                    C2R_AL2_TARGET_KERNEL: "kernel-5.15"
+                discover+:
+                    test+<:
+                        - conversion-method/activation_key_conversion
+
 
         /single_yum_transaction:
             /packages_upgraded_after_conversion:
