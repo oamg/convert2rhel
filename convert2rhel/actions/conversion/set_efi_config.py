@@ -252,8 +252,7 @@ class ReplaceEfiBootEntry(actions.Action):
 
         if not grub.is_efi():
             logger.info(
-                "Unable to collect data about UEFI on a BIOS system, did not perform UEFI bootloader "
-                "entry replacement."
+                "Unable to collect data about UEFI on a BIOS system, did not perform UEFI bootloader entry replacement."
             )
             return
 

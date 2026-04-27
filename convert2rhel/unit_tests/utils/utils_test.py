@@ -455,14 +455,9 @@ class TestDownload_pkg:
         monkeypatch.setattr(
             utils,
             "download_pkg",
-            lambda pkg,
-            dest,
-            reposdir,
-            enable_repos,
-            disable_repos,
-            set_releasever,
-            custom_releasever,
-            varsdir: "/filepath/",
+            lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever, custom_releasever, varsdir: (
+                "/filepath/"
+            ),
         )
 
         paths = utils.download_pkgs(

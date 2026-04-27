@@ -167,7 +167,7 @@ class RemoveSpecialPackages(actions.Action):
                     " conversion. This list includes packages that are known to cause a conversion failure."
                 ),
                 remediations=(
-                    "Remove the packages manually before running convert2rhel again:\n" "yum remove -y {}".format(
+                    "Remove the packages manually before running convert2rhel again:\nyum remove -y {}".format(
                         " ".join(pkgs_not_removed)
                     )
                 ),
