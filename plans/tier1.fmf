@@ -274,7 +274,7 @@ adjust+:
         enabled: false
         adjust+:
           - enabled: true
-            when: distro == centos-7, oracle-7
+            when: distro == centos-7, oracle-7, amazon2
             because: The host metering package is currently only in RHEL7 repositories.
         discover+:
             test+<:
