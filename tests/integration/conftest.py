@@ -152,7 +152,7 @@ def convert2rhel(shell):
                 # continue running. Reinstall them as a safety net.
                 shell("yum install -y python3 python3-pip python3-devel gcc --enablerepo rhel-7-server-optional-rpms")
                 shell(
-                    "python3 -m pip install pytest pytest-cov python-dotenv click pexpect dataclasses jsonschema psutil"
+                    f"python3 -m pip install --proxy http://{TEST_VARS['PROXY_SERVER']}:{TEST_VARS['PROXY_PORT']} pytest pytest-cov python-dotenv click pexpect dataclasses jsonschema psutil"
                 )
 
             if unregister:
