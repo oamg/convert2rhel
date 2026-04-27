@@ -30,9 +30,9 @@ class Satellite:
         return self._sat_reg_commands.get(self.key)
 
     def _curl_the_satellite_script(self, curl_command):
-        assert (
-            self.shell(f"{curl_command} -o {self._sat_script_location}", silent=True).returncode == 0
-        ), "Failed to curl the satellite script to the machine."
+        assert self.shell(f"{curl_command} -o {self._sat_script_location}", silent=True).returncode == 0, (
+            "Failed to curl the satellite script to the machine."
+        )
 
         # [danmyway] This is just a mitigation of rhn-client-tools pkg obsoleting subscription-manager during upgrade
         # TODO remove when https://github.com/theforeman/foreman/pull/10280 gets merged and or foreman 3.12 is out
