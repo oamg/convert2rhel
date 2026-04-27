@@ -200,8 +200,8 @@ def get_rpm_header(pkg_obj):
 
 
 def get_installed_pkg_objects(name=None, version=None, release=None, arch=None):
-    """Return list with installed package objects. The packages can be
-    optionally filtered by name.
+    """Return list with installed package objects (yum.rpmsack.RPMInstalledPackage objects in case
+    of yum and hawkey.Package objects in case of dnf). The packages can be optionally filtered.
     """
     if pkgmanager.TYPE == "yum":
         return _get_installed_pkg_objects_yum(name, version, release, arch)
@@ -290,6 +290,16 @@ def get_installed_pkgs_w_different_key_id(key_ids, name="*"):
     pkgs_w_key_ids = get_installed_pkg_information(name)
 
     return [pkg for pkg in pkgs_w_key_ids if pkg.key_id not in key_ids and pkg.nevra.name != "gpg-pubkey"]
+
+
+@utils.run_as_child_process
+def get_files_owned_by_package(installed_pkg_name):
+    """Get a list of files that are owned by an installed package."""
+    output, ret_code = utils.run_subprocess(["/usr/bin/rpm", "-ql", installed_pkg_name])
+    if ret_code != 0:
+        logger.warning("Failed to list files for package {0}: {1}".format(installed_pkg_name, output))
+        return []
+    return output.decode("utf-8").splitlines()
 
 
 @utils.run_as_child_process
@@ -396,7 +406,13 @@ def _get_package_repositories(pkgs, disable_repos=None):
     # If needed, disable some repos for the repoquery
     disable_repo_command = repo.get_rhel_disable_repos_command(disable_repos)
 
-    cmd = ["repoquery", "--quiet", "-q", "--setopt=exclude="]
+    cmd = [
+        "repoquery",
+        "--quiet",
+        "-q",
+        "--installed",
+        "--setopt=exclude=",
+    ]
     cmd.extend(disable_repo_command)
     cmd.extend(pkgs)
     cmd.extend(["--qf", query_format])
@@ -623,7 +639,10 @@ def get_kernel_availability():
     available kernel versions.
     """
     output, _ = pkgmanager.call_yum_cmd(command="list", args=["--showduplicates", "kernel"], print_output=False)
-    return (list(get_kernel(data)) for data in output.split("Available Packages"))
+    if "Available Packages" in output:
+        return (list(get_kernel(data)) for data in output.split("Available Packages"))
+    else:
+        return (list(get_kernel(output)), [])
 
 
 def get_kernel(kernels_raw):
@@ -788,7 +807,7 @@ def _get_packages_to_update_dnf(disable_repos=None):
     # in repo files. See this bugzilla comment:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1920735#c2
     base.conf.read(priority=pkgmanager.conf.PRIO_MAINCONFIG)
-    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot, varsdir=base.conf.varsdir)
+    base.conf.substitutions.update_from_etc(installroot=base.conf.installroot)
     base.read_all_repos()
     base.fill_sack()
 

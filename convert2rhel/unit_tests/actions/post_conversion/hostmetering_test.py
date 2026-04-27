@@ -137,6 +137,8 @@ def test_configure_host_metering(
     monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
     monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", envvar)
     monkeypatch.setattr(system_info, "version", os_version)
+    fake_release = "CentOS Linux release {version} (Core)".format(version=repr(os_version))
+    monkeypatch.setattr(hostmetering.SystemInfo, "get_system_release_file_content", staticmethod(lambda: fake_release))
     monkeypatch.setattr(hostmetering, "get_rhsm_facts", mock.Mock(return_value=rhsm_facts))
     yum_mock = mock.Mock(return_value=(0, ""))
     monkeypatch.setattr(hostmetering, "call_yum_cmd", yum_mock)
@@ -344,6 +346,11 @@ def test_configure_host_metering_messages_and_results(
     if env_var:
         monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", env_var)
     monkeypatch.setattr(system_info, "version", os_version)
+    if os_version:
+        fake_release = "CentOS Linux release {version} (Core)".format(version=repr(os_version))
+        monkeypatch.setattr(
+            hostmetering.SystemInfo, "get_system_release_file_content", staticmethod(lambda: fake_release)
+        )
     # The facts aren't used during the test run
     monkeypatch.setattr(hostmetering, "get_rhsm_facts", mock.Mock(return_value=None))
     monkeypatch.setattr(

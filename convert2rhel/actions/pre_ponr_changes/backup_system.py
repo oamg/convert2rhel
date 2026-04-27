@@ -24,8 +24,7 @@ from convert2rhel.backup.files import MissingFile, RestorableFile
 from convert2rhel.logger import LOG_DIR, root_logger
 from convert2rhel.pkghandler import VERSIONLOCK_FILE_PATH
 from convert2rhel.redhatrelease import os_release_file, system_release_file
-from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
-from convert2rhel.systeminfo import system_info
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import warn_deprecated_env
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
@@ -100,47 +99,13 @@ class BackupRepository(actions.Action):
             backup.backup_control.push(restorable_file)
 
 
-class BackupYumVariables(actions.Action):
-    id = "BACKUP_YUM_VARIABLES"
-
-    def run(self):
-        """Backup varsdir folder in /etc/{yum,dnf}/vars so the variables can be restored on rollback."""
-        logger.task("Backup variables")
-
-        super(BackupYumVariables, self).run()
-
-        logger.info("Backing up variables files from {}.".format(DEFAULT_YUM_VARS_DIR))
-        self._backup_variables(path=DEFAULT_YUM_VARS_DIR)
-
-        if system_info.version.major >= 8:
-            logger.info("Backing up variables files from {}.".format(DEFAULT_DNF_VARS_DIR))
-            self._backup_variables(path=DEFAULT_DNF_VARS_DIR)
-
-    def _backup_variables(self, path):
-        """Helper internal function to backup the variables.
-
-        :param path: The path for the original variable.
-        :type path: str
-        """
-        variable_files_backed_up = False
-
-        for variable in os.listdir(path):
-            variable_path = os.path.join(path, variable)
-            restorable_file = RestorableFile(variable_path)
-            backup.backup_control.push(restorable_file)
-            variable_files_backed_up = True
-
-        if not variable_files_backed_up:
-            logger.info("No variables files backed up.")
-
-
 class BackupPackageFiles(actions.Action):
     id = "BACKUP_PACKAGE_FILES"
     # BACKUP_PACKAGE_FILES should be the last one
     # Something could be backed up by this function
     # and if the MD5 differs it might be backed up for second time
     # by the BackupPackageFiles
-    dependencies = ("BACKUP_REPOSITORY", "BACKUP_REDHAT_RELEASE")
+    dependencies = ("BACKUP_REPOSITORY", "BACKUP_REDHAT_RELEASE", "BACKUP_YUM_VARIABLES")
 
     def run(self):
         """Backup changed package files"""

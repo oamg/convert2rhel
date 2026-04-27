@@ -18,13 +18,46 @@ __metaclass__ = type
 from convert2rhel import actions, backup, grub, utils
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.logger import root_logger
-
+from convert2rhel.systeminfo import system_info
 
 logger = root_logger.getChild(__name__)
 
 
+class FixGrubSettingsOnAL2(actions.Action):
+    id = "FIX_GRUB_SETTINGS_ON_AL2"
+
+    def run(self):
+        """On Amazon Linux 2 the GRUB_TERMINAL setting in /etc/default/grub is set to "ec2-console". Leaving it there
+        prevents us from successfully executing grub2-mkconfig - we need to change that to "console".
+        """
+        super(FixGrubSettingsOnAL2, self).run()
+
+        logger.task("Fix GRUB2 settings on Amazon Linux 2")
+        if system_info.version.major != 2:
+            logger.info("Not running Amazon Linux 2, skipping.")
+            return
+
+        file_path = "/etc/default/grub"
+        old_value = 'GRUB_TERMINAL="ec2-console"'
+        new_value = 'GRUB_TERMINAL="console"'
+
+        backup.backup_control.push(RestorableFile(file_path))
+
+        content = utils.get_file_content(file_path)
+        if old_value in content:
+            updated_content = content.replace(old_value, new_value)
+
+            with open(file_path, "w") as file:
+                file.write(updated_content)
+            logger.debug("Replaced {} with {} in {}.".format(old_value, new_value, file_path))
+            logger.info("Successfully updated {}.".format(file_path))
+        else:
+            logger.info("{} not found in {}. Nothing to do.".format(old_value, file_path))
+
+
 class UpdateGrub(actions.Action):
     id = "UPDATE_GRUB"
+    dependencies = ("FIX_GRUB_SETTINGS_ON_AL2",)
 
     def run(self):
         """Update GRUB2 images and config after conversion.

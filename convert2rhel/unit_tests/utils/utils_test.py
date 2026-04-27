@@ -455,14 +455,7 @@ class TestDownload_pkg:
         monkeypatch.setattr(
             utils,
             "download_pkg",
-            lambda pkg,
-            dest,
-            reposdir,
-            enable_repos,
-            disable_repos,
-            set_releasever,
-            custom_releasever,
-            varsdir: "/filepath/",
+            lambda pkg, dest, reposdir, enable_repos, disable_repos, set_releasever, custom_releasever: "/filepath/",
         )
 
         paths = utils.download_pkgs(
@@ -473,7 +466,6 @@ class TestDownload_pkg:
             disable_repos=["repo2"],
             set_releasever=False,
             custom_releasever=8,
-            varsdir="/tmp",
         )
 
         assert paths == ["/filepath/", "/filepath/"]
@@ -501,7 +493,6 @@ class TestDownload_pkg:
             disable_repos=disable_repos,
             set_releasever=True,
             custom_releasever="8",
-            varsdir="/tmp",
         )
 
         assert [
@@ -514,7 +505,6 @@ class TestDownload_pkg:
             "--enablerepo=repo1",
             "--enablerepo=repo2",
             "--releasever=8",
-            "--setopt=varsdir=/tmp",
             "--setopt=module_platform_id=platform:el8",
             "kernel",
         ] == utils.run_cmd_in_pty.cmd

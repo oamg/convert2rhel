@@ -27,7 +27,6 @@ from convert2rhel.actions.pre_ponr_changes import backup_system
 from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.unit_tests import CriticalErrorCallableObject
-from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
 
 
@@ -45,11 +44,6 @@ def backup_repository_action():
     return backup_system.BackupRepository()
 
 
-@pytest.fixture
-def backup_variables_action():
-    return backup_system.BackupYumVariables()
-
-
 class RestorableFileBackupMocked(CriticalErrorCallableObject):
     method_spec = RestorableFile.enable
 
@@ -57,19 +51,6 @@ class RestorableFileBackupMocked(CriticalErrorCallableObject):
 @pytest.fixture
 def backup_package_files_action():
     return backup_system.BackupPackageFiles()
-
-
-@pytest.fixture
-def generate_vars(tmpdir):
-    """Create yum and dnf vars folders with file for backup."""
-    tmpdir = tmpdir.mkdir("etc")
-
-    yum_vars = tmpdir.mkdir("yum").mkdir("vars").join("yum_test_var")
-    dnf_vars = tmpdir.mkdir("dnf").mkdir("vars").join("dnf_test_var")
-    yum_vars.write("yum_test_var")
-    dnf_vars.write("dnf_test_var")
-
-    return str(dnf_vars), str(yum_vars)
 
 
 def generate_repo(tmpdir, name):
@@ -469,78 +450,3 @@ class TestBackupRepository:
 
         backup_repository.run()
         assert ("Repository folder {} seems to be empty.".format(etc)) in caplog.text
-
-
-class TestBackupVariables:
-    @all_systems
-    def test_backup_variables_nonexisting_path(self, tmpdir, monkeypatch, caplog, backup_variables_action, pretend_os):
-        """Test empty paths, nothing for backup."""
-        etc = tmpdir.mkdir("etc")
-
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_VARS_DIR", str(etc))
-        monkeypatch.setattr(backup_system, "DEFAULT_DNF_VARS_DIR", str(etc))
-
-        backup_variables = backup_variables_action
-
-        backup_variables.run()
-
-        assert "No variables files backed up." in caplog.text
-
-    @centos7
-    def test_backup_variables_only_yum(self, pretend_os, monkeypatch, tmpdir, generate_vars, backup_variables_action):
-        """Test when DNF is not present - DNF vars dir is not backed up."""
-        dnf_vars, yum_vars = generate_vars
-
-        backup_dir = str(tmpdir.mkdir("backup"))
-
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_VARS_DIR", os.path.dirname(yum_vars))
-        monkeypatch.setattr(backup_system, "DEFAULT_DNF_VARS_DIR", os.path.dirname(dnf_vars))
-        monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
-
-        backup_variables = backup_variables_action
-
-        backup_variables.run()
-
-        # Mapping if the file should be backed up or not
-        orig_path_dict = {dnf_vars: False, yum_vars: True}
-
-        # Get the target path of backed up file and check presence of the file
-        for path, value in orig_path_dict.items():
-            filename = os.path.basename(path)
-            dirname = os.path.dirname(path)
-            hashed_directory = os.path.join(backup_dir, hashlib.md5(dirname.encode()).hexdigest())
-            backed_up_path = os.path.join(hashed_directory, filename)
-
-            assert os.path.exists(backed_up_path) == value
-
-    @centos8
-    def test_backup_variables_complete(
-        self, monkeypatch, tmpdir, generate_vars, backup_variables_action, global_backup_control, pretend_os
-    ):
-        """Test backup, remove the originals and restore them from backup."""
-        dnf_vars, yum_vars = generate_vars
-
-        backup_dir = str(tmpdir.mkdir("backup"))
-
-        monkeypatch.setattr(backup_system, "DEFAULT_YUM_VARS_DIR", os.path.dirname(yum_vars))
-        monkeypatch.setattr(backup_system, "DEFAULT_DNF_VARS_DIR", os.path.dirname(dnf_vars))
-        monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
-
-        backup_variables = backup_variables_action
-
-        backup_variables.run()
-
-        orig_path_list = [dnf_vars, yum_vars]
-
-        # Remove the original files
-        for path in orig_path_list:
-            os.remove(path)
-            assert not os.path.isfile(path)
-
-        global_backup_control.pop_all()
-
-        # Check presence of restored files
-        for path in orig_path_list:
-            assert os.path.isfile(path)
-            with open(path, mode="r") as f:
-                assert f.read() == os.path.basename(path)
