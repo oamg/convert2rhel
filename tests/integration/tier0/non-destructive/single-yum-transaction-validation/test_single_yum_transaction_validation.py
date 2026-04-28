@@ -22,7 +22,7 @@ elif "rocky" in SYSTEM_RELEASE_ENV:
 elif "stream" in SYSTEM_RELEASE_ENV:
     SERVER_SUB = "CentOS Stream"
 
-if SystemInformationRelease.version.major == 7:
+if SystemInformationRelease.version.major <= 7:
     PKGMANAGER = "yum"
 
 

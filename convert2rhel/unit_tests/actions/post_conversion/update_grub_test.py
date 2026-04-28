@@ -247,3 +247,98 @@ def test_update_grub_error(update_grub_instance, monkeypatch, get_partition_erro
         description="The block device could not be identified, please look at the diagnosis " "for more information.",
         diagnosis=diagnosis,
     )
+
+
+_GRUB_DISTRIBUTOR_OPT = "GRUB_DISTRIBUTOR=\"$(sed 's, release .*$,,g' /etc/system-release)\""
+_GRUB_DISABLE_SUBMENU_OPT = 'GRUB_DISABLE_SUBMENU="true"'
+
+
+@pytest.mark.parametrize(
+    ("releasever_major", "file_content", "expected_content", "expected_log", "expect_write"),
+    [
+        pytest.param(
+            3,
+            'GRUB_TERMINAL="ec2-console"\n',
+            None,
+            "Not running Amazon Linux 2, skipping.",
+            False,
+            id="not_al2_skip",
+        ),
+        pytest.param(
+            2,
+            'GRUB_TERMINAL="ec2-console"\n',
+            'GRUB_TERMINAL="console"\n{}\n{}\n'.format(_GRUB_DISTRIBUTOR_OPT, _GRUB_DISABLE_SUBMENU_OPT),
+            "Successfully updated /etc/default/grub.",
+            True,
+            id="al2_replace_ec2_console_add_missing_opts",
+        ),
+        pytest.param(
+            2,
+            'GRUB_TERMINAL="console"\n',
+            'GRUB_TERMINAL="console"\n{}\n{}\n'.format(_GRUB_DISTRIBUTOR_OPT, _GRUB_DISABLE_SUBMENU_OPT),
+            "Successfully updated /etc/default/grub.",
+            True,
+            id="al2_console_already_set_add_missing_opts",
+        ),
+        pytest.param(
+            2,
+            'GRUB_TIMEOUT=5\nGRUB_DISTRIBUTOR="Amazon Linux"\nGRUB_TERMINAL="ec2-console"\n',
+            "GRUB_TIMEOUT=5\n{}\n{}\n{}\n".format(
+                _GRUB_DISTRIBUTOR_OPT, 'GRUB_TERMINAL="console"', _GRUB_DISABLE_SUBMENU_OPT
+            ),
+            "Successfully updated /etc/default/grub.",
+            True,
+            id="al2_replace_ec2_console_and_existing_distributor",
+        ),
+        pytest.param(
+            2,
+            'GRUB_TIMEOUT=5\nGRUB_DISTRIBUTOR="Amazon Linux"\nGRUB_TERMINAL="ec2-console"\n'
+            'GRUB_DISABLE_SUBMENU="false"\n',
+            "GRUB_TIMEOUT=5\n{}\n{}\n{}\n".format(
+                _GRUB_DISTRIBUTOR_OPT, 'GRUB_TERMINAL="console"', _GRUB_DISABLE_SUBMENU_OPT
+            ),
+            "Successfully updated /etc/default/grub.",
+            True,
+            id="al2_replace_all_existing_opts",
+        ),
+    ],
+)
+def test_fix_grub_settings_on_al2(
+    releasever_major, file_content, expected_content, expected_log, expect_write, monkeypatch, caplog
+):
+    monkeypatch.setattr(
+        "convert2rhel.systeminfo.system_info.version",
+        namedtuple("Version", ["major"])(releasever_major),
+    )
+    mock_open = mock.mock_open()
+    monkeypatch.setattr(six.moves.builtins, "open", mock_open)
+    monkeypatch.setattr("convert2rhel.utils.get_file_content", mock.Mock(return_value=file_content))
+    monkeypatch.setattr("convert2rhel.actions.post_conversion.update_grub.backup.backup_control.push", mock.Mock())
+
+    action = update_grub.FixGrubSettingsOnAL2()
+    action.run()
+
+    if expect_write:
+        mock_open.assert_called_with("/etc/default/grub", "w")
+        mock_open().write.assert_called_once_with(expected_content)
+    else:
+        mock_open.assert_not_called()
+
+    assert expected_log in caplog.text
+
+
+def test_fix_grub_settings_on_al2_ec2_console_not_found_log(monkeypatch, caplog):
+    """Verify the 'not found' log appears when ec2-console is absent but file is still updated with missing opts."""
+    monkeypatch.setattr(
+        "convert2rhel.systeminfo.system_info.version",
+        namedtuple("Version", ["major"])(2),
+    )
+    monkeypatch.setattr(six.moves.builtins, "open", mock.mock_open())
+    monkeypatch.setattr("convert2rhel.utils.get_file_content", mock.Mock(return_value='GRUB_TERMINAL="console"\n'))
+    monkeypatch.setattr("convert2rhel.actions.post_conversion.update_grub.backup.backup_control.push", mock.Mock())
+
+    action = update_grub.FixGrubSettingsOnAL2()
+    action.run()
+
+    assert 'GRUB_TERMINAL="ec2-console" not found in /etc/default/grub. Nothing to do.' in caplog.text
+    assert "Successfully updated /etc/default/grub." in caplog.text

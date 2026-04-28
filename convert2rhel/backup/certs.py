@@ -118,8 +118,9 @@ class RestorablePEMCert(RestorableChange):
             try:
                 files.mkdir_p(self._target_cert_dir)
                 shutil.copy2(self._source_cert_path, self._target_cert_dir)
-            except OSError as err:
-                logger.critical_no_exit("OSError({0}): {1}".format(err.errno, err.strerror))
+            except (OSError, IOError) as err:
+                # IOError for py2 and OSError for py3
+                logger.critical_no_exit("Error({0}): {1}".format(err.errno, err.strerror))
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_CERTIFICATE",
                     title="Failed to install certificate.",

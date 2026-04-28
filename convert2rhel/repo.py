@@ -17,7 +17,7 @@
 
 __metaclass__ = type
 
-
+import os.path
 import tempfile
 import re
 
@@ -33,9 +33,9 @@ from convert2rhel.utils import TMP_DIR, store_content_to_file
 from convert2rhel.pkgmanager import TYPE, call_yum_cmd
 
 
-DEFAULT_YUM_REPOFILE_DIR = "/etc/yum.repos.d"
-DEFAULT_YUM_VARS_DIR = "/etc/yum/vars"
-DEFAULT_DNF_VARS_DIR = "/etc/dnf/vars"
+DEFAULT_YUM_REPOFILE_DIR = os.path.normcase("/etc/yum.repos.d")
+DEFAULT_YUM_VARS_DIR = os.path.normcase("/etc/yum/vars")
+DEFAULT_DNF_VARS_DIR = os.path.normcase("/etc/dnf/vars")
 
 logger = root_logger.getChild(__name__)
 

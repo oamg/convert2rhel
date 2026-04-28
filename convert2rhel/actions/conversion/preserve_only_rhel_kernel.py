@@ -125,17 +125,48 @@ class FixDefaultKernel(actions.Action):
     id = "FIX_DEFAULT_KERNEL"
     dependencies = ("FIX_INVALID_GRUB2_ENTRIES",)
 
+    # AL2 and similar systems may not ship /etc/sysconfig/kernel at all.
+    KERNEL_SYSCONFIG_PATH = "/etc/sysconfig/kernel"
+
     def run(self):
         """
-        Systems converted from Oracle Linux or CentOS Linux may have leftover kernel-uek or kernel-plus in
-        /etc/sysconfig/kernel as DEFAULTKERNEL.
-        This function fixes that by replacing the DEFAULTKERNEL setting from kernel-uek or kernel-plus to kernel for
-        RHEL7 and kernel-core for RHEL8.
+        Ensure /etc/sysconfig/kernel exists with the correct DEFAULTKERNEL value.
+
+        Systems converted from Amazon Linux 2 may not have /etc/sysconfig/kernel file.
+        Systems converted from Oracle Linux or CentOS Linux may have leftover kernel-uek or kernel-plus as DEFAULTKERNEL.
+        This function creates the file if missing or fixes leftover values.
         """
         super(FixDefaultKernel, self).run()
 
+        default_kernel = "kernel" if system_info.version.major <= 7 else "kernel-core"
+
+        if not os.path.exists(self.KERNEL_SYSCONFIG_PATH):
+            loggerinst.warning(
+                "{} does not exist. Creating it with DEFAULTKERNEL={}.".format(
+                    self.KERNEL_SYSCONFIG_PATH, default_kernel
+                )
+            )
+            self.add_message(
+                level="WARNING",
+                id="MISSING_KERNEL_SYSCONFIG_CREATED",
+                title="{} missing".format(self.KERNEL_SYSCONFIG_PATH),
+                description=(
+                    "The {} file was missing on the system, likely because the original OS"
+                    " does not ship it. The file has been created with"
+                    " DEFAULTKERNEL={} to ensure RHEL compatibility.".format(self.KERNEL_SYSCONFIG_PATH, default_kernel)
+                ),
+            )
+            content = (
+                "# UPDATEDEFAULT specifies if new-kernel-pkg should make\n"
+                "# new kernels the default\n"
+                "UPDATEDEFAULT=yes\n"
+                "DEFAULTKERNEL={}\n".format(default_kernel)
+            )
+            utils.store_content_to_file(self.KERNEL_SYSCONFIG_PATH, content)
+            return
+
         loggerinst.info("Checking for incorrect boot kernel")
-        kernel_sys_cfg = utils.get_file_content("/etc/sysconfig/kernel")
+        kernel_sys_cfg = utils.get_file_content(self.KERNEL_SYSCONFIG_PATH)
 
         possible_kernels = ["kernel-uek", "kernel-plus"]
         kernel_to_change = next(
@@ -151,11 +182,10 @@ class FixDefaultKernel(actions.Action):
                 title="Leftover boot kernel detected",
                 description=description,
             )
-            # need to change to "kernel" in rhel7 and "kernel-core" in rhel8
-            new_kernel_str = "DEFAULTKERNEL=" + ("kernel" if system_info.version.major == 7 else "kernel-core")
+            new_kernel_str = "DEFAULTKERNEL=" + default_kernel
 
             kernel_sys_cfg = kernel_sys_cfg.replace("DEFAULTKERNEL=" + kernel_to_change, new_kernel_str)
-            utils.store_content_to_file("/etc/sysconfig/kernel", kernel_sys_cfg)
+            utils.store_content_to_file(self.KERNEL_SYSCONFIG_PATH, kernel_sys_cfg)
             loggerinst.info("Boot kernel {} was changed to {}".format(kernel_to_change, new_kernel_str))
         else:
             loggerinst.debug("Boot kernel validated.")

@@ -11,7 +11,8 @@ def set_custom_repository_files(shell):
     Set up custom repositories.
     Tear down after the test.
     """
-    repo_file_name = f"rhel{SystemInformationRelease.version.major}"
+    major = SystemInformationRelease.version.major if SystemInformationRelease.version.major != 2 else 7
+    repo_file_name = f"rhel{major}"
     if SystemInformationRelease.is_eus:
         repo_file_name += "-eus"
 

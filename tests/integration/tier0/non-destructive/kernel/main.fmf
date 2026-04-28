@@ -8,6 +8,10 @@ tier: 0
 tag+:
     - kernel-check
 
+adjust+:
+    - enabled: false
+      when: distro == amazon2
+
 /custom_kernel:
     summary+: |
         Custom kernel

@@ -208,3 +208,44 @@ class MissingFile(RestorableChange):
             logger.info("File {filepath} removed".format(filepath=self.filepath))
 
             super(MissingFile, self).restore()
+
+
+class InstalledFile(RestorableChange):
+    """
+    A file we plant on the system during the conversion. It can either be removed on a rollback or after a successful
+    conversion, depending on what purpose the planted file serves.
+    """
+
+    def __init__(self, filepath):
+        super(InstalledFile, self).__init__()
+        self.filepath = filepath
+
+    def enable(self):
+        if self.enabled:
+            return
+
+        logger.info("Marking file {filepath} as installed on the system.".format(filepath=self.filepath))
+        super(InstalledFile, self).enable()
+
+    def restore(self):
+        """Remove the file if it was installed during the conversion.
+
+        .. warning::
+            Exceptions are not handled and left for handling by the calling code.
+
+        :raises OSError: When the removal of the file fails.
+        :raises IOError: When the removal of the file fails.
+        """
+        if not self.enabled:
+            return
+
+        logger.task("Remove {filepath} installed during the conversion".format(filepath=self.filepath))
+
+        if not os.path.isfile(self.filepath):
+            logger.info("File {filepath} wasn't installed during conversion.".format(filepath=self.filepath))
+        else:
+            # Possible exceptions will be handled in the BackupController
+            os.remove(self.filepath)
+            logger.info("File {filepath} removed.".format(filepath=self.filepath))
+
+            super(InstalledFile, self).restore()

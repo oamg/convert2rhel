@@ -24,6 +24,7 @@ def workaround_missing_os_release_package(shell):
         "rocky": ["rocky-release"],
         "oracle": ["oraclelinux-release"],
         "stream": ["centos-stream-release"],
+        "amazon": ["system-release"],
     }
 
     # Run only for non-destructive tests.

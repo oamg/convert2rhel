@@ -129,11 +129,41 @@ def test_rhel_compatible_kernel_success(monkeypatch, caplog, rhel_compatible_ker
     assert "is compatible with RHEL" in caplog.records[-1].message
 
 
+def test_rhel_compatible_kernel_incompatible_kernel_allowed_on_al2(monkeypatch, caplog, rhel_compatible_kernel_action):
+    bad_kernel_version_check = mock.Mock(
+        side_effect=KernelIncompatibleError("INCOMPATIBLE_VERSION", "Bad kernel version", {"fake_data": "fake"})
+    )
+    bad_kernel_signature_check = mock.Mock(return_value=False)
+    bad_kernel_substring_check = mock.Mock(return_value=False)
+
+    monkeypatch.setattr(
+        rhel_compatible_kernel,
+        "_bad_kernel_version",
+        value=bad_kernel_version_check,
+    )
+    monkeypatch.setattr(rhel_compatible_kernel, "_bad_kernel_substring", value=bad_kernel_substring_check)
+    monkeypatch.setattr(rhel_compatible_kernel, "_bad_kernel_package_signature", value=bad_kernel_signature_check)
+    Version = namedtuple("Version", ("major", "minor"))
+    monkeypatch.setattr(rhel_compatible_kernel.system_info, "version", value=Version(major=2, minor=0))
+    monkeypatch.setattr(rhel_compatible_kernel.system_info, "booted_kernel", value="4.14.330-250.540.amzn2.x86_64")
+
+    rhel_compatible_kernel_action.run()
+
+    bad_kernel_version_check.assert_called_once_with("4.14.330-250.540.amzn2.x86_64")
+    bad_kernel_signature_check.assert_not_called()
+    bad_kernel_substring_check.assert_not_called()
+    assert len(rhel_compatible_kernel_action.messages) == 1
+    assert rhel_compatible_kernel_action.messages[0].id == "INCOMPATIBLE_KERNEL_ON_AL2"
+    assert rhel_compatible_kernel_action.messages[0].diagnosis == "Bad kernel version"
+    assert "Ignoring the check result on Amazon Linux 2" in caplog.text
+
+
 @pytest.mark.parametrize(
     ("kernel_release", "major_ver", "exp_return"),
     (
         ("3.10.0-1160.24.1.el7.x86_64", 7, False),
         ("4.18.0-240.22.1.el8_3.x86_64", 8, False),
+        ("4.18.0-250.540.amzn2.x86_64", 2, False),
     ),
 )
 def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monkeypatch):
@@ -161,8 +191,16 @@ def test_bad_kernel_version_success(kernel_release, major_ver, exp_return, monke
             8,
             "INCOMPATIBLE_VERSION",
             "Booted kernel version '{kernel_version}' does not correspond to the version "
-            "'{compatible_version}' available in RHEL {rhel_major_version}",
-            {"kernel_version": "5.4.17", "compatible_version": COMPATIBLE_KERNELS_VERS[8], "rhel_major_version": 8},
+            "'{compatible_version}' available in RHEL",
+            {"kernel_version": "5.4.17", "compatible_version": COMPATIBLE_KERNELS_VERS[8]},
+        ),
+        (
+            "4.14.330-250.540.amzn2.x86_64",
+            2,
+            "INCOMPATIBLE_VERSION",
+            "Booted kernel version '{kernel_version}' does not correspond to the version "
+            "'{compatible_version}' available in RHEL",
+            {"kernel_version": "4.14.330", "compatible_version": COMPATIBLE_KERNELS_VERS[2]},
         ),
     ),
 )

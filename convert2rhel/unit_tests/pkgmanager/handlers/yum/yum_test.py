@@ -28,7 +28,7 @@ from six.moves import mock
 
 from convert2rhel import backup, exceptions, pkghandler, pkgmanager
 from convert2rhel.pkgmanager.handlers.yum import YumTransactionHandler
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RemovePkgsMocked, create_pkg_information, mock_decorator
 from convert2rhel.unit_tests.conftest import centos7
@@ -448,14 +448,12 @@ def test_resolve_yum_problematic_dependencies(
     if expected_remove_pkgs:
         assert pkgmanager.handlers.yum.remove_pkgs.called
         backedup_reposdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
-        backedup_yum_varsdir = os.path.join(backup.BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest())
         assert pkgmanager.handlers.yum.RestorablePackage.called
         pkgmanager.handlers.yum.RestorablePackage.assert_called_with(
             pkgs=expected_remove_pkgs,
             reposdir=backedup_reposdir,
             set_releasever=True,
             custom_releasever=7,
-            varsdir=backedup_yum_varsdir,
         )
         pkgmanager.handlers.yum.remove_pkgs.assert_called_with(pkgs_to_remove=expected_remove_pkgs, critical=True)
     else:

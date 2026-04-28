@@ -19,7 +19,7 @@ from convert2rhel import actions, systeminfo
 from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.subscription import get_rhsm_facts
-from convert2rhel.systeminfo import system_info
+from convert2rhel.systeminfo import SystemInfo
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
 
@@ -52,7 +52,12 @@ class ConfigureHostMetering(actions.Action):
         if not self._check_host_metering_configuration():
             return False
 
-        if system_info.version.major != 7 and tool_opts.configure_host_metering == "auto":
+        # Reparse the system release file because for instance converting AL 2 to RHEL 7 leads
+        # to the major version changing from 2 to 7.
+        system_version = SystemInfo.parse_system_release_content(SystemInfo.get_system_release_file_content())[
+            "version"
+        ]
+        if system_version.major != 7 and tool_opts.configure_host_metering == "auto":
             logger.info("Did not perform host metering configuration. Only supported for RHEL 7.")
             return False
 

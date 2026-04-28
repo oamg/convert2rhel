@@ -74,7 +74,12 @@ class EnsureKernelModulesCompatibility(actions.Action):
         # Clearing the exclude field with setopt to prevent kernel being
         # excluded in the config.
         # https://issues.redhat.com/browse/RHELC-774
-        basecmd = ["repoquery", "--releasever={}".format(system_info.releasever), "--setopt=exclude="]
+        basecmd = [
+            "repoquery",
+            "--releasever={}".format(system_info.releasever),
+            "--setopt=exclude=",
+            "--archlist={}".format(system_info.arch),
+        ]
 
         if system_info.version.major >= 8:
             basecmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
@@ -102,8 +107,17 @@ class EnsureKernelModulesCompatibility(actions.Action):
             )
 
         cmd = basecmd[:]
-        cmd.append("-f")
-        cmd.append("/lib/modules/*.ko*")
+
+        if system_info.version.major >= 8:
+            cmd.extend(["-f", "/lib/modules/*.ko*"])
+        else:
+            # On EL7, `repoquery -f` uses yum's searchPackageProvides which
+            # loads all package provides into memory. For large repos like
+            # rhel-7-server-rpms this causes MemoryError on memory-constrained
+            # systems. Query by name pattern instead - all RHEL kernel module
+            # packages start with kernel* or kmod* (enforced by
+            # _get_most_recent_unique_kernel_pkgs).
+            cmd.extend(["kernel*", "kmod*"])
 
         # Without the release package installed, dnf can't determine the
         # modularity platform ID. get output of a command to get all

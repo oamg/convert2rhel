@@ -124,6 +124,12 @@ def convert2rhel(shell):
         timeout: int = 60 * 60,
         unregister: bool = False,
     ) -> ContextManager[pexpect.spawn]:
+        if SYSTEM_RELEASE_ENV == "amazon2":
+            options += (
+                " --enablerepo rhel-7-server-rpms"
+                " --enablerepo rhel-7-server-extras-rpms "
+                "--enablerepo rhel-7-server-optional-rpms"
+            )
         c2r_runtime = pexpect.spawn(
             f"convert2rhel {options}",
             encoding="utf-8",
@@ -146,6 +152,15 @@ def convert2rhel(shell):
                     c2r_runtime.expect(pexpect.EOF, timeout=900)
                 except pexpect.TIMEOUT:
                     c2r_runtime.terminate(force=True)
+            if SYSTEM_RELEASE_ENV == "amazon2":
+                # The conversion transaction may remove or replace python3,
+                # python3-pip and pytest which the test framework needs to
+                # continue running. Reinstall them as a safety net.
+                shell("yum install -y python3 python3-pip python3-devel gcc --enablerepo rhel-7-server-optional-rpms")
+                shell(
+                    "python3 -m pip install pytest pytest-cov python-dotenv click pexpect dataclasses jsonschema psutil"
+                )
+
             if unregister:
                 shell("subscription-manager unregister")
 

@@ -1,5 +1,7 @@
 __metaclass__ = type
 
+import hashlib
+
 import pytest
 
 from convert2rhel import backup
@@ -144,3 +146,15 @@ def test_get_backedup_system_repos(monkeypatch):
 
     result = backup.get_backedup_system_repos()
     assert result == "/var/lib/convert2rhel/backup/098f6bcd4621d373cade4e832627b4f6"
+
+
+def test_get_backed_up_yum_var_dirs(monkeypatch):
+    monkeypatch.setattr(backup, "DEFAULT_YUM_VARS_DIR", value="/etc/yum/vars")
+    monkeypatch.setattr(backup, "DEFAULT_DNF_VARS_DIR", value="/etc/dnf/vars")
+
+    result = backup.get_backed_up_yum_var_dirs()
+
+    assert result == {
+        "/etc/yum/vars": "/var/lib/convert2rhel/backup/{}".format(hashlib.md5("/etc/yum/vars".encode()).hexdigest()),
+        "/etc/dnf/vars": "/var/lib/convert2rhel/backup/{}".format(hashlib.md5("/etc/dnf/vars".encode()).hexdigest()),
+    }

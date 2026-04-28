@@ -242,7 +242,6 @@ class TestCallYumCmd:
         ("setopts",),
         (
             (["obsoletes=0"],),
-            (["varsdir=test"],),
             (["reposdir=test"],),
             (["reposdir=test", "obsoletes=1"],),
         ),
