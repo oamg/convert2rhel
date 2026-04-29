@@ -67,7 +67,7 @@ def test_inhibitor_releasever_noexistent_release(backup_files, convert2rhel, she
     # whereas other systems we test come in format major.minor
     orig_release = (
         SystemInformationRelease.version.major
-        if SystemInformationRelease.is_stream
+        if SystemInformationRelease.is_stream or SystemInformationRelease.is_amazon
         else f"{SystemInformationRelease.version.major}.{SystemInformationRelease.version.minor}"
     )
     shell(

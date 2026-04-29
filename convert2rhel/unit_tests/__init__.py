@@ -327,15 +327,14 @@ class RestorablePackageMocked(MockFunctionObject):
 
         super(RestorablePackageMocked, self).__init__(**kwargs)
 
-    def __call__(self, pkgs, reposdir, set_releasever, custom_releasever, varsdir, *args, **kwargs):
+    def __call__(self, pkgs, reposdir, set_releasever, custom_releasever, *args, **kwargs):
         self.pkgs = pkgs
         self.reposdir = reposdir
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
-        self.varsdir = varsdir
 
         return super(RestorablePackageMocked, self).__call__(
-            pkgs, reposdir, set_releasever, custom_releasever, vars, *args, **kwargs
+            pkgs, reposdir, set_releasever, custom_releasever, *args, **kwargs
         )
 
 
@@ -892,11 +891,10 @@ class ErrorOnRestoreRestorable(MinimalRestorable):
 
 
 class RestorablePackageMock(MinimalRestorable):
-    def __init__(self, pkg_name=None, reposdir=None, set_releasever=False, custom_releasever=None, varsdir=None):
+    def __init__(self, pkg_name=None, reposdir=None, set_releasever=False, custom_releasever=None):
         super(RestorablePackageMock, self).__init__()
 
         self.pkg_name = pkg_name
         self.reposdir = reposdir
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
-        self.varsdir = varsdir

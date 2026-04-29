@@ -24,7 +24,7 @@ import os
 import six
 
 from convert2rhel.logger import root_logger
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
+from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR, DEFAULT_DNF_VARS_DIR
 from convert2rhel.utils import TMP_DIR
 
 
@@ -41,6 +41,19 @@ def get_backedup_system_repos():
     """
     backedup_reposdir = os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_REPOFILE_DIR.encode()).hexdigest())
     return backedup_reposdir
+
+
+def get_backed_up_yum_var_dirs():
+    """Get folders where we've backed up yum and dnf variables inside our backup structure.
+
+    :returns dict: Keys are the original dir paths, values are paths to the dir with backed up yum/dnf variable files
+    """
+
+    yum_var_dirs = {
+        DEFAULT_YUM_VARS_DIR: os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_YUM_VARS_DIR.encode()).hexdigest()),
+        DEFAULT_DNF_VARS_DIR: os.path.join(BACKUP_DIR, hashlib.md5(DEFAULT_DNF_VARS_DIR.encode()).hexdigest()),
+    }
+    return yum_var_dirs
 
 
 class BackupController:

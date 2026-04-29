@@ -1,0 +1,154 @@
+# Copyright(C) 2025 Red Hat, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+__metaclass__ = type
+
+import os
+import shutil
+
+from convert2rhel import actions
+from convert2rhel import backup
+from convert2rhel.backup.files import InstalledFile, RestorableFile
+from convert2rhel.logger import root_logger
+from convert2rhel import pkghandler
+from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
+from convert2rhel.systeminfo import system_info
+from convert2rhel.toolopts.config import loggerinst
+
+logger = root_logger.getChild(__name__)
+
+
+class BackUpYumVariables(actions.Action):
+    id = "BACKUP_YUM_VARIABLES"
+    # We don't make a distinction between /etc/yum/vars/ and /etc/dnf/vars/ in this Action. Wherever the files are we
+    # back them up.
+    yum_var_dirs = [DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR]
+
+    def run(self):
+        """Back up yum variable files in /etc/{yum,dnf}/vars/ owned by packages that are known to install these yum
+        variable files (such as system-release). We back them up to be able to restore them right after we remove these
+        packages. We need to restore the variable files because we use repofiles also installed by these packages and
+        yum does not allow specifying a custom directory with yum variable files. This functionality came later with dnf
+        however we apply the same approach to both yum and dnf for the sake of code simplicity.
+        """
+        logger.task("Back up yum variables")
+
+        super(BackUpYumVariables, self).run()
+
+        logger.debug("Getting a list of files owned by packages affecting variables in .repo files.")
+        yum_var_affecting_pkgs = []
+        for pkg in system_info.repofile_pkgs:
+            # We use get_installed_pkg_objects() to have yum find installed packages even when a glob (*) is used
+            yum_var_affecting_pkgs.extend(pkghandler.get_installed_pkg_objects(pkg))
+
+        # Get just the names of the packages affecting yum variables
+        yum_var_affecting_pkg_names = [pkg.name for pkg in yum_var_affecting_pkgs]
+        logger.debug("Packages affecting yum variables: {0}".format(", ".join(yum_var_affecting_pkg_names)))
+
+        yum_var_files_to_back_up = self._get_yum_var_files_owned_by_pkgs(yum_var_affecting_pkg_names)
+        self._back_up_var_files(yum_var_files_to_back_up)
+
+    def _get_yum_var_files_owned_by_pkgs(self, pkg_names):
+        """Get paths of yum var files owned by the packages passed to the method."""
+        pkg_owned_files = set()
+        for pkg in pkg_names:
+            # using set() and union() to get unique paths
+            pkg_owned_files = pkg_owned_files.union(pkghandler.get_files_owned_by_package(pkg))
+
+        # Out of all the files owned by the packages get just those in yum/dnf var dirs.
+        # rpm -ql lists directories too; RestorableFile rejects directories.
+        yum_var_filepaths = [
+            path
+            for path in pkg_owned_files
+            if os.path.normcase(os.path.dirname(path)) in self.yum_var_dirs and not os.path.isdir(path)
+        ]
+
+        return yum_var_filepaths
+
+    def _back_up_var_files(self, paths):
+        """Back up yum/dnf variable files.
+
+        :param paths: Paths to the variable files to back up
+        :type paths: list[str]
+        """
+        logger.info(
+            "Backing up yum variable files from {} owned by {} packages.".format(
+                " and ".join(self.yum_var_dirs), system_info.name
+            )
+        )
+        if not paths:
+            logger.info("No variable files to back up detected.")
+            return
+
+        for filepath in paths:
+            restorable_file = RestorableFile(filepath)
+            backup.backup_control.push(restorable_file)
+        logger.info("Yum variables successfully backed up.")
+
+
+class RestoreYumVarFiles(actions.Action):
+    id = "RESTORE_YUM_VAR_FILES"
+    dependencies = ("REMOVE_SPECIAL_PACKAGES",)
+
+    def run(self):
+        """Right after removing packages that own yum variable files in the REMOVE_SPECIAL_PACKAGES Action, in this
+        Action we restore these files to /etc/{yum,dnf}/vars/ so that yum can use them when accessing the original
+        vendor repositories (which are backed up in a temporary folder and passed to yum through the --setopt=reposdir=
+        option).
+        The ideal solution would be to use the --setopt=varsdir= option also for the temporary folder where yum variable
+        files are backed up however the option was only introduced in dnf so it's not available in RHEL 7 and its
+        derivatives. For the sake of using just one approach to simplify the codebase, we are restoring the yum variable
+        files no matter the package manager.
+        We use the backup controller to record that we've restored the variable files meaning that upon rollback the
+        files get removed. As part of the rollback we also install back the packages that include these files so they'll
+        be present.
+        TODO: These restored variable files should not be present after a successful conversion. One option is to
+        enhance the backup controller to indicate that a certain activity should be rolled back not only during a rollback
+        but also after a successful conversion. With such a flag we would add a new post-conversion Action to run the
+        backup controller restoration but only for the activities recorded with this flag.
+        """
+        super(RestoreYumVarFiles, self).run()
+
+        backed_up_yum_var_dirs = backup.get_backed_up_yum_var_dirs()
+        loggerinst.task("Restoring yum variable files")
+        loggerinst.info(
+            "We need to restore {0} yum variables as they are oftentimes necessary for accessing the {0} repositories.".format(
+                system_info.name
+            )
+        )
+        for orig_yum_var_dir, backed_up_yum_var_dir in backed_up_yum_var_dirs.items():
+            if not os.path.exists(backed_up_yum_var_dir):
+                logger.info("No file from {} backed up. Nothing to restore.".format(orig_yum_var_dir))
+                continue
+            for backed_up_yum_var_filename in os.listdir(backed_up_yum_var_dir):
+                backed_up_yum_var_filepath = os.path.join(backed_up_yum_var_dir, backed_up_yum_var_filename)
+                try:
+                    shutil.copy2(backed_up_yum_var_filepath, orig_yum_var_dir)
+                    logger.debug("Copied {} from backup to {}.".format(backed_up_yum_var_filepath, orig_yum_var_dir))
+                except (OSError, IOError) as err:
+                    # IOError for py2 and OSError for py3
+                    # Not being able to restore the yum variables might or might not cause problems down the road. No
+                    # need to stop the conversion because of that. The warning message below should be enough of a clue
+                    # for resolving subsequent yum errors.
+                    logger.warning(
+                        "Couldn't copy {} to {}. Error: {}".format(
+                            backed_up_yum_var_filepath, orig_yum_var_dir, err.strerror
+                        )
+                    )
+                    return
+                restored_file = InstalledFile(
+                    os.path.join(orig_yum_var_dir, os.path.basename(backed_up_yum_var_filepath))
+                )
+                backup.backup_control.push(restored_file)

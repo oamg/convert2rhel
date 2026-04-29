@@ -40,8 +40,7 @@ def test_modified_rpm_files_diff_with_no_rpm_va(
     global_tool_opts.no_rpm_va = True
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
 
-    # This can be removed when systeminfo is ported to use global logger
-    monkeypatch.setattr(systeminfo.system_info, "logger", logging.getLogger(__name__))
+    monkeypatch.setattr(systeminfo, "logger", logging.getLogger(__name__))
 
     modified_rpm_files_diff_instance.run()
 
@@ -106,11 +105,11 @@ def test_modified_rpm_files_diff_without_differences_after_conversion(
     monkeypatch.setattr(systeminfo, "tool_opts", global_tool_opts)
     monkeypatch.setattr(utils, "run_subprocess", mock.Mock(return_value=(rpm_va_pre_output, 0)))
     monkeypatch.setattr(logger, "LOG_DIR", str(tmpdir))
+    monkeypatch.setattr(systeminfo, "LOG_DIR", str(tmpdir))
     # Need to patch explicitly since the modified_rpm_files_diff is already instanciated in the fixture
     monkeypatch.setattr(modified_rpm_files_diff, "LOG_DIR", str(tmpdir))
 
-    # This can be removed when systeminfo is ported to use global logger
-    monkeypatch.setattr(systeminfo.system_info, "logger", logging.getLogger(__name__))
+    monkeypatch.setattr(systeminfo, "logger", logging.getLogger(__name__))
 
     # Generate the pre-conversion rpm -Va output
     system_info.generate_rpm_va()

@@ -26,7 +26,8 @@ from collections import namedtuple
 
 from six.moves import configparser
 
-from convert2rhel import logger, utils
+from convert2rhel import utils
+from convert2rhel.logger import root_logger, LOG_DIR
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
@@ -59,12 +60,15 @@ RELEASE_VER_MAPPING = {
     "8.4": "8.4",
     "8": "8",  # CentOS Stream and similar
     "7.9": "7Server",
+    "2": "7Server",  # Amazon Linux 2
 }
 
 # Dictionary of EUS minor versions supported and their EUS period start date
 EUS_MINOR_VERSIONS = {"8.8": "2023-11-14"}
 
 ELS_RELEASE_DATE = "2024-06-12"
+
+logger = root_logger.getChild(__name__)
 
 
 class Version(namedtuple("Version", ["major", "minor"])):
@@ -136,7 +140,6 @@ class SystemInfo:
         self.cfg_filename = None
         self.cfg_content = None
         self.system_release_file_content = None
-        self.logger = logger.root_logger.getChild(__name__)
         # IDs of the default Red Hat CDN repositories that correspond to the current system
         self.default_rhsm_repoids = None
         # IDs of the Extended Update Support (EUS) Red Hat CDN repositories that correspond to the current system
@@ -155,7 +158,7 @@ class SystemInfo:
     def resolve_system_info(self):
         self.system_release_file_content = self.get_system_release_file_content()
 
-        system_release_data = self.parse_system_release_content()
+        system_release_data = self.parse_system_release_content(self.system_release_file_content)
         self.name = system_release_data["name"]
         self.id = system_release_data["id"]
         self.distribution_id = system_release_data["distribution_id"]
@@ -182,10 +185,10 @@ class SystemInfo:
 
     def print_system_information(self):
         """Print system related information."""
-        self.logger.info("%-20s %s" % ("Name:", self.name))
-        self.logger.info("%-20s %s" % ("OS version:", self.version))
-        self.logger.info("%-20s %s" % ("Architecture:", self.arch))
-        self.logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
+        logger.info("%-20s %s" % ("Name:", self.name))
+        logger.info("%-20s %s" % ("OS version:", self.version))
+        logger.info("%-20s %s" % ("Architecture:", self.arch))
+        logger.info("%-20s %s" % ("Config filename:", self.cfg_filename))
 
     @staticmethod
     def get_system_release_file_content():
@@ -193,18 +196,15 @@ class SystemInfo:
 
         return redhatrelease.get_system_release_content()
 
-    def parse_system_release_content(self, system_release_content=None):
-        """Parse the content of the system release string
+    @staticmethod
+    def parse_system_release_content(system_release_file_content):
+        """Parse the content of the /etc/system-release file.
 
-        If system_release_content is not provided we use the content from the self.system_release_file_content.
-
-        :param system_release_content: The contents of the system_release file if needed.
-        :type system_release_content: str
+        :param system_release_file_content: The contents of the system_release file if needed.
+        :type system_release_file_content: str
         :returns: A dictionary containing the system release information
         :rtype: dict[str, str]
         """
-
-        content = self.system_release_file_content if not system_release_content else system_release_content
 
         matched = re.match(
             # We assume that the /etc/system-release content follows the pattern:
@@ -232,11 +232,13 @@ class SystemInfo:
             #   CentOS Linux release 8.1.1911      Beta       (Core     )
             #   <    name  > <      ><full_version><    ><  <dist_id>>
             r"^(?P<name>.+?)\s(?:release\s)?(?P<full_version>[.\d]+)(?:\sBeta)?(\s\((?P<dist_id>.+)\))?$",
-            content,  # type: ignore
+            system_release_file_content,  # type: ignore
         )
 
         if not matched:
-            self.logger.critical_no_exit("Couldn't parse the system release content string: {}".format(content))
+            logger.critical_no_exit(
+                "Couldn't parse the /etc/system-release content: {}".format(system_release_file_content)
+            )
             return {}
 
         name = matched.group("name")
@@ -299,7 +301,7 @@ class SystemInfo:
         cfg_parser = configparser.ConfigParser()
         cfg_filepath = os.path.join(utils.DATA_DIR, "configs", self.cfg_filename)
         if not cfg_parser.read(cfg_filepath):
-            self.logger.critical(
+            logger.critical(
                 "Current combination of system distribution"
                 " and architecture is not supported for the"
                 " conversion to RHEL."
@@ -327,7 +329,7 @@ class SystemInfo:
         if option_name in self.cfg_content:
             return self.cfg_content[option_name]
         else:
-            self.logger.error(
+            logger.error(
                 "Internal error: {} option not found in {} config file.".format(option_name, self.cfg_filename)
             )
 
@@ -349,7 +351,7 @@ class SystemInfo:
                 new_package = new_package.strip()
 
                 if old_package in pkgs_to_swap:
-                    self.logger.warning(
+                    logger.warning(
                         "Package {old_package} redefined in swap packages list.\n"
                         "Old package {old_package} will be swapped by {newest_package} instead of {new_package}.".format(
                             old_package=old_package, new_package=pkgs_to_swap[old_package], newest_package=new_package
@@ -359,11 +361,11 @@ class SystemInfo:
 
         except ValueError:
             # Leave the swap packages dict empty, packages for swap aren't defined
-            self.logger.debug("Leaving the swap package list empty. No packages defined.")
+            logger.debug("Leaving the swap package list empty. No packages defined.")
 
         except AttributeError:
             # Leave the swap packages dict empty, missing swap_pkgs in config file
-            self.logger.warning("Leaving the swap package list empty. Missing swap_pkgs key in configuration file.")
+            logger.warning("Leaving the swap package list empty. Missing swap_pkgs key in configuration file.")
 
         return pkgs_to_swap
 
@@ -386,7 +388,7 @@ class SystemInfo:
             # return config value or corresponding releasever from the RELEASE_VER_MAPPING
             return releasever_cfg or RELEASE_VER_MAPPING[repr(self.version)]
         except KeyError:
-            self.logger.critical(
+            logger.critical(
                 "{os_name} of version {current_version} is not allowed for conversion.\n"
                 "Allowed versions are: {allowed_versions}".format(
                     os_name=self.name, current_version=self.version, allowed_versions=list(RELEASE_VER_MAPPING.keys())
@@ -398,7 +400,7 @@ class SystemInfo:
 
     def _get_booted_kernel(self):
         kernel_vra = run_subprocess(["uname", "-r"], print_output=False)[0].rstrip()
-        self.logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_vra))
+        logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_vra))
         return kernel_vra
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
@@ -408,10 +410,10 @@ class SystemInfo:
         Here we are getting a list of changed package files of all the installed packages. Such a list is useful for
         debug and support purposes. It's being saved to the default log folder as log_filename."""
         if tool_opts.no_rpm_va:
-            self.logger.info("Skipping the execution of 'rpm -Va'.")
+            logger.info("Skipping the execution of 'rpm -Va'.")
             return
 
-        self.logger.info(
+        logger.info(
             "Running the 'rpm -Va' command which can take several"
             " minutes. It can be disabled by using the"
             " --no-rpm-va option."
@@ -419,9 +421,9 @@ class SystemInfo:
         # Discussed under RHELC-1427, `--nodeps` will skip verification of package dependencies,
         # avoiding unnecessary packages lookup.
         rpm_va, _ = utils.run_subprocess(["rpm", "-Va", "--nodeps"], print_output=False)
-        output_file = os.path.join(logger.LOG_DIR, log_filename)
+        output_file = os.path.join(LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
-        self.logger.info("The 'rpm -Va' output has been stored in the {} file.".format(output_file))
+        logger.info("The 'rpm -Va' output has been stored in the {} file.".format(output_file))
 
     @staticmethod
     def is_rpm_installed(name):
@@ -455,7 +457,7 @@ class SystemInfo:
         current_version = repr(self.version)
 
         if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
-            self.logger.info("EUS argument detected, automatically evaluating system as EUS")
+            logger.info("EUS argument detected, automatically evaluating system as EUS")
             return True
 
         return False
@@ -469,7 +471,7 @@ class SystemInfo:
         :rtype: bool
         """
         # This check will be dropped once 7 is no longer supported under ELS
-        if tool_opts.els and self.version.major == 7:
+        if tool_opts.els and self.version.major in (7, 2):
             return True
         return False
 
@@ -501,26 +503,31 @@ class SystemInfo:
 
         return status
 
-    def get_system_release_info(self, system_release_content=None):
+    def get_system_release_info(self, system_release_data=None):
         """Return the system release information as a dictionary
 
         This function aims to retrieve the system release information in a dictionary format.
         This can be used before and after we modify the system-release file on the system,
-        as it have a parameter to read from the contents of a system-release file (if called from somewhere else).
+        as it has a parameter to read from the parsed contents of the system-release file.
 
-        :param system_release_content: The contents of the system_release file if needed.
-        :type system_release_content: str
+        :param system_release_data: Optional parsed contents of the system_release file from parse_system_release_content().
+        :type system_release_data: dict|None
         :returns: A dictionary containing the system release information
         :rtype: dict[str, str]
         """
 
-        release_info = {
+        if system_release_data:
+            return {
+                "id": system_release_data.get("distribution_id"),
+                "name": system_release_data["name"],
+                "version": repr(system_release_data["version"]),
+            }
+
+        return {
             "id": self.distribution_id,
             "name": self.name,
             "version": repr(self.version),
         }
-
-        return release_info
 
 
 def is_systemd_managed_service_running(service):
