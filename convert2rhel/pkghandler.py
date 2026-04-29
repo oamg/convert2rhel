@@ -299,7 +299,7 @@ def get_files_owned_by_package(installed_pkg_name):
     if ret_code != 0:
         logger.warning("Failed to list files for package {0}: {1}".format(installed_pkg_name, output))
         return []
-    return output.decode("utf-8").splitlines()
+    return output.decode("utf-8").splitlines() if isinstance(output, bytes) else output.splitlines()
 
 
 @utils.run_as_child_process
