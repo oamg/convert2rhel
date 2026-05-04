@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        2.2.0
+Version:        2.3.0
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -125,6 +125,14 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Mon May 04 2026 Michal Bocek <mbocek@redhat.com> 2.3.0
+- Allow Amazon Linux 2 to RHEL 7 conversions
+- State action in special package removal report messages
+- Fix generating GRUB2 config file on UEFI EL9+
+- Fix corrupted rpm db on a memory-constrained EL7 system
+- Fix backing up and restoring yum variables on EL7
+- Correct target OS in breadcrumbs files
+
 * Thu Nov 28 2024 Michal Bocek <mbocek@redhat.com> 2.2.0
 - Rename GPG fingerprint to key_id
 - Port environment variables to config file
