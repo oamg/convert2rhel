@@ -1,4 +1,4 @@
-FROM almalinux:9 as base
+FROM almalinux:10 as base
 
 ENV PODMAN_USERNS=keep-id
 ENV PYTHON python3
