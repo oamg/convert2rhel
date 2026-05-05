@@ -53,7 +53,7 @@ jobs:
           replace: '${1}"${{steps.tag.outputs.tag}}"'
 
       - name: Upload changed files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: github-repo
           path: |
@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download changed files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: github-repo
 
