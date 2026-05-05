@@ -20,6 +20,7 @@ import abc
 import copy
 import logging
 import os
+from sys import version_info
 
 import six
 
@@ -151,7 +152,14 @@ class FileConfig(BaseConfig):
             them.
         :type paths: list[str]
         """
-        config_file = configparser.ConfigParser()
+
+        # The reason for using the RawConfigParser and ConfigParser with interpolation set to None is to prevent
+        # interpreting % as a sign for string replacement. This interpolation feature would cause convert2rhel to fail
+        # if the user enters the % character in the config file, for example in the RHSM password.
+        if version_info.major < 3:
+            config_file = configparser.RawConfigParser()
+        else:
+            config_file = configparser.ConfigParser(interpolation=None)
         found_opts = {}
 
         for path in reversed(paths):
