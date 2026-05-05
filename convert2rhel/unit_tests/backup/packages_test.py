@@ -144,9 +144,9 @@ class TestRestorablePackage:
         with pytest.raises(exceptions.CriticalError) as err:
             rp.restore()
 
-        assert err.value.diagnosis == "Couldn't find a backup for test.rpm package."
+        assert err.value.diagnosis == "Couldn't find a backup for the following package(s): test.rpm"
         assert utils.remove_orphan_folders.call_count == 1
-        assert "Couldn't find a backup for test.rpm package." in caplog.records[-1].message
+        assert "Couldn't find a backup for the following package(s): test.rpm" in caplog.records[-1].message
 
     def test_restore_second_restore(self, monkeypatch):
         monkeypatch.setattr(
