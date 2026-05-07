@@ -48,7 +48,7 @@ def test_enabled_repositories_after_analysis(
     with convert2rhel("analyze -y --debug") as c2r:
         c2r.expect("Enabling RHEL repositories:")
         c2r.expect("rhel-7-server-rpms")
-        c2r.expect("Rollback: Restoring state of the repositories")
+        c2r.expect("Rollback: Restore state of the repositories")
 
     assert c2r.exitstatus == 0
 

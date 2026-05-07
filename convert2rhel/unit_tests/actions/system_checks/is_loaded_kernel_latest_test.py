@@ -119,7 +119,7 @@ class TestIsLoadedKernelLatest:
             id="INVALID_KERNEL_VERSION",
             level="OVERRIDABLE",
             title="Invalid kernel version detected",
-            description="The loaded kernel version mismatch the latest one available in system repositories",
+            description="The loaded kernel version mismatch the latest one available in system repositories.",
             diagnosis="The version of the loaded kernel is different from the latest version in system repositories.",
             remediations="To proceed with the conversion, update the kernel version by executing the following step:\n\n",
         )
@@ -142,7 +142,7 @@ class TestIsLoadedKernelLatest:
                 0,
                 "kernel-core",
                 "Invalid kernel package found",
-                "Please refer to the diagnosis for further information",
+                "Refer to the diagnosis for further information.",
                 "The package names ('kernel-core-1' and 'kernel-core-2') do not match. Can only compare versions for the same packages.",
                 None,
             ),
@@ -152,7 +152,7 @@ class TestIsLoadedKernelLatest:
                 0,
                 "kernel-core",
                 "Invalid kernel package found",
-                "Please refer to the diagnosis for further information",
+                "Refer to the diagnosis for further information.",
                 "Invalid package - kernel-core-1 .01-5.02, packages need to be in one of the following formats: NEVRA, NEVR, NVRA, NVR, ENVRA, ENVR.",
                 None,
             ),
@@ -238,7 +238,7 @@ class TestIsLoadedKernelLatest:
                 0,
                 "kernel",
                 "Invalid kernel package found",
-                "Please refer to the diagnosis for further information",
+                "Refer to the diagnosis for further information.",
                 "The following field(s) are invalid - release : 1.01-5",
                 None,
             ),
@@ -248,7 +248,7 @@ class TestIsLoadedKernelLatest:
                 0,
                 "kernel",
                 "Invalid kernel package found",
-                "Please refer to the diagnosis for further information",
+                "Refer to the diagnosis for further information.",
                 "The following field(s) are invalid - version : 1 .01",
                 None,
             ),
@@ -426,18 +426,16 @@ class TestIsLoadedKernelLatest:
             {"CONVERT2RHEL_SKIP_KERNEL_CURRENCY_CHECK": skip_check},
         )
 
-        expected_set = set(
-            (
-                actions.ActionMessage(
-                    level=level,
-                    id=id,
-                    title=title,
-                    description=description,
-                    diagnosis=diagnosis,
-                    remediations=remediations,
-                ),
+        expected_set = {
+            actions.ActionMessage(
+                level=level,
+                id=id,
+                title=title,
+                description=description,
+                diagnosis=diagnosis,
+                remediations=remediations,
             )
-        )
+        }
         is_loaded_kernel_latest_action.run()
         assert description in caplog.records[-1].message
         assert expected_set.issuperset(is_loaded_kernel_latest_action.messages)
@@ -464,7 +462,7 @@ class TestIsLoadedKernelLatest:
                 "Unable to fetch recent kernels",
                 (
                     "Couldn't fetch the list of the most recent kernels available in "
-                    "the repositories. Did not perform the loaded kernel check."
+                    "the repositories. Did not perform the loaded kernel currency check."
                 ),
                 None,
                 None,
@@ -549,10 +547,10 @@ class TestIsLoadedKernelLatest:
                 0,
                 "kernel-core",
                 "Kernel currency check failed",
-                "Please refer to the diagnosis for further information",
+                "Refer to the diagnosis for further information.",
                 "Could not find any {0} from repositories to compare against the loaded kernel.",
                 (
-                    "Please check if you have any vendor repositories enabled to proceed with the conversion.\n"
+                    "Check if you have any vendor repositories enabled to proceed with the conversion.\n"
                     "If you wish to disregard this message, set the skip_kernel_currency_check inhibitor override in"
                     " the /etc/convert2rhel.ini config file to true."
                 ),
@@ -775,7 +773,7 @@ class TestIsLoadedKernelLatest:
             level="OVERRIDABLE",
             id="INVALID_KERNEL_VERSION",
             title="Invalid kernel version detected",
-            description="The loaded kernel version mismatch the latest one available in system repositories",
+            description="The loaded kernel version mismatch the latest one available in system repositories.",
             diagnosis="The version of the loaded kernel is different from the latest version in system repositories.",
             remediations="To proceed with the conversion, update the kernel version by executing the following step:",
         )

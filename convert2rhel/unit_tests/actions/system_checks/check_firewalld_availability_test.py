@@ -169,6 +169,16 @@ CleanupModulesOnExit=yes
             True,
             True,
         ),
+        (
+            {
+                "content": """
+#CleanupModulesOnExit=yes
+CleanupModulesOnExit=no
+"""
+            },
+            True,
+            False,
+        ),
     ),
     indirect=("write_firewalld_mockup_config",),
 )
@@ -183,8 +193,10 @@ def test_is_modules_cleanup_config_commented(
             "Couldn't find CleanupModulesOnExit in firewalld.conf. Treating it as enabled because of default behavior."
             in caplog.records[-1].message
         )
+    elif expected:
+        assert "CleanupModulesOnExit option is enabled in " in caplog.records[-1].message
     else:
-        assert "CleanupModulesOnExit option enabled" in caplog.records[-1].message
+        assert "CleanupModulesOnExit option is disabled in " in caplog.records[-1].message
 
 
 @pytest.mark.skipif(pkgmanager.TYPE == "yum", reason="Test is only relevant for RHEL 8+")
@@ -299,7 +311,7 @@ SomethingElse=yes
             check_firewalld_availability_is_running_action,
             level="ERROR",
             id="FIREWALLD_MODULES_CLEANUP_ON_EXIT_CONFIG",
-            title="Firewalld is set to cleanup modules after exit.",
+            title="Firewalld is set to cleanup modules after exit",
             description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
             diagnosis=(
                 "We've detected that firewalld unit is running and that causes iptables and nftables "

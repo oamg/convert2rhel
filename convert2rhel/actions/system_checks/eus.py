@@ -30,9 +30,10 @@ class EusSystemCheck(actions.Action):
     id = "EUS_SYSTEM_CHECK"
 
     def run(self):
-        """Warn the user if their system is under EUS and past the EUS release date without using the --eus cli option."""
+        """Warn users if their system is under EUS and past the EUS release date without using the --eus cli option."""
         super(EusSystemCheck, self).run()
 
+        logger.task("Warn about not using --eus on a system in the EUS phase")
         current_version = "{}.{}".format(system_info.version.major, system_info.version.minor)
         eus_versions = list(EUS_MINOR_VERSIONS.keys())
         if current_version in eus_versions:
@@ -47,7 +48,22 @@ class EusSystemCheck(actions.Action):
                     level="WARNING",
                     id="EUS_COMMAND_LINE_OPTION_UNUSED",
                     title="The --eus command line option is unused",
-                    description="Current system version is under Extended Update Support (EUS). You may want to consider using the --eus"
-                    " command line option to land on a system patched with the latest security errata.",
+                    description="Current system version is under Extended Update Support (EUS). You may want to"
+                    " consider using the --eus command line option to land on a system patched with the latest security"
+                    " errata.",
                 )
+        else:
+            logger.info(
+                "Applicable only when converting the following system versions:\n{}".format(
+                    "\n".join(
+                        [
+                            "{} after {}".format(
+                                system_info.name,
+                                version,
+                            )
+                            for version in EUS_MINOR_VERSIONS
+                        ]
+                    )
+                )
+            )
         return

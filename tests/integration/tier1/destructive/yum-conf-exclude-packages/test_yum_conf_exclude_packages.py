@@ -19,6 +19,6 @@ def test_yum_conf_exclude_packages(convert2rhel, yum_conf_exclude):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        c2r.expect("IS_LOADED_KERNEL_LATEST has succeeded")
+        c2r.expect("The IS_LOADED_KERNEL_LATEST action has succeeded.")
 
     assert c2r.exitstatus == 0

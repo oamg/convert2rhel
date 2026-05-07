@@ -59,7 +59,7 @@ class RestorableSystemSubscription(RestorableChange):
         except subscription.UnregisterError as e:
             logger.warning(str(e))
         except OSError:
-            logger.warning("subscription-manager not installed, skipping")
+            logger.warning("subscription-manager not installed, skipping.")
 
         super(RestorableSystemSubscription, self).restore()
 
@@ -82,7 +82,7 @@ class RestorableAutoAttachmentSubscription(RestorableChange):
 
     def restore(self):
         if self._is_attached:
-            logger.task("Removing auto-attached subscription")
+            logger.task("Remove auto-attached subscription")
             subscription.remove_subscription()
             super(RestorableAutoAttachmentSubscription, self).restore()
 
@@ -135,7 +135,7 @@ class RestorableDisableRepositories(RestorableChange):
         if not self.enabled:
             return
 
-        logger.task("Restoring state of the repositories")
+        logger.task("Restore state of the repositories")
 
         if self._repos_to_enable:
             logger.debug("Repositories to enable: {}".format(",".join(self._repos_to_enable)))

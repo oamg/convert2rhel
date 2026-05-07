@@ -457,7 +457,7 @@ class SystemInfo:
         current_version = repr(self.version)
 
         if tool_opts.eus and current_version in EUS_MINOR_VERSIONS:
-            logger.info("EUS argument detected, automatically evaluating system as EUS")
+            logger.info("EUS argument detected, automatically evaluating system as EUS.")
             return True
 
         return False

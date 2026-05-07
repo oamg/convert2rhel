@@ -80,7 +80,7 @@ def test_check_rhel_compatible_kernel_failure(
         level="ERROR",
         id="UNEXPECTED_VERSION",
         title="Incompatible booted kernel version",
-        description="Please refer to the diagnosis for further information",
+        description="Refer to the diagnosis for further information.",
         diagnosis="The booted kernel version is incompatible with the standard RHEL kernel",
         remediations=(
             "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"

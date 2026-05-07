@@ -30,21 +30,21 @@ class DbusIsRunning(actions.Action):
     def run(self):
         """Error out if we need to register with rhsm and the dbus daemon is not running."""
         super(DbusIsRunning, self).run()
-        logger.task("Check that DBus Daemon is running")
+        logger.task("Check that DBus daemon is running")
 
         if not subscription.should_subscribe():
             logger.info("Did not perform the check because we have been asked not to subscribe this system to RHSM.")
             return
 
         if system_info.dbus_running:
-            logger.info("DBus Daemon is running")
+            logger.info("DBus daemon is running.")
             return
 
         self.set_result(
             level="ERROR",
             id="DBUS_DAEMON_NOT_RUNNING",
             title="Dbus daemon not running",
-            description="The Dbus daemon is not running",
+            description="The Dbus daemon is not running.",
             diagnosis="Could not find a running DBus Daemon which is needed to register with subscription manager.",
-            remediations="Please start dbus using `systemctl start dbus`",
+            remediations="Start dbus using `systemctl start dbus`",
         )

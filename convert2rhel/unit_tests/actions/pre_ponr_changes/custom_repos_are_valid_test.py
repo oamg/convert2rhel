@@ -62,7 +62,7 @@ def test_custom_repos_are_invalid(custom_repos_are_valid_action, monkeypatch):
         id="UNABLE_TO_ACCESS_REPOSITORIES",
         title="Unable to access repositories",
         description="Access could not be made to the custom repositories.",
-        diagnosis="Unable to access the repositories passed through the --enablerepo option.",
+        diagnosis="Unable to access repositories passed through the --enablerepo option.",
         remediations="For more details, see YUM/DNF output:\nYUM/DNF failed",
     )
 
@@ -72,7 +72,4 @@ def test_custom_repos_are_valid_skip(custom_repos_are_valid_action, monkeypatch,
 
     custom_repos_are_valid_action.run()
 
-    assert (
-        "Did not perform the check of repositories due to the use of RHSM for the conversion."
-        in caplog.records[-1].message
-    )
+    assert "Skipping the check verifying the accessibility of the repositories." in caplog.records[-1].message

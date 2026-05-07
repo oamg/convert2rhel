@@ -559,7 +559,7 @@ class Stage:
                     title="Skipped action",
                     description="This action was skipped due to another action failing.",
                     diagnosis=diagnosis,
-                    remediations="Please ensure that the {} check passes so that this Action can evaluate your system".format(
+                    remediations="Ensure that the {} check passes so that this Action can evaluate your system".format(
                         utils.format_sequence_as_message(failed_deps)
                     ),
                 )
@@ -586,7 +586,7 @@ class Stage:
 
             # Categorize the results
             if action.result.level <= STATUS_CODE["WARNING"]:
-                logger.info("{} has succeeded".format(action.id))
+                logger.info("The {} action has succeeded.".format(action.id))
                 successes.append(action)
 
             if action.result.level > STATUS_CODE["WARNING"]:
@@ -742,7 +742,7 @@ def run_pre_actions():
     # When we call check_dependencies() or run() on the first Stage
     # (system_checks), it will operate on the first Stage and then recursively
     # call check_dependencies() or run() on the next_stage.
-    pre_ponr_changes = Stage("pre_ponr_changes", "Making recoverable changes")
+    pre_ponr_changes = Stage("pre_ponr_changes", "Make recoverable changes")
     system_checks = Stage("system_checks", "Check whether system is ready for conversion", next_stage=pre_ponr_changes)
 
     try:

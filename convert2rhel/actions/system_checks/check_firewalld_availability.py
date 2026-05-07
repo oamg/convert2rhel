@@ -71,12 +71,12 @@ def _is_modules_cleanup_enabled():
     # If the config file has this option set to true/yes, then we need to
     # return True to ask the user to change it to False.
     if list(filter(CLEANUP_MODULES_ON_EXIT_REGEX.match, contents)):
-        logger.debug("CleanupModulesOnExit option enabled in {}".format(FIREWALLD_CONFIG_FILE))
+        logger.debug("CleanupModulesOnExit option is enabled in {}.".format(FIREWALLD_CONFIG_FILE))
         return True
 
     # Default to return False as it is possible that the CleanupModulesOnExit
     # is set to no in the config already.
-    logger.debug("CleanupModulesOnExit option is disabled in {}".format(FIREWALLD_CONFIG_FILE))
+    logger.debug("CleanupModulesOnExit option is disabled in {}.".format(FIREWALLD_CONFIG_FILE))
     return False
 
 
@@ -102,7 +102,7 @@ class CheckFirewalldAvailability(actions.Action):
                 self.set_result(
                     level="ERROR",
                     id="FIREWALLD_MODULES_CLEANUP_ON_EXIT_CONFIG",
-                    title="Firewalld is set to cleanup modules after exit.",
+                    title="Firewalld is set to cleanup modules after exit",
                     description="Firewalld running on Oracle Linux 8 can lead to a conversion failure.",
                     diagnosis=(
                         "We've detected that firewalld unit is running and that causes iptables and nftables "

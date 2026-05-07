@@ -239,5 +239,5 @@ def write_temporary_repofile(contents):
             raise exceptions.CriticalError(
                 id_="STORE_REPOFILE_FAILED",
                 title="Failed to store a repository file",
-                description="Failed to write a repository file contents to {}.\n" "Reason: {}".format(f.name, str(err)),
+                description="Failed to write a repository file contents to {}.\nReason: {}".format(f.name, str(err)),
             )

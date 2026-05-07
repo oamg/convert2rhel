@@ -121,7 +121,7 @@ class TestRestorableSystemSubscription:
 
         system_subscription.restore()
 
-        assert "subscription-manager not installed, skipping" == caplog.messages[-1]
+        assert "subscription-manager not installed, skipping." == caplog.messages[-1]
 
 
 class TestRestorableAutoAttachmentSubscription:

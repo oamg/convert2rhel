@@ -343,9 +343,9 @@ class TestMissingFile:
     @pytest.mark.parametrize(
         ("exists", "enabled", "message"),
         (
-            (True, True, "File {filepath} removed"),
+            (True, True, "File {filepath} removed."),
             (True, False, None),
-            (False, True, "File {filepath} wasn't created during conversion"),
+            (False, True, "File {filepath} wasn't created during conversion."),
         ),
     )
     def test_created_file_restore(self, tmpdir, exists, enabled, message, caplog):
@@ -371,13 +371,13 @@ class TestMissingFile:
     @pytest.mark.parametrize(
         ("exists", "created", "message_push", "message_pop"),
         (
-            (False, True, "Marking file {filepath} as missing on system.", "File {filepath} removed"),
+            (False, True, "Marking file {filepath} as missing on system.", "File {filepath} removed."),
             (True, False, "The file {filepath} is present on the system before conversion, skipping it.", None),
             (
                 False,
                 False,
                 "Marking file {filepath} as missing on system.",
-                "File {filepath} wasn't created during conversion",
+                "File {filepath} wasn't created during conversion.",
             ),
         ),
     )

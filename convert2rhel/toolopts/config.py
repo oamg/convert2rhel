@@ -196,7 +196,7 @@ class FileConfig(BaseConfig):
 
         for option in conf_options:
             if option.lower() not in supported_opts:
-                loggerinst.warning("Unsupported option '{}' in '{}'".format(option, header))
+                loggerinst.warning("Unsupported option '{}' in '{}'.".format(option, header))
                 continue
 
             # This is the only header that can contain boolean values for now.
@@ -292,13 +292,13 @@ class CliConfig(BaseConfig):
 
         if opts["username"] and not opts["password"]:
             loggerinst.warning(
-                "You have passed the RHSM username without an associated password. Please provide a password together"
+                "You have passed the RHSM username without an associated password. Provide a password together"
                 " with the username."
             )
 
         if opts["password"] and not opts["username"]:
             loggerinst.warning(
-                "You have passed the RHSM password without an associated username. Please provide a username together"
+                "You have passed the RHSM password without an associated username. Provide a username together"
                 " with the password."
             )
 
