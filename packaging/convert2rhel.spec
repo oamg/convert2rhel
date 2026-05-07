@@ -9,7 +9,7 @@
 %endif
 
 Name:           convert2rhel
-Version:        2.3.0
+Version:        2.3.1
 Release:        1%{?dist}
 Summary:        Automates the conversion of RHEL derivative distributions to RHEL
 
@@ -125,6 +125,9 @@ install -m 0600 config/convert2rhel.ini %{buildroot}%{_sysconfdir}/convert2rhel.
 %attr(0644,root,root) %{_mandir}/man8/%{name}.8*
 
 %changelog
+* Thu May 07 2026 Michal Bocek <mbocek@redhat.com> 2.3.1
+- Remove duplicate amazon-efs-utils from AL2 excluded_pkgs
+
 * Mon May 04 2026 Michal Bocek <mbocek@redhat.com> 2.3.0
 - Allow Amazon Linux 2 to RHEL 7 conversions
 - State action in special package removal report messages
