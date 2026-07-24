@@ -23,6 +23,7 @@ import logging
 import os
 import re
 import shutil
+import struct
 import sys
 
 from pickle import PicklingError
@@ -1172,3 +1173,47 @@ def test_warn_deprecated_env_wrong_name(global_tool_opts, monkeypatch, caplog):
     for item, value in global_tool_opts.__dict__.items():
         assert default_tool_opts.__dict__[item] == value
     assert not caplog.text
+
+
+class TestGetTerminalSize:
+    @mock.patch("convert2rhel.utils.shutil.get_terminal_size", create=True, side_effect=AttributeError)
+    @mock.patch("convert2rhel.utils.sys.stdout")
+    @mock.patch("convert2rhel.utils.fcntl.ioctl")
+    def test_zero_columns_falls_back_to_80(self, mock_ioctl, mock_stdout, _):
+        mock_stdout.isatty.return_value = True
+        mock_stdout.fileno.return_value = 1
+        mock_ioctl.return_value = struct.pack("HHHH", 24, 0, 0, 0)
+        assert utils.get_terminal_size() == (80, 24)
+
+    @mock.patch("convert2rhel.utils.shutil.get_terminal_size", create=True, side_effect=AttributeError)
+    @mock.patch("convert2rhel.utils.sys.stdout")
+    @mock.patch("convert2rhel.utils.fcntl.ioctl")
+    def test_zero_rows_falls_back_to_24(self, mock_ioctl, mock_stdout, _):
+        mock_stdout.isatty.return_value = True
+        mock_stdout.fileno.return_value = 1
+        mock_ioctl.return_value = struct.pack("HHHH", 0, 100, 0, 0)
+        assert utils.get_terminal_size() == (100, 24)
+
+    @mock.patch("convert2rhel.utils.shutil.get_terminal_size", create=True, side_effect=AttributeError)
+    @mock.patch("convert2rhel.utils.sys.stdout")
+    @mock.patch("convert2rhel.utils.fcntl.ioctl")
+    def test_both_zero_falls_back_to_defaults(self, mock_ioctl, mock_stdout, _):
+        mock_stdout.isatty.return_value = True
+        mock_stdout.fileno.return_value = 1
+        mock_ioctl.return_value = struct.pack("HHHH", 0, 0, 0, 0)
+        assert utils.get_terminal_size() == (80, 24)
+
+    @mock.patch("convert2rhel.utils.shutil.get_terminal_size", create=True, side_effect=AttributeError)
+    @mock.patch("convert2rhel.utils.sys.stdout")
+    @mock.patch("convert2rhel.utils.fcntl.ioctl")
+    def test_normal_values_pass_through(self, mock_ioctl, mock_stdout, _):
+        mock_stdout.isatty.return_value = True
+        mock_stdout.fileno.return_value = 1
+        mock_ioctl.return_value = struct.pack("HHHH", 50, 120, 0, 0)
+        assert utils.get_terminal_size() == (120, 50)
+
+    @mock.patch("convert2rhel.utils.shutil.get_terminal_size", create=True, side_effect=AttributeError)
+    @mock.patch("convert2rhel.utils.sys.stdout")
+    def test_non_tty_returns_defaults(self, mock_stdout, _):
+        mock_stdout.isatty.return_value = False
+        assert utils.get_terminal_size() == (80, 24)
