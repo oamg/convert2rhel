@@ -990,7 +990,9 @@ def get_terminal_size():
     size = struct.unpack("HHHH", terminal_info)[:2]
     # The fcntl data has height, width but shutil.get_terminal_size, which
     # we're emulating uses width, height.
-    return (size[1], size[0])
+    columns = size[1] or 80
+    rows = size[0] or 24
+    return (columns, rows)
 
 
 def hide_secrets(
