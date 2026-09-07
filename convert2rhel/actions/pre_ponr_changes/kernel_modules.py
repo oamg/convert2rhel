@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import itertools
 import re
-
 from functools import cmp_to_key
 
 from convert2rhel import actions, pkghandler
@@ -25,7 +23,6 @@ from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
-
 
 logger = root_logger.getChild(__name__)
 
@@ -68,7 +65,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
         precache = [
             "yum",
             "makecache",
-            "--releasever={}".format(system_info.releasever),
+            f"--releasever={system_info.releasever}",
             "--setopt=*.skip_if_unavailable=False",
         ]
         # Clearing the exclude field with setopt to prevent kernel being
@@ -76,9 +73,9 @@ class EnsureKernelModulesCompatibility(actions.Action):
         # https://issues.redhat.com/browse/RHELC-774
         basecmd = [
             "repoquery",
-            "--releasever={}".format(system_info.releasever),
+            f"--releasever={system_info.releasever}",
             "--setopt=exclude=",
-            "--archlist={}".format(system_info.arch),
+            f"--archlist={system_info.arch}",
         ]
 
         if system_info.version.major >= 8:
@@ -135,7 +132,7 @@ class EnsureKernelModulesCompatibility(actions.Action):
         # from these packages we select only the latest one
         kmod_pkgs = self._get_most_recent_unique_kernel_pkgs(kmod_pkgs_str.rstrip("\n").split())
         if not kmod_pkgs:
-            logger.debug("Output of the previous repoquery command:\n{0}".format(kmod_pkgs_str))
+            logger.debug(f"Output of the previous repoquery command:\n{kmod_pkgs_str}")
             raise RHELKernelModuleNotFound(
                 "No packages containing kernel modules available in the enabled repositories ({}).".format(
                     ", ".join(system_info.get_enabled_rhel_repos())
@@ -245,14 +242,13 @@ class EnsureKernelModulesCompatibility(actions.Action):
         """
         unsupported_kmods_subpaths = host_kmods - rhel_supported_kmods - set(system_info.kmods_to_ignore)
         unsupported_kmods_full_paths = [
-            "/lib/modules/{kver}/{kmod}".format(kver=system_info.booted_kernel, kmod=kmod)
-            for kmod in unsupported_kmods_subpaths
+            f"/lib/modules/{system_info.booted_kernel}/{kmod}" for kmod in unsupported_kmods_subpaths
         ]
         return unsupported_kmods_full_paths
 
     def run(self):
         """Ensure that the host kernel modules are compatible with RHEL."""
-        super(EnsureKernelModulesCompatibility, self).run()
+        super().run()
 
         logger.task("Ensure kernel modules compatibility with RHEL")
 
@@ -291,11 +287,11 @@ class EnsureKernelModulesCompatibility(actions.Action):
                         "\n".join(unsupported_kmods)
                     ),
                     remediations="Ensure you have updated the kernel to the latest available version and rebooted the system.\nIf this "
-                    "message persists, you can prevent the modules from loading by following {0} and rerun convert2rhel.\n"
+                    f"message persists, you can prevent the modules from loading by following {LINK_PREVENT_KMODS_FROM_LOADING} and rerun convert2rhel.\n"
                     "Keeping them loaded could cause the system to malfunction after the conversion as they might not work "
                     "properly with the RHEL kernel.\n"
                     "To circumvent this check and accept the risk, set the allow_unavailable_kmods inhibitor override in the"
-                    "/etc/convert2rhel.ini config file to true.".format(LINK_PREVENT_KMODS_FROM_LOADING),
+                    "/etc/convert2rhel.ini config file to true.",
                 )
                 return
 
@@ -323,5 +319,5 @@ class EnsureKernelModulesCompatibility(actions.Action):
                 id="CANNOT_COMPARE_PACKAGE_VERSIONS",
                 title="Error while comparing packages",
                 description="There was an error while detecting the kernel package which corresponds to the kernel modules present on the system.",
-                diagnosis="Package comparison failed: {}".format(str(e)),
+                diagnosis=f"Package comparison failed: {e!s}",
             )

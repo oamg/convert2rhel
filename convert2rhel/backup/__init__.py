@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2022 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import abc
 import hashlib
@@ -24,9 +22,8 @@ import os
 import six
 
 from convert2rhel.logger import root_logger
-from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR, DEFAULT_DNF_VARS_DIR
+from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_REPOFILE_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.utils import TMP_DIR
-
 
 # Directory for temporary backing up files, packages and other relevant stuff.
 BACKUP_DIR = os.path.join(TMP_DIR, "backup")
@@ -81,13 +78,13 @@ class BackupController:
         :arg restorable: RestorableChange object that can be restored later.
         """
         if not isinstance(restorable, RestorableChange):
-            raise TypeError("`{}` is not a RestorableChange object".format(restorable))
+            raise TypeError(f"`{restorable}` is not a RestorableChange object")
 
         # Check if the restorable is already backed up
         # if it is, we skip it
         for r in self._restorables:
             if r == restorable:
-                logger.debug("Skipping: {} has already been backed up".format(restorable.__class__.__name__))
+                logger.debug(f"Skipping: {restorable.__class__.__name__} has already been backed up")
                 return
 
         restorable.enable()
@@ -142,7 +139,7 @@ class BackupController:
             # logger.critical in some places.
             except (Exception, SystemExit) as e:
                 # Don't let a failure in one restore influence the others
-                message = "Error while rolling back a {}: {}".format(restorable.__class__.__name__, str(e))
+                message = f"Error while rolling back a {restorable.__class__.__name__}: {e!s}"
                 logger.warning(message)
                 # Add the rollback failures to the list
                 self._rollback_failures.append(message)

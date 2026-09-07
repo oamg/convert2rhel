@@ -6,7 +6,6 @@ import pytest
 
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS, SystemInformationRelease
 
-
 PKI_ENTITLEMENT_CERTS_PATH = "/etc/pki/entitlement"
 
 SERVER_SUB = "CentOS Linux"
@@ -54,7 +53,7 @@ def remove_entitlement_certs():
         try:
             os.unlink(cert_path)
         except Exception as e:
-            print("Failed to delete {}. Reason: {}".format(cert_path, e))
+            print(f"Failed to delete {cert_path}. Reason: {e}")
 
 
 def test_package_download_error(convert2rhel, shell, yum_cache):
@@ -80,8 +79,8 @@ def test_package_download_error(convert2rhel, shell, yum_cache):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        c2r.expect("Validate the {} transaction".format(PKGMANAGER))
-        c2r.expect("Adding {} packages to the {} transaction set.".format(SERVER_SUB, PKGMANAGER))
+        c2r.expect(f"Validate the {PKGMANAGER} transaction")
+        c2r.expect(f"Adding {SERVER_SUB} packages to the {PKGMANAGER} transaction set.")
 
         if SYSTEM_RELEASE_ENV in ("centos-7", "oracle-7", "amazon2"):
             # Remove the repomd.xml for rhel-7-server-rpms repo

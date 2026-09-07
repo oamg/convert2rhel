@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import argparse
 import logging
@@ -25,7 +22,6 @@ import sys
 from convert2rhel import __version__, utils
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.toolopts.config import CliConfig, FileConfig
-
 
 loggerinst = logging.getLogger(__name__)
 
@@ -69,12 +65,12 @@ class CLI:
         usage = (
             "\n"
             "  convert2rhel [--version] [-h]\n"
-            "  convert2rhel {subcommand} [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
+            f"  convert2rhel {subcommand_to_print} [-u username] [-p password | -c conf_file_path] [--pool pool_id | -a] [--disablerepo repoid]"
             " [--enablerepo repoid] [--serverurl url] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
-            "  convert2rhel {subcommand} [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
-            "  convert2rhel {subcommand} [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
+            f"  convert2rhel {subcommand_to_print} [--no-rhsm] [--disablerepo repoid] [--enablerepo repoid] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
+            f"  convert2rhel {subcommand_to_print} [-k activation_key | -c conf_file_path] [-o organization] [--pool pool_id | -a] [--disablerepo repoid] [--enablerepo"
             " repoid] [--serverurl url] [--no-rpm-va] [--eus] [--els] [--debug] [--restart] [-y]\n"
-        ).format(subcommand=subcommand_to_print)
+        )
 
         if subcommand_not_used_on_cli:
             usage = usage + "\n  Subcommands: analyze, convert"
@@ -130,11 +126,11 @@ class CLI:
             action="store_true",
             help="Skip gathering changed rpm files using"
             " 'rpm -Va'. By default it's performed before and after the conversion with the output"
-            " stored in log files {} and {}. At the end of the conversion, these logs are compared"
+            f" stored in log files {utils.rpm.PRE_RPM_VA_LOG_FILENAME} and {utils.rpm.POST_RPM_VA_LOG_FILENAME}. At the end of the conversion, these logs are compared"
             " to show you what rpm files have been affected by the conversion."
             " Cannot be used with analyze subcommand."
             " The incomplete_rollback option needs to be set to true in the /etc/convert2rhel.ini config file to"
-            " use this argument.".format(utils.rpm.PRE_RPM_VA_LOG_FILENAME, utils.rpm.POST_RPM_VA_LOG_FILENAME),
+            " use this argument.",
         )
         self._shared_options_parser.add_argument(
             "--eus",
@@ -145,8 +141,7 @@ class CLI:
         self._shared_options_parser.add_argument(
             "--els",
             action="store_true",
-            help="Explicitly recognize the system as els, utilizing els repos."
-            " This option is meant for el7 systems.",
+            help="Explicitly recognize the system as els, utilizing els repos. This option is meant for el7 systems.",
         )
         self._shared_options_parser.add_argument(
             "--enablerepo",
@@ -296,7 +291,7 @@ def _log_command_used():
     and the logfile
     """
     command = " ".join(utils.hide_secrets(sys.argv))
-    loggerinst.info("convert2rhel command used:\n{0}".format(command))
+    loggerinst.info(f"convert2rhel command used:\n{command}")
 
 
 def _add_default_command(argv):

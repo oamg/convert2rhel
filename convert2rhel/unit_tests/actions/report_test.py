@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import json
 import os.path
@@ -25,10 +24,8 @@ import six
 from convert2rhel.actions import STATUS_CODE, report
 from convert2rhel.logger import bcolors
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
 
 #: _LONG_MESSAGE since we do line wrapping
 _LONG_MESSAGE = {
@@ -1199,12 +1196,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     },
                 }
             },
-            "{begin}(ERROR) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediations: move on{end}".format(
-                begin=bcolors.FAIL, end=bcolors.ENDC
-            ),
-            "{begin}(WARNING) ErrorAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{end}".format(
-                begin=bcolors.WARNING, end=bcolors.ENDC
-            ),
+            f"{bcolors.FAIL}(ERROR) ErrorAction::ERROR - Error\n     Description: Action error\n     Diagnosis: User error\n     Remediations: move on{bcolors.ENDC}",
+            f"{bcolors.WARNING}(WARNING) ErrorAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{bcolors.ENDC}",
         ),
         (
             {
@@ -1231,12 +1224,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     },
                 }
             },
-            "{begin}(OVERRIDABLE) OverridableAction::OVERRIDABLE - Overridable\n     Description: Action overridable\n     Diagnosis: User overridable\n     Remediations: move on{end}".format(
-                begin=bcolors.FAIL, end=bcolors.ENDC
-            ),
-            "{begin}(WARNING) OverridableAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{end}".format(
-                begin=bcolors.WARNING, end=bcolors.ENDC
-            ),
+            f"{bcolors.FAIL}(OVERRIDABLE) OverridableAction::OVERRIDABLE - Overridable\n     Description: Action overridable\n     Diagnosis: User overridable\n     Remediations: move on{bcolors.ENDC}",
+            f"{bcolors.WARNING}(WARNING) OverridableAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{bcolors.ENDC}",
         ),
         (
             {
@@ -1263,12 +1252,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     },
                 }
             },
-            "{begin}(SKIP) SkipAction::SKIP - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediations: move on{end}".format(
-                begin=bcolors.FAIL, end=bcolors.ENDC
-            ),
-            "{begin}(WARNING) SkipAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{end}".format(
-                begin=bcolors.WARNING, end=bcolors.ENDC
-            ),
+            f"{bcolors.FAIL}(SKIP) SkipAction::SKIP - Skip\n     Description: Action skip\n     Diagnosis: User skip\n     Remediations: move on{bcolors.ENDC}",
+            f"{bcolors.WARNING}(WARNING) SkipAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{bcolors.ENDC}",
         ),
         (
             {
@@ -1295,10 +1280,8 @@ def test_messages_summary_ordering(results, include_all_reports, expected_result
                     },
                 }
             },
-            "{begin}(SUCCESS) SuccessfulAction::SUCCESS - N/A{end}".format(begin=bcolors.OKGREEN, end=bcolors.ENDC),
-            "{begin}(WARNING) SuccessfulAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{end}".format(
-                begin=bcolors.WARNING, end=bcolors.ENDC
-            ),
+            f"{bcolors.OKGREEN}(SUCCESS) SuccessfulAction::SUCCESS - N/A{bcolors.ENDC}",
+            f"{bcolors.WARNING}(WARNING) SuccessfulAction::WARNING_ID - Warning\n     Description: Action warning\n     Diagnosis: User warning\n     Remediations: move on{bcolors.ENDC}",
         ),
     ),
 )

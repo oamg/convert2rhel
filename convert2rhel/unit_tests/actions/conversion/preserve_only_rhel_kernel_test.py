@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 import glob
 import os
 import re
@@ -35,7 +34,6 @@ from convert2rhel.unit_tests import (
     create_pkg_information,
 )
 from convert2rhel.unit_tests.conftest import centos7, centos8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -414,7 +412,7 @@ class TestFixDefaultKernel:
         monkeypatch.setattr(
             utils,
             "get_file_content",
-            lambda _: "UPDATEDEFAULT=yes\nDEFAULTKERNEL={}\n".format(old_kernel),
+            lambda _: f"UPDATEDEFAULT=yes\nDEFAULTKERNEL={old_kernel}\n",
         )
         monkeypatch.setattr(utils, "store_content_to_file", StoreContentToFileMocked())
 
@@ -428,10 +426,10 @@ class TestFixDefaultKernel:
         kernel_file_lines = content.splitlines()
 
         assert "/etc/sysconfig/kernel" == filename
-        assert "DEFAULTKERNEL={}".format(new_kernel) in kernel_file_lines
+        assert f"DEFAULTKERNEL={new_kernel}" in kernel_file_lines
 
         for kernel_name in not_default_kernels:
-            assert "DEFAULTKERNEL={}".format(kernel_name) not in kernel_file_lines
+            assert f"DEFAULTKERNEL={kernel_name}" not in kernel_file_lines
 
     @centos7
     def test_fix_default_kernel_with_no_incorrect_kernel(
@@ -490,7 +488,7 @@ class TestFixDefaultKernel:
 
         (filename, content), _ = utils.store_content_to_file.call_args
         assert filename == "/etc/sysconfig/kernel"
-        assert "DEFAULTKERNEL={}".format(expected_default_kernel) in content
+        assert f"DEFAULTKERNEL={expected_default_kernel}" in content
         assert "UPDATEDEFAULT=yes" in content
 
         assert any(m.id == "MISSING_KERNEL_SYSCONFIG_CREATED" for m in fix_default_kernel_instance.messages)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -14,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 import abc
 import copy
@@ -22,9 +20,7 @@ import logging
 import os
 
 import six
-
 from six.moves import configparser
-
 
 loggerinst = logging.getLogger(__name__)
 
@@ -72,7 +68,7 @@ class FileConfig(BaseConfig):
     DEFAULT_CONFIG_FILES = ["~/.convert2rhel.ini", "/etc/convert2rhel.ini"]
 
     def __init__(self, custom_config):
-        super(FileConfig, self).__init__()
+        super().__init__()
 
         # Subscription Manager
         self.username = None  # type: str | None
@@ -155,20 +151,18 @@ class FileConfig(BaseConfig):
         found_opts = {}
 
         for path in reversed(paths):
-            loggerinst.debug("Checking configuration file at {}".format(path))
+            loggerinst.debug(f"Checking configuration file at {path}")
             # Check for correct permissions on file
             if not oct(os.stat(path).st_mode)[-4:].endswith("00"):
-                loggerinst.critical("The {} file must only be accessible by the owner (0600)".format(path))
+                loggerinst.critical(f"The {path} file must only be accessible by the owner (0600)")
 
             config_file.read(path)
 
             # Mapping of all supported options we can have in the config file
             for supported_header, supported_opts in CONFIG_FILE_MAPPING_OPTIONS.items():
-                loggerinst.debug("Checking for header '{}'".format(supported_header))
+                loggerinst.debug(f"Checking for header '{supported_header}'")
                 if supported_header not in config_file.sections():
-                    loggerinst.warning(
-                        "Couldn't find header '{}' in the configuration file {}.".format(supported_header, path)
-                    )
+                    loggerinst.warning(f"Couldn't find header '{supported_header}' in the configuration file {path}.")
                     continue
                 options = self._get_options_value(config_file, supported_header, supported_opts)
                 found_opts.update(options)
@@ -191,12 +185,12 @@ class FileConfig(BaseConfig):
         conf_options = config_file.options(header)
 
         if len(conf_options) == 0:
-            loggerinst.debug("No options found for {}. It seems to be empty or commented.".format(header))
+            loggerinst.debug(f"No options found for {header}. It seems to be empty or commented.")
             return options
 
         for option in conf_options:
             if option.lower() not in supported_opts:
-                loggerinst.warning("Unsupported option '{}' in '{}'".format(option, header))
+                loggerinst.warning(f"Unsupported option '{option}' in '{header}'")
                 continue
 
             # This is the only header that can contain boolean values for now.
@@ -205,7 +199,7 @@ class FileConfig(BaseConfig):
             else:
                 options[option] = config_file.get(header, option)
 
-            loggerinst.debug("Found {} in {}".format(option, header))
+            loggerinst.debug(f"Found {option} in {header}")
 
         return options
 
@@ -214,7 +208,7 @@ class CliConfig(BaseConfig):
     SOURCE = "command line"
 
     def __init__(self, opts):
-        super(CliConfig, self).__init__()
+        super().__init__()
 
         self.debug = False  # type: bool
         self.username = None  # type: str | None
@@ -308,7 +302,7 @@ class CliConfig(BaseConfig):
             if duplicate_repos:
                 message = "Duplicate repositories were found across disablerepo and enablerepo options:"
                 for repo in duplicate_repos:
-                    message += "\n{}".format(repo)
+                    message += f"\n{repo}"
                 message += "\nThis ambiguity may have unintended consequences."
                 loggerinst.warning(message)
 

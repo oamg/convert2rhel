@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 import os
 import shutil
 
@@ -23,7 +22,6 @@ import six
 from convert2rhel import actions, grub, systeminfo, unit_tests
 from convert2rhel.actions.conversion import set_efi_config
 from convert2rhel.unit_tests.conftest import centos7
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -200,7 +198,7 @@ def test_move_grub_files_io_error(
     move_grub_files_instance,
 ):
     monkeypatch.setattr(shutil, "move", mock.Mock())
-    shutil.move.side_effect = IOError(13, "Permission denied")
+    shutil.move.side_effect = OSError(13, "Permission denied")
     monkeypatch.setattr(os.path, "exists", mock.Mock(side_effect=[False, True, True, True, False, True, False]))
     monkeypatch.setattr(grub, "is_efi", mock.Mock(return_value=True))
 

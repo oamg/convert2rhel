@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 import pytest
 import six
 
@@ -22,7 +21,6 @@ from convert2rhel.actions import STATUS_CODE
 from convert2rhel.actions.conversion import transaction
 from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.unit_tests.conftest import all_systems
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -15,14 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from collections import namedtuple
 
 import pytest
 
 from convert2rhel.utils import subscription
-
 
 UrlParts = namedtuple("UrlParts", ("scheme", "hostname", "port"))
 

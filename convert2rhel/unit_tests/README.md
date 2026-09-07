@@ -44,6 +44,7 @@ that needs to be mocked:
 import mock
 import package_handler
 
+
 def test_check_for_yum_updates(monkeypatch):
     packages_to_update_mock = mock.Mock(return_value=["package-1", "package-2"])
     monkeypatch.setattr(package_handler, "get_packages_to_update", value=packages_to_update_mock)
@@ -58,6 +59,7 @@ dependencies:
 ```python
 import os
 import file_handler
+
 
 def test_archive_old_files(tmpdir):
     tmpdir = str(tmpdir)

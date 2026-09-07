@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 import hashlib
 
 import pytest
@@ -155,6 +153,6 @@ def test_get_backed_up_yum_var_dirs(monkeypatch):
     result = backup.get_backed_up_yum_var_dirs()
 
     assert result == {
-        "/etc/yum/vars": "/var/lib/convert2rhel/backup/{}".format(hashlib.md5("/etc/yum/vars".encode()).hexdigest()),
-        "/etc/dnf/vars": "/var/lib/convert2rhel/backup/{}".format(hashlib.md5("/etc/dnf/vars".encode()).hexdigest()),
+        "/etc/yum/vars": "/var/lib/convert2rhel/backup/{}".format(hashlib.md5(b"/etc/yum/vars").hexdigest()),
+        "/etc/dnf/vars": "/var/lib/convert2rhel/backup/{}".format(hashlib.md5(b"/etc/dnf/vars").hexdigest()),
     }
