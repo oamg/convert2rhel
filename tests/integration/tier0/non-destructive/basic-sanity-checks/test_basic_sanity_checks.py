@@ -6,7 +6,6 @@ import subprocess
 
 import pytest
 
-
 CONVERT2RHEL_FACTS_FILE = "/etc/rhsm/facts/convert2rhel.facts"
 
 
@@ -81,7 +80,7 @@ def c2r_version(request):
         with open(path_to_version, "w") as version_file_to_update:
             # Update the version
             version_pattern = r'__version__ = "(\d+\.\d+\.\d+)"'
-            updated_version_content = re.sub(version_pattern, '__version__ = "{}"'.format(version), old_version_content)
+            updated_version_content = re.sub(version_pattern, f'__version__ = "{version}"', old_version_content)
             version_file_to_update.write(updated_version_content)
 
     yield _update_c2r_version

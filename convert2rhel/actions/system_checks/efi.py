@@ -13,15 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os.path
 
 from convert2rhel import actions, grub
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 
@@ -31,7 +28,7 @@ class Efi(actions.Action):
 
     def run(self):
         """Inhibit the conversion when we are not able to handle UEFI."""
-        super(Efi, self).run()
+        super().run()
 
         logger.task("Check the firmware interface type (BIOS/UEFI)")
         if not grub.is_efi():
@@ -87,8 +84,8 @@ class Efi(actions.Action):
             # NOTE(pstodulk): I am not sure what could be consequences after the conversion, as the
             # new UEFI bootloader entry is created referring to a RHEL UEFI binary.
             logger.warning(
-                "The current UEFI bootloader '{}' is not referring to any binary UEFI"
-                " file located on local EFI System Partition (ESP).".format(efiboot_info.current_bootnum)
+                f"The current UEFI bootloader '{efiboot_info.current_bootnum}' is not referring to any binary UEFI"
+                " file located on local EFI System Partition (ESP)."
             )
             self.add_message(
                 level="WARNING",
@@ -96,8 +93,8 @@ class Efi(actions.Action):
                 title="UEFI bootloader mismatch",
                 description="There was a UEFI bootloader mismatch.",
                 diagnosis=(
-                    "The current UEFI bootloader '{}' is not referring to any binary UEFI"
-                    " file located on local EFI System Partition (ESP).".format(efiboot_info.current_bootnum)
+                    f"The current UEFI bootloader '{efiboot_info.current_bootnum}' is not referring to any binary UEFI"
+                    " file located on local EFI System Partition (ESP)."
                 ),
             )
         # TODO(pstodulk): print warning when multiple orig. UEFI entries point

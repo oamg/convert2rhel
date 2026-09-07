@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
@@ -34,7 +32,6 @@ from convert2rhel.unit_tests import (
     RunSubprocessMocked,
 )
 from convert2rhel.unit_tests.conftest import centos7
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -57,7 +54,7 @@ class DownloadPkgsMocked(MockFunctionObject):
         if "return_value" not in kwargs:
             kwargs["return_value"] = ["/path/to.rpm"]
 
-        super(DownloadPkgsMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, pkgs, dest, *args, **kwargs):
         self.pkgs = pkgs
@@ -67,7 +64,7 @@ class DownloadPkgsMocked(MockFunctionObject):
         if self.destdir and not os.path.exists(self.destdir):
             os.mkdir(self.destdir, 0o700)
 
-        return super(DownloadPkgsMocked, self).__call__(pkgs, dest, *args, **kwargs)
+        return super().__call__(pkgs, dest, *args, **kwargs)
 
 
 class TestRestorablePackage:
@@ -173,7 +170,7 @@ class TestRestorablePackage:
         rp = RestorablePackage(pkgs=["pkg-1"])
         rp.enable()
 
-        assert "Can't access {}".format(backup_dir) in caplog.records[-1].message
+        assert f"Can't access {backup_dir}" in caplog.records[-1].message
 
     def test_install_local_rpms_package_install_warning(self, monkeypatch, caplog):
         pkg_name = "pkg-1"
@@ -190,7 +187,7 @@ class TestRestorablePackage:
 
         assert not result
         assert run_subprocess_mock.call_count == 1
-        assert "Couldn't install {} packages.".format(pkg_name) in caplog.records[-1].message
+        assert f"Couldn't install {pkg_name} packages." in caplog.records[-1].message
 
     def test_test_install_local_rpms_system_exit(self, monkeypatch, caplog):
         pkg_name = ["pkg-1"]

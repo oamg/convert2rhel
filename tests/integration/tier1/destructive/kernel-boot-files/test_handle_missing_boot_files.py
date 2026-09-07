@@ -3,7 +3,6 @@ import subprocess
 
 from conftest import TEST_VARS, SystemInformationRelease
 
-
 INITRAMFS_FILE = "/boot/initramfs-%s.img"
 VMLINUZ_FILE = "/boot/vmlinuz-%s"
 
@@ -13,7 +12,7 @@ def get_latest_installed_kernel_version(kernel_name):
 
     output = subprocess.check_output(["rpm", "-q", "--last", kernel_name]).decode()
     latest_installed_kernel = output.split("\n", maxsplit=1)[0].split(" ")[0]
-    latest_installed_kernel = latest_installed_kernel.split("{}-".format(kernel_name))[-1]
+    latest_installed_kernel = latest_installed_kernel.split(f"{kernel_name}-")[-1]
     return latest_installed_kernel.strip()
 
 
@@ -28,8 +27,8 @@ def remove_kernel_boot_files(shell, kernel_version):
     assert os.path.exists(vmlinuz_file)
 
     # Remove the installed RHEL kernel boot files, simulating that they failed to be generated during the conversion
-    assert shell("rm -f {}".format(initramfs_file)).returncode == 0
-    assert shell("rm -f {}".format(vmlinuz_file)).returncode == 0
+    assert shell(f"rm -f {initramfs_file}").returncode == 0
+    assert shell(f"rm -f {vmlinuz_file}").returncode == 0
 
 
 def test_handling_missing_kernel_boot_files(convert2rhel, shell):
@@ -78,7 +77,7 @@ def test_handling_missing_kernel_boot_files(convert2rhel, shell):
     # assert that the rest of the conversion has succeeded.
     # We'll do that the same way we're telling the user in a warning message how to fix the problem.
     # That is by reinstalling the RHEL kernel and re-running grub2-mkconfig.
-    reinstall_command = "yum reinstall {}-{} -y".format(kernel_name, kernel_version)
+    reinstall_command = f"yum reinstall {kernel_name}-{kernel_version} -y"
 
     assert shell(reinstall_command).returncode == 0
     assert shell("grub2-mkconfig -o /boot/grub2/grub.cfg").returncode == 0

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -14,13 +13,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 
 import glob
 import os
 import re
-
 from collections import namedtuple
 
 import pytest
@@ -55,10 +52,8 @@ from convert2rhel.unit_tests import (
 )
 from convert2rhel.unit_tests.conftest import all_systems, centos7, centos8
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
 
 YUM_KERNEL_LIST_OLDER_AVAILABLE = """Installed Packages
 kernel.x86_64    4.7.4-200.fc24   @updates
@@ -131,7 +126,7 @@ class ReturnPackagesObject(unit_tests.MockFunctionObject):
     """
 
     def __call__(self, *args, **kwargs):
-        super(ReturnPackagesObject, self).__call__(*args, **kwargs)
+        super().__call__(*args, **kwargs)
 
         patterns = kwargs.get("patterns", None)
         if patterns:
@@ -347,7 +342,7 @@ class TestReplaceNonRHELInstalledKernel:
             "--force",
             "--nodeps",
             "--replacepkgs",
-            "{}kernel-4.7.4-200.fc24*".format(utils.TMP_DIR),
+            f"{utils.TMP_DIR}kernel-4.7.4-200.fc24*",
         ]
 
     def test_replace_non_rhel_installed_kernel_custom_repos(self, monkeypatch, global_tool_opts):
@@ -755,13 +750,13 @@ def test_get_total_packages_to_update(
     if package_manager_type == "dnf":
         monkeypatch.setattr(
             pkghandler,
-            "_get_packages_to_update_{}".format(package_manager_type),
+            f"_get_packages_to_update_{package_manager_type}",
             value=lambda disable_repos: packages,
         )
     else:
         monkeypatch.setattr(
             pkghandler,
-            "_get_packages_to_update_{}".format(package_manager_type),
+            f"_get_packages_to_update_{package_manager_type}",
             value=lambda disable_repos: packages,
         )
     assert get_total_packages_to_update() == expected

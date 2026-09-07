@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import hashlib
 import os
@@ -28,7 +26,6 @@ from convert2rhel.backup import files
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.unit_tests import CriticalErrorCallableObject
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -220,7 +217,7 @@ class TestBackupSystem:
         monkeypatch.setattr(backup_system, "LOG_DIR", str(tmp_path))
 
         rpm_va_path = os.path.join(tmp_path, PRE_RPM_VA_LOG_FILENAME)
-        message = "Missing file {} in it's location".format(rpm_va_path)
+        message = f"Missing file {rpm_va_path} in it's location"
 
         with pytest.raises(SystemExit, match=message):
             backup_package_files_action._get_changed_package_files()
@@ -316,8 +313,8 @@ class TestBackupSystem:
                     path = line.split()[-1]
                     with open(path, mode="w") as f:
                         # Append the original path to the content
-                        f.write("Content for testing of file {}".format(path))
-                except (OSError, IOError):
+                        f.write(f"Content for testing of file {path}")
+                except OSError:
                     # case with invalid filepath
                     pass
 
@@ -344,13 +341,13 @@ class TestBackupSystem:
             if backed_up[i]:
                 # Check if the file exists and contains right content
                 with open(backed_up_file_path, mode="r") as f:
-                    assert f.read() == "Content for testing of file {}".format(original_file_path)
+                    assert f.read() == f"Content for testing of file {original_file_path}"
                 # Remove the original file
                 try:
                     os.remove(original_file_path)
                     removed_paths.append(original_file_path)
                 # FileNotFound on Python 3+, due compatibility with Python 2.7 using OSError
-                except (OSError, IOError):
+                except OSError:
                     # If the path is present multiple times in the 'rpm -Va' output
                     # it's possible, the path was already removed. If not, that's fail.
                     if original_file_path not in removed_paths:
@@ -358,7 +355,7 @@ class TestBackupSystem:
             elif status == "missing":
                 with open(original_file_path, mode="w") as f:
                     # Append the original path to the content
-                    f.write("Content for testing of file {}".format(original_file_path))
+                    f.write(f"Content for testing of file {original_file_path}")
             else:
                 assert not os.path.isfile(backed_up_file_path)
 
@@ -374,7 +371,7 @@ class TestBackupSystem:
             if backed_up[i]:
                 assert os.path.isfile(original_file_path)
                 with open(original_file_path, mode="r") as f:
-                    assert f.read() == "Content for testing of file {}".format(original_file_path)
+                    assert f.read() == f"Content for testing of file {original_file_path}"
             elif status == "missing":
                 assert not os.path.isfile(original_file_path)
 
@@ -449,4 +446,4 @@ class TestBackupRepository:
         backup_repository = backup_repository_action
 
         backup_repository.run()
-        assert ("Repository folder {} seems to be empty.".format(etc)) in caplog.text
+        assert (f"Repository folder {etc} seems to be empty.") in caplog.text

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import errno
 import shutil
@@ -21,7 +20,6 @@ import shutil
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.utils import TMP_DIR
-
 
 loggerinst = root_logger.getChild(__name__)
 
@@ -39,13 +37,13 @@ class RemoveTmpDir(actions.Action):
         This function is idempotent and will do nothing if the
         temporary directory does not exist.
         """
-        super(RemoveTmpDir, self).run()
+        super().run()
 
-        loggerinst.task("Remove temporary folder {}".format(TMP_DIR))
+        loggerinst.task(f"Remove temporary folder {TMP_DIR}")
 
         try:
             shutil.rmtree(self.tmp_dir)
-            loggerinst.info("Temporary folder {} removed".format(self.tmp_dir))
+            loggerinst.info(f"Temporary folder {self.tmp_dir} removed")
         except OSError as exc:
             # We want run() to be idempotent, so do nothing silently if
             # the path doesn't exist.
@@ -53,14 +51,14 @@ class RemoveTmpDir(actions.Action):
             if exc.errno == errno.ENOENT:
                 return
             warning_message = (
-                "The folder {} is left untouched. You may remove the folder manually"
-                " after you ensure there is no preserved data you would need.".format(self.tmp_dir)
+                f"The folder {self.tmp_dir} is left untouched. You may remove the folder manually"
+                " after you ensure there is no preserved data you would need."
             )
             loggerinst.warning(warning_message)
 
             self.add_message(
                 level="WARNING",
                 id="UNSUCCESSFUL_REMOVE_TMP_DIR",
-                title="Temporary folder {tmp_dir} wasn't removed.".format(tmp_dir=self.tmp_dir),
+                title=f"Temporary folder {self.tmp_dir} wasn't removed.",
                 description=warning_message,
             )

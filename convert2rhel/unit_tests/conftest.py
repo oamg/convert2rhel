@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 import logging
 import os
 import sys
@@ -13,10 +11,8 @@ from convert2rhel.logger import setup_logger_handler
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import MinimalRestorable
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
 
 # We are injecting a instance of `mock.Mock()` for `Depsolve` class and
 # `callback` module, as when we run the tests under CentOS 7, it fails by saying
@@ -246,7 +242,7 @@ def pretend_os(request, pkg_root, monkeypatch, global_tool_opts):
     monkeypatch.setattr(
         utils,
         "DATA_DIR",
-        value=str(pkg_root / ("convert2rhel/data/{}/x86_64/".format(system_version_major))),
+        value=str(pkg_root / (f"convert2rhel/data/{system_version_major}/x86_64/")),
     )
     monkeypatch.setattr(
         redhatrelease,
@@ -256,7 +252,7 @@ def pretend_os(request, pkg_root, monkeypatch, global_tool_opts):
     monkeypatch.setattr(
         utils,
         "get_file_content",
-        value=lambda _: "{} release {}".format(system_name, system_version),
+        value=lambda _: f"{system_name} release {system_version}",
     )
     monkeypatch.setattr(
         system_info,

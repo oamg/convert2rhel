@@ -280,7 +280,7 @@ def test_rollback_failure_returncode(shell, convert2rhel, immutable_os_release_f
     Use fake credentials to cause the inhibition.
     """
 
-    with convert2rhel("{} --debug -y --username happy_hippo --password hippo_is_hungry".format(c2r_mode)) as c2r:
+    with convert2rhel(f"{c2r_mode} --debug -y --username happy_hippo --password hippo_is_hungry") as c2r:
         c2r.expect("WARNING - Error while rolling back")
         c2r.expect("CRITICAL - Rollback of system wasn't completed successfully.")
     assert c2r.exitstatus == 1

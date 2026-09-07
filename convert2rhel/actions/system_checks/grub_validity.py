@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from convert2rhel import actions, utils
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -30,7 +28,7 @@ class GrubValidity(actions.Action):
         Execute grub2-mkconfig and report an error if it fails to execute. A failure means that the grub file
         is invalid.
         """
-        super(GrubValidity, self).run()
+        super().run()
         logger.task("Check if the grub file is valid")
         output, ret_code = utils.run_subprocess(["grub2-mkconfig"], print_output=False)
 

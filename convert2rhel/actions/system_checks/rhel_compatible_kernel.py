@@ -13,15 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_installed_pkg_information
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
-
 
 logger = root_logger.getChild(__name__)
 
@@ -58,7 +55,7 @@ class RhelCompatibleKernel(actions.Action):
         By requesting that, we can be confident that the RHEL kernel will provide the same capabilities as on the
         original system.
         """
-        super(RhelCompatibleKernel, self).run()
+        super().run()
         logger.task("Check kernel compatibility with RHEL")
         for check_function in (_bad_kernel_version, _bad_kernel_package_signature, _bad_kernel_substring):
             try:
@@ -88,23 +85,21 @@ class RhelCompatibleKernel(actions.Action):
                     title="Incompatible booted kernel version",
                     description="Please refer to the diagnosis for further information",
                     diagnosis=(
-                        "The booted kernel version is incompatible with the standard RHEL kernel. {}".format(
-                            bad_kernel_message
-                        )
+                        f"The booted kernel version is incompatible with the standard RHEL kernel. {bad_kernel_message}"
                     ),
                     remediations=(
-                        "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
+                        f"To proceed with the conversion, boot into a kernel that is available in the {system_info.name} {system_info.version.major} base repository"
                         " by executing the following steps:\n\n"
-                        "1. Ensure that the {0} {1} base repository is enabled\n"
+                        f"1. Ensure that the {system_info.name} {system_info.version.major} base repository is enabled\n"
                         "2. Run: yum install kernel\n"
                         "3. (optional) Run: grubby --set-default "
-                        '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
+                        '/boot/vmlinuz-`rpm -q --qf "%{BUILDTIME}\\t%{EVR}.%{ARCH}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
                         "4. Reboot the machine and if step 3 was not applied choose the kernel"
-                        " installed in step 2 manually".format(system_info.name, system_info.version.major)
+                        " installed in step 2 manually"
                     ),
                 )
                 return
-        logger.info("The booted kernel {} is compatible with RHEL.".format(system_info.booted_kernel))
+        logger.info(f"The booted kernel {system_info.booted_kernel} is compatible with RHEL.")
 
 
 def _bad_kernel_version(kernel_release):
@@ -139,7 +134,7 @@ def _bad_kernel_version(kernel_release):
 
 def _bad_kernel_package_signature(kernel_release):
     """Return True if the booted kernel is not signed by the original OS vendor, i.e. it's a custom kernel."""
-    vmlinuz_path = "/boot/vmlinuz-{}".format(kernel_release)
+    vmlinuz_path = f"/boot/vmlinuz-{kernel_release}"
 
     kernel_pkg, return_code = run_subprocess(["rpm", "-qf", "--qf", "%{NEVRA}", vmlinuz_path], print_output=False)
     logger.debug("Booted kernel package name: %s", kernel_pkg)
@@ -162,7 +157,7 @@ def _bad_kernel_package_signature(kernel_release):
             {"os_vendor": os_vendor},
         )
 
-    logger.debug("The booted kernel is signed by {}.".format(os_vendor))
+    logger.debug(f"The booted kernel is signed by {os_vendor}.")
     return False
 
 

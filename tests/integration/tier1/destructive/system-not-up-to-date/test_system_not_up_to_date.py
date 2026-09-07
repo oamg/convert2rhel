@@ -29,7 +29,7 @@ def downgrade_and_versionlock(shell):
     os_key = f"{SystemInformationRelease.distribution}-{SystemInformationRelease.version.major}"
 
     if re.match(r"^(almalinux|centos|rocky)-[89]", os_key):
-        assert shell("yum install -y {}".format(older_packages_mapping.get(os_key))).returncode == 0
+        assert shell(f"yum install -y {older_packages_mapping.get(os_key)}").returncode == 0
     else:
         assert shell("yum install openldap wpa_supplicant sqlite -y").returncode == 0
         # Try to downgrade some packages.

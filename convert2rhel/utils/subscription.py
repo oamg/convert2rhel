@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 import re
 
 from six.moves import urllib
-
 
 loggerinst = logging.getLogger(__name__)
 
@@ -60,7 +57,7 @@ def setup_rhsm_parts(opts):
                 loggerinst.critical(
                     "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
                     "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
-                    "Supplied serverurl: {}\nError: {}".format(opts.serverurl, e)
+                    f"Supplied serverurl: {opts.serverurl}\nError: {e}"
                 )
 
             rhsm_parts["rhsm_hostname"] = url_parts.hostname
@@ -88,7 +85,7 @@ def _parse_subscription_manager_serverurl(serverurl):
             raise ValueError("Unable to parse --serverurl. Make sure it starts with http://HOST or https://HOST")
 
         # If there isn't a scheme, add one now
-        serverurl = "https://{}".format(serverurl)
+        serverurl = f"https://{serverurl}"
 
     url_parts = urllib.parse.urlsplit(serverurl, allow_fragments=False)
 
@@ -104,9 +101,7 @@ def _validate_serverurl_parsing(url_parts):
     :returns: url_parts If the check was successful.
     """
     if url_parts.scheme not in ("https", "http"):
-        raise ValueError(
-            "Subscription manager must be accessed over http or https.  {} is not valid".format(url_parts.scheme)
-        )
+        raise ValueError(f"Subscription manager must be accessed over http or https.  {url_parts.scheme} is not valid")
 
     if not url_parts.hostname:
         raise ValueError("A hostname must be specified in a subscription-manager serverurl")

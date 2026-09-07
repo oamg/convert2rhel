@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2022 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import re
 
@@ -27,7 +25,6 @@ from convert2rhel.pkgmanager.handlers.base import TransactionHandlerBase
 from convert2rhel.pkgmanager.handlers.yum.callback import PackageDownloadCallback, TransactionDisplayCallback
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import remove_pkgs
-
 
 logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
@@ -159,13 +156,13 @@ class YumTransactionHandler(TransactionHandlerBase):
             for repo in enabled_repos:
                 self._base.repos.enableRepo(repo)
         except pkgmanager.Errors.RepoError as e:
-            logger.debug("Loading repository metadata failed: {}".format(e))
+            logger.debug(f"Loading repository metadata failed: {e}")
             logger.critical_no_exit("Failed to populate repository metadata.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_ENABLE_REPOS",
                 title="Failed to enable repositories.",
                 description="We've encountered a failure when accessing repository metadata.",
-                diagnosis="Loading repository metadata failed with error {}.".format(str(e)),
+                diagnosis=f"Loading repository metadata failed with error {e!s}.",
             )
 
     def _swap_base_os_specific_packages(self):
@@ -179,10 +176,10 @@ class YumTransactionHandler(TransactionHandlerBase):
         # Related issue: https://issues.redhat.com/browse/RHELC-1130, see comments
         # to get more proper description of solution
         for old_package, new_package in system_info.swap_pkgs.items():
-            logger.debug("Checking if {} installed for later swap.".format(old_package))
+            logger.debug(f"Checking if {old_package} installed for later swap.")
             is_installed = system_info.is_rpm_installed(old_package)
             if is_installed:
-                logger.debug("Package {} will be swapped to {} during conversion.".format(old_package, new_package))
+                logger.debug(f"Package {old_package} will be swapped to {new_package} during conversion.")
                 # Order of operations based on YUM implementation of swap:
                 # https://github.com/rpm-software-management/yum/blob/master/yumcommands.py#L3488
                 self._base.remove(pattern=old_package)
@@ -233,7 +230,7 @@ class YumTransactionHandler(TransactionHandlerBase):
                 id_="FAILED_TO_LOAD_REPOSITORIES",
                 title="Failed to find suitable mirrors for the load repositories.",
                 description="All available mirrors were tried and none were available.",
-                diagnosis="Repository mirrors failed with error {}.".format(str(e)),
+                diagnosis=f"Repository mirrors failed with error {e!s}.",
             )
 
     def _resolve_dependencies(self):

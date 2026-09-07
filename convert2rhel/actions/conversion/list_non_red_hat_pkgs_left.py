@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from convert2rhel import actions, logger
 from convert2rhel.pkghandler import get_installed_pkgs_w_different_key_id, print_pkg_info
 from convert2rhel.systeminfo import system_info
-
 
 loggerinst = logger.root_logger.getChild(__name__)
 
@@ -31,7 +29,7 @@ class ListNonRedHatPkgsLeft(actions.Action):
         """List all the packages that have not been replaced by the
         Red Hat-signed ones during the conversion.
         """
-        super(ListNonRedHatPkgsLeft, self).run()
+        super().run()
         loggerinst.task("List remaining non-Red Hat packages")
 
         loggerinst.info("Listing packages not signed by Red Hat")

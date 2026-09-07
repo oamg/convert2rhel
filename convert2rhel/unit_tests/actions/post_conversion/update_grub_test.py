@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from collections import namedtuple
 
@@ -23,7 +22,6 @@ import six
 from convert2rhel import actions, grub, unit_tests, utils
 from convert2rhel.actions.post_conversion import update_grub
 from convert2rhel.unit_tests import RunSubprocessMocked, run_subprocess_side_effect
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -65,7 +63,7 @@ def test_update_grub(
                 (
                     "/usr/sbin/grub2-mkconfig",
                     "-o",
-                    "{}".format(config_path),
+                    f"{config_path}",
                 ),
                 (
                     "output",
@@ -201,7 +199,7 @@ def test_update_grub_action_messages(
                 (
                     "/usr/sbin/grub2-mkconfig",
                     "-o",
-                    "{}".format(config_path),
+                    f"{config_path}",
                 ),
                 (
                     "output",
@@ -244,7 +242,7 @@ def test_update_grub_error(update_grub_instance, monkeypatch, get_partition_erro
         level="ERROR",
         id="FAILED_TO_IDENTIFY_GRUB2_BLOCK_DEVICE",
         title="Failed to identify GRUB2 block device",
-        description="The block device could not be identified, please look at the diagnosis " "for more information.",
+        description="The block device could not be identified, please look at the diagnosis for more information.",
         diagnosis=diagnosis,
     )
 
@@ -267,7 +265,7 @@ _GRUB_DISABLE_SUBMENU_OPT = 'GRUB_DISABLE_SUBMENU="true"'
         pytest.param(
             2,
             'GRUB_TERMINAL="ec2-console"\n',
-            'GRUB_TERMINAL="console"\n{}\n{}\n'.format(_GRUB_DISTRIBUTOR_OPT, _GRUB_DISABLE_SUBMENU_OPT),
+            f'GRUB_TERMINAL="console"\n{_GRUB_DISTRIBUTOR_OPT}\n{_GRUB_DISABLE_SUBMENU_OPT}\n',
             "Successfully updated /etc/default/grub.",
             True,
             id="al2_replace_ec2_console_add_missing_opts",
@@ -275,7 +273,7 @@ _GRUB_DISABLE_SUBMENU_OPT = 'GRUB_DISABLE_SUBMENU="true"'
         pytest.param(
             2,
             'GRUB_TERMINAL="console"\n',
-            'GRUB_TERMINAL="console"\n{}\n{}\n'.format(_GRUB_DISTRIBUTOR_OPT, _GRUB_DISABLE_SUBMENU_OPT),
+            f'GRUB_TERMINAL="console"\n{_GRUB_DISTRIBUTOR_OPT}\n{_GRUB_DISABLE_SUBMENU_OPT}\n',
             "Successfully updated /etc/default/grub.",
             True,
             id="al2_console_already_set_add_missing_opts",
