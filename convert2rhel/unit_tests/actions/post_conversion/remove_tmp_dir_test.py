@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 import os
@@ -35,7 +34,7 @@ def test_remove_tmp_dir(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
     assert os.path.isdir(path)
     remove_tmp_dir_instance.run()
-    assert "Temporary folder {} removed".format(path) in caplog.text
+    assert f"Temporary folder {path} removed" in caplog.text
     assert not os.path.isdir(path)
 
 
@@ -45,7 +44,7 @@ def test_remove_tmp_dir_non_existent(remove_tmp_dir_instance, monkeypatch, caplo
     monkeypatch.setattr(remove_tmp_dir_instance, "tmp_dir", path)
     assert not os.path.isdir(path)
     remove_tmp_dir_instance.run()
-    assert "Temporary folder {} removed".format(path) not in caplog.text
+    assert f"Temporary folder {path} removed" not in caplog.text
 
 
 def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, caplog):
@@ -55,15 +54,15 @@ def test_remove_tmp_dir_failure(remove_tmp_dir_instance, monkeypatch, tmpdir, ca
     os.chmod(path, 0)
     remove_tmp_dir_instance.run()
     expected_message = (
-        "The folder {} is left untouched. You may remove the folder manually"
-        " after you ensure there is no preserved data you would need.".format(path)
+        f"The folder {path} is left untouched. You may remove the folder manually"
+        " after you ensure there is no preserved data you would need."
     )
     expected = set(
         (
             actions.ActionMessage(
                 id="UNSUCCESSFUL_REMOVE_TMP_DIR",
                 level="WARNING",
-                title="Temporary folder {tmp_dir} wasn't removed.".format(tmp_dir=path),
+                title=f"Temporary folder {path} wasn't removed.",
                 description=expected_message,
             ),
         ),

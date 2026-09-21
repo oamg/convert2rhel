@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from convert2rhel import actions, systeminfo
 from convert2rhel.logger import root_logger
@@ -22,7 +21,6 @@ from convert2rhel.subscription import get_rhsm_facts
 from convert2rhel.systeminfo import SystemInfo
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
-
 
 logger = root_logger.getChild(__name__)
 
@@ -46,7 +44,7 @@ class ConfigureHostMetering(actions.Action):
         """
         logger.task("Configure host-metering")
 
-        super(ConfigureHostMetering, self).run()
+        super().run()
 
         warn_deprecated_env("CONVERT2RHEL_CONFIGURE_HOST_METERING")
         if not self._check_host_metering_configuration():
@@ -77,9 +75,7 @@ class ConfigureHostMetering(actions.Action):
                 title="Failed to install host metering package.",
                 description="When installing host metering package an error occurred meaning we can't"
                 " enable host metering on the system.",
-                diagnosis="`yum install host-metering` command returned {ret_install} with message {output}".format(
-                    ret_install=ret_install, output=output
-                ),
+                diagnosis=f"`yum install host-metering` command returned {ret_install} with message {output}",
                 remediations="You can try install and set up the host metering"
                 " manually using following commands:\n"
                 " - `yum install host-metering`\n"
@@ -95,11 +91,8 @@ class ConfigureHostMetering(actions.Action):
                 level="WARNING",
                 id="CONFIGURE_HOST_METERING_FAILURE",
                 title="Failed to enable and start host metering service.",
-                description="The host metering service failed to start"
-                " successfully and won't be able to keep track.",
-                diagnosis="Command {command} failed with {error_message}".format(
-                    command=command, error_message=error_message
-                ),
+                description="The host metering service failed to start successfully and won't be able to keep track.",
+                diagnosis=f"Command {command} failed with {error_message}",
                 remediations="You can try set up the host metering"
                 " service manually using following commands:\n"
                 " - `systemctl enable host-metering.service`\n"
@@ -137,18 +130,14 @@ class ConfigureHostMetering(actions.Action):
         if tool_opts.configure_host_metering not in ("force", "auto"):
             logger.debug(
                 "Unexpected value of 'configure_host_metering' in convert2rhel.ini or the"
-                " CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: {}".format(
-                    tool_opts.configure_host_metering
-                )
+                f" CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: {tool_opts.configure_host_metering}"
             )
             self.add_message(
                 level="WARNING",
                 id="UNRECOGNIZED_OPTION_CONFIGURE_HOST_METERING",
                 title="Unexpected value of the host metering setting",
                 diagnosis="Unexpected value of 'configure_host_metering' in convert2rhel.ini or the"
-                " CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: {}".format(
-                    tool_opts.configure_host_metering
-                ),
+                f" CONVERT2RHEL_CONFIGURE_HOST_METERING environment variable: {tool_opts.configure_host_metering}",
                 description="Host metering will not be configured.",
                 remediations="Set the option to 'auto' or 'force' if you want to configure host metering.",
             )
@@ -210,7 +199,7 @@ class ConfigureHostMetering(actions.Action):
         command = ["systemctl", "enable", "host-metering.service"]
         output, ret_enable = run_subprocess(command)
         if output:
-            logger.debug("Output of systemctl call: {}".format(output))
+            logger.debug(f"Output of systemctl call: {output}")
         if ret_enable:
             logger.warning("Failed to enable host-metering service.")
             return " ".join(command), output
@@ -219,7 +208,7 @@ class ConfigureHostMetering(actions.Action):
         command = ["systemctl", "start", "host-metering.service"]
         output, ret_start = run_subprocess(command)
         if output:
-            logger.debug("Output of systemctl call: {}".format(output))
+            logger.debug(f"Output of systemctl call: {output}")
         if ret_start:
             logger.warning("Failed to start host-metering service.")
             return " ".join(command), output

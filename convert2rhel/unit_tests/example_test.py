@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 """
 This is an example test file containing a simple test.
@@ -24,7 +22,6 @@ This is an example test file containing a simple test.
 import six
 
 from convert2rhel import unit_tests, utils
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -57,7 +54,7 @@ class RunSubprocessMocked(unit_tests.MockFunctionObject):
         self.prefix = "this ain't "
         self.ret = ret
 
-        super(RunSubprocessMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, *args, **kwargs):
         """
@@ -73,7 +70,7 @@ class RunSubprocessMocked(unit_tests.MockFunctionObject):
           or `side_effect` in `__init__` and returning the results of the superclass's `__call__`
           method here.
         """
-        super(RunSubprocessMocked, self).__call__(*args, **kwargs)
+        super().__call__(*args, **kwargs)
 
         self.ret = (self.prefix + self.ret[0], self.ret[1])
         return self.ret

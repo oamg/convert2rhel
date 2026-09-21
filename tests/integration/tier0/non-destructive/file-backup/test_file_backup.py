@@ -3,7 +3,6 @@ import os.path
 
 import pytest
 
-
 MODIFIED_CONTENT = """\n#This is just a placeholder test
 #to verify the file won't be changed
 # after the rollback"""

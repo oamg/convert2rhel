@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 import sys
@@ -23,13 +21,23 @@ import sys
 import pytest
 import six
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
 
-from convert2rhel import actions, applock, backup, cli, exceptions
+from convert2rhel import (
+    actions,
+    applock,
+    backup,
+    cli,
+    exceptions,
+    main,
+    pkghandler,
+    pkgmanager,
+    subscription,
+    toolopts,
+    utils,
+)
 from convert2rhel import logger as logger_module
-from convert2rhel import main, pkghandler, pkgmanager, subscription, toolopts, utils
 from convert2rhel.actions import report
 from convert2rhel.breadcrumbs import breadcrumbs
 from convert2rhel.systeminfo import system_info

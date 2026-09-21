@@ -13,13 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
-
 
 logger = root_logger.getChild(__name__)
 
@@ -39,16 +37,16 @@ class TaintedKmods(actions.Action):
         system76_io 16384 0 - Live 0x0000000000000000 (OE)  <<<<<< Tainted
         system76_acpi 16384 0 - Live 0x0000000000000000 (OE) <<<<<< Tainted
         """
-        super(TaintedKmods, self).run()
+        super().run()
 
         logger.task("Check if loaded kernel modules are not tainted")
         unsigned_modules, _ = run_subprocess(["grep", "(", "/proc/modules"])
         module_names = "\n  ".join([mod.split(" ")[0] for mod in unsigned_modules.splitlines()])
         warn_deprecated_env("CONVERT2RHEL_TAINTED_KERNEL_MODULE_CHECK_SKIP")
         diagnosis = (
-            "Tainted kernel modules detected:\n  {0}\n"
+            f"Tainted kernel modules detected:\n  {module_names}\n"
             "Third-party components are not supported per our "
-            "software support policy:\n{1}\n".format(module_names, LINK_KMODS_RH_POLICY)
+            f"software support policy:\n{LINK_KMODS_RH_POLICY}\n"
         )
 
         if unsigned_modules:
@@ -60,15 +58,13 @@ class TaintedKmods(actions.Action):
                     description="Please refer to the diagnosis for further information",
                     diagnosis=diagnosis,
                     remediations=(
-                        "Prevent the modules from loading by following {0}"
+                        f"Prevent the modules from loading by following {LINK_PREVENT_KMODS_FROM_LOADING}"
                         " and run convert2rhel again to continue with the conversion."
                         " Although it is not recommended, you can disregard this message by setting the"
                         " tainted_kernel_module_check_skip inhibitor override in the /etc/convert2rhel.ini"
                         " config file to true. Overriding this check can be dangerous"
                         " so it is recommended that you do a system backup beforehand."
-                        " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
-                            LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
-                        )
+                        f" For information on what a tainted kernel module is, please refer to this documentation {LINK_TAINTED_KMOD_DOCS}"
                     ),
                 )
                 return
@@ -90,11 +86,9 @@ class TaintedKmods(actions.Action):
                 description="Please refer to the diagnosis for further information",
                 diagnosis=diagnosis,
                 remediations=(
-                    "Prevent the modules from loading by following {0}"
+                    f"Prevent the modules from loading by following {LINK_PREVENT_KMODS_FROM_LOADING}"
                     " and run convert2rhel again to continue with the conversion."
-                    " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
-                        LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
-                    )
+                    f" For information on what a tainted kernel module is, please refer to this documentation {LINK_TAINTED_KMOD_DOCS}"
                 ),
             )
             return

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 import os
 import shutil
 import sys
-
 from logging.handlers import BufferingHandler
 from time import gmtime, strftime
 
@@ -70,7 +67,7 @@ class LogfileBufferHandler(BufferingHandler):
         :param int capacity: Buffer size for the handler
         :param str handler_name: Handler to flush buffer to, defaults to "file_handler"
         """
-        super(LogfileBufferHandler, self).__init__(capacity)
+        super().__init__(capacity)
         # the FileLogger handler that we are logging to
         self._handler_name = handler_name
         self.set_name("logfile_buffer_handler")
@@ -101,7 +98,7 @@ class LogfileBufferHandler(BufferingHandler):
         :param logging.LogRecord record: The record to log
         :return bool: Always returns false
         """
-        if super(LogfileBufferHandler, self).shouldFlush(record):
+        if super().shouldFlush(record):
             self.buffer = self.buffer[1:]
         return False
 
@@ -213,7 +210,7 @@ def archive_old_logger_files(log_name, log_dir):
         os.makedirs(archive_log_dir)
 
     file_name, suffix = tuple(log_name.rsplit(".", 1))
-    archive_log_file = "{}/{}-{}.{}".format(archive_log_dir, file_name, formatted_time, suffix)
+    archive_log_file = f"{archive_log_dir}/{file_name}-{formatted_time}.{suffix}"
     shutil.move(current_log_file, archive_log_file)
 
 
@@ -282,12 +279,10 @@ class CustomFormatter(logging.Formatter):
         if is_task:
             log_phase_name = ""
             if ConversionPhases.current_phase and ConversionPhases.current_phase.log_name:
-                log_phase_name = "{}: ".format(ConversionPhases.current_phase.log_name)
+                log_phase_name = f"{ConversionPhases.current_phase.log_name}: "
             asterisks = "*" * (90 - len(log_phase_name) - len(record.msg) - 25)
 
-            fmt_orig = "\n[%(asctime)s] TASK - [{log_phase_name}%(message)s] {asterisks}".format(
-                log_phase_name=log_phase_name, asterisks=asterisks
-            )
+            fmt_orig = f"\n[%(asctime)s] TASK - [{log_phase_name}%(message)s] {asterisks}"
 
             self.datefmt = "%Y-%m-%dT%H:%M:%S%z"
         elif record.levelno >= logging.WARNING:
@@ -307,7 +302,7 @@ class CustomFormatter(logging.Formatter):
             # Overwriting the style _fmt gets the result we want
             self._style._fmt = self._fmt
 
-        return super(CustomFormatter, self).format(record)
+        return super().format(record)
 
     def _getLogLevelColor(self, record, is_task=False):
         if is_task:
@@ -336,7 +331,7 @@ class CustomLogger(logging.Logger):
     """
 
     def __init__(self, name, level=0):
-        super(CustomLogger, self).__init__(name, level)
+        super().__init__(name, level)
 
     def critical_no_exit(self, message, *args, **kwargs):
         return self.critical(message, extra={"no_exit": True}, *args, **kwargs)

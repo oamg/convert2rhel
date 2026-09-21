@@ -2,7 +2,6 @@ import jsonschema
 
 from test_helpers.common_functions import load_json_schema
 
-
 C2R_MIGRATION_RESULTS_SCHEMA = load_json_schema(path="artifacts/c2r_migration_results_schema.json")
 C2R_RHSM_CUSTOM_FACTS_SCHEMA = load_json_schema(path="artifacts/c2r_facts_schema.json")
 

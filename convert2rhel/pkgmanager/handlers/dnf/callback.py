@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -58,12 +57,10 @@
 #   License above taken from the original code at:
 #
 #       https://github.com/rpm-software-management/dnf/blob/4.7.0/dnf/cli/output.py
-__metaclass__ = type
 
 
 from convert2rhel import pkgmanager
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
@@ -101,7 +98,7 @@ class DependencySolverProgressIndicatorCallback(pkgmanager.Depsolve):
             message = self._DEPSOLVE_MODES[mode]
         except KeyError:
             message = None
-            logger.debug("Unknown operation ({}) for package '{}'.".format(mode, pkg))
+            logger.debug(f"Unknown operation ({mode}) for package '{pkg}'.")
 
         if message:
             logger.info(message, pkg)
@@ -204,7 +201,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress):
                     self.total_drpm,
                     package,
                 )
-                message = "{} - {}".format(message, err_msg)
+                message = f"{message} - {err_msg}"
             else:
                 message = "(%d/%d) [%s]: %s" % (
                     self.done_files,
@@ -225,7 +222,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
 
     def __init__(self):
         """Constructor for the transaction display progress in DNF."""
-        super(TransactionDisplayCallback, self).__init__()
+        super().__init__()
         self.last_package_seen = None
 
     def progress(self, package, action, ti_done, ti_total, ts_done, ts_total):
@@ -259,7 +256,7 @@ class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
         # different.
         package = str(package)
 
-        message = "{}: {} [{}/{}]".format(pkgmanager.transaction.ACTIONS.get(action), package, ts_done, ts_total)
+        message = f"{pkgmanager.transaction.ACTIONS.get(action)}: {package} [{ts_done}/{ts_total}]"
 
         # The base API will call this callback class on every package update,
         # no matter if it is the same update or not, so, the below statement

@@ -313,13 +313,13 @@ from rpmUtils.miscutils import checkSignals
 
 yb = YumBase()
 try:
-    #yb.doConfigSetup(init_plugins=False)
+    # yb.doConfigSetup(init_plugins=False)
     yb.runTransaction(False)
 except (BaseException, SystemExit, Exception) as e:
-    print('We were able to catch an exception from runTransaction!')
+    print("We were able to catch an exception from runTransaction!")
     print(type(e))
     print(e)
-print('Sleeping')
+print("Sleeping")
 time.sleep(3)
 # Hit Ctrl-C
 # If KeyboardInterrupt is raised, chances are that this did not cause the
@@ -327,11 +327,11 @@ time.sleep(3)
 try:
     checkSignals()
 except (BaseException, SystemExit, Exception) as e:
-    print('We were able to catch an exception from checkSignals!')
+    print("We were able to catch an exception from checkSignals!")
     print(type(e))
     print(e)
 finally:
-    print('In the finally block')
+    print("In the finally block")
 # If the previous try: except  exits immediately without message, then the
 # issue occurred.
 # If it raises a KeyboardInterrupt traceback then we're okay.

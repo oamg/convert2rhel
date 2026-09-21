@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import getpass
 import json
@@ -24,7 +22,6 @@ import os
 import re
 import shutil
 import sys
-
 from pickle import PicklingError
 
 import pexpect
@@ -32,7 +29,6 @@ import pytest
 import six
 
 from convert2rhel.utils import prompt_user
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 
@@ -42,22 +38,21 @@ from convert2rhel import exceptions, systeminfo, toolopts, unit_tests, utils  # 
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RunCmdInPtyMocked, RunSubprocessMocked, conftest, is_rpm_based_os
 
-
 DOWNLOADED_RPM_NVRA = "kernel-4.18.0-193.28.1.el8_2.x86_64"
-DOWNLOADED_RPM_NEVRA = "7:{}".format(DOWNLOADED_RPM_NVRA)
-DOWNLOADED_RPM_FILENAME = "{}.rpm".format(DOWNLOADED_RPM_NVRA)
+DOWNLOADED_RPM_NEVRA = f"7:{DOWNLOADED_RPM_NVRA}"
+DOWNLOADED_RPM_FILENAME = f"{DOWNLOADED_RPM_NVRA}.rpm"
 
 YUMDOWNLOADER_OUTPUTS = (
-    "{0}                  97% [================================================- ] 6.8 MB/s |  21 MB  00:00:00 ETA\n"
+    f"{DOWNLOADED_RPM_FILENAME}                  97% [================================================- ] 6.8 MB/s |  21 MB  00:00:00 ETA\n"
     "rpmdb time: 0.000\n"
-    "{0}                                                                                    |  21 MB  00:00:01\n"
-    "== Rebuilding _local repo. with 1 new packages ==".format(DOWNLOADED_RPM_FILENAME),
+    f"{DOWNLOADED_RPM_FILENAME}                                                                                    |  21 MB  00:00:01\n"
+    "== Rebuilding _local repo. with 1 new packages ==",
     "Last metadata expiration check: 2:47:36 ago on Thu 22 Oct 2020 06:07:08 PM CEST.\n"
-    "{}         2.7 MB/s | 2.8 MB     00:01".format(DOWNLOADED_RPM_FILENAME),
-    "/var/lib/convert2rhel/{} already exists and appears to be complete".format(DOWNLOADED_RPM_FILENAME),
-    "rpmdb time: 0.000\nusing local copy of {}".format(DOWNLOADED_RPM_NEVRA),
-    "rpmdb time: 0.000\nusing local copy of {}\r\n".format(DOWNLOADED_RPM_NEVRA),
-    "[SKIPPED] {}: Already downloaded".format(DOWNLOADED_RPM_FILENAME),
+    f"{DOWNLOADED_RPM_FILENAME}         2.7 MB/s | 2.8 MB     00:01",
+    f"/var/lib/convert2rhel/{DOWNLOADED_RPM_FILENAME} already exists and appears to be complete",
+    f"rpmdb time: 0.000\nusing local copy of {DOWNLOADED_RPM_NEVRA}",
+    f"rpmdb time: 0.000\nusing local copy of {DOWNLOADED_RPM_NEVRA}\r\n",
+    f"[SKIPPED] {DOWNLOADED_RPM_FILENAME}: Already downloaded",
 )
 
 
@@ -66,21 +61,21 @@ class GetEUIDMocked(unit_tests.MockFunctionObject):
 
     def __init__(self, uid, **kwargs):
         self.uid = uid
-        super(GetEUIDMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, *args, **kwargs):
-        super(GetEUIDMocked, self).__call__(*args, **kwargs)
+        super().__call__(*args, **kwargs)
         return self.uid
 
 
 class FakeSecondCallToRunSubprocessMocked(RunSubprocessMocked):
     def __init__(self, second_call_return_code, *args, **kwargs):
-        super(FakeSecondCallToRunSubprocessMocked, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.real_run_subprocess = utils.run_subprocess
         self.second_call_return_code = second_call_return_code
 
     def __call__(self, *args, **kwargs):
-        fake_return_val = super(FakeSecondCallToRunSubprocessMocked, self).__call__(*args, **kwargs)
+        fake_return_val = super().__call__(*args, **kwargs)
 
         if self.call_count == 1:
             # Set this so it looks like run_subprocess failed on the next call
@@ -152,7 +147,7 @@ def test_run_cmd_in_pty_expect_script(capfd):
         prompt_cmd = "input"
     with capfd.disabled():
         output, code = utils.run_cmd_in_pty(
-            [sys.executable, "-c", 'print({}("Ask for password: "))'.format(prompt_cmd)],
+            [sys.executable, "-c", f'print({prompt_cmd}("Ask for password: "))'],
             expect_script=(("password: *", "Foo bar\n"),),
         )
 
@@ -397,7 +392,7 @@ class TestFindKeys:
 
         with pytest.raises(
             utils.ImportGPGKeyError,
-            match="Unable to determine the gpg keyid for the rpm key file: {}".format(self.gpg_key),
+            match=f"Unable to determine the gpg keyid for the rpm key file: {self.gpg_key}",
         ):
             utils.find_keyid(self.gpg_key)
 
@@ -499,8 +494,8 @@ class TestDownload_pkg:
             "yumdownloader",
             "-v",
             "--setopt=exclude=",
-            "--destdir={}".format(dest),
-            "--setopt=reposdir={}".format(reposdir),
+            f"--destdir={dest}",
+            f"--setopt=reposdir={reposdir}",
             "--disablerepo=*",
             "--enablerepo=repo1",
             "--enablerepo=repo2",
@@ -972,7 +967,7 @@ class RunAsChildProcessFunctions:
 
     @staticmethod
     def return_with_both_args_and_kwargs(args, kwargs):
-        return "{}, {}".format(args, kwargs)
+        return f"{args}, {kwargs}"
 
     @staticmethod
     def raise_bare_system_exit_exception():

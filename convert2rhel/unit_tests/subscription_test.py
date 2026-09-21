@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import json
 import os
-
 from collections import namedtuple
 
 import dbus
@@ -40,7 +37,6 @@ from convert2rhel.unit_tests import (
     run_subprocess_side_effect,
 )
 from convert2rhel.unit_tests.conftest import centos7, centos8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -802,9 +798,7 @@ class TestRegistrationCommand:
             utils,
             "run_subprocess",
             RunSubprocessMocked(
-                return_string=(
-                    "system identity: 1234-56-78-9abc\n" "name: abc-123\n" "org name: Test\n" "org ID: 12345678910\n"
-                )
+                return_string=("system identity: 1234-56-78-9abc\nname: abc-123\norg name: Test\norg ID: 12345678910\n")
             ),
         )
 
@@ -892,7 +886,7 @@ class TestUnregisteringSystem:
 
         with pytest.raises(
             subscription.UnregisterError,
-            match="System unregistration result:\n{}".format(output),
+            match=f"System unregistration result:\n{output}",
         ):
             subscription.unregister_system()
 
@@ -1000,7 +994,7 @@ def test_enable_repos_rhel_repoids(
     monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
     for repo_to_enable in rhel_repoids:
-        cmd_mock.append("--enable={}".format(repo_to_enable))
+        cmd_mock.append(f"--enable={repo_to_enable}")
 
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(
@@ -1064,7 +1058,7 @@ def test_enable_repos_toolopts_enablerepo(
     monkeypatch.setattr(subscription, "system_info", global_system_info)
     cmd_mock = ["subscription-manager", "repos"]
     for repo_to_enable in toolopts_enablerepo:
-        cmd_mock.append("--enable={}".format(repo_to_enable))
+        cmd_mock.append(f"--enable={repo_to_enable}")
 
     run_subprocess_mock = RunSubprocessMocked(
         side_effect=unit_tests.run_subprocess_side_effect(

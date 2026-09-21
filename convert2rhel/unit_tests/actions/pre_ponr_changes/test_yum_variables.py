@@ -45,7 +45,7 @@ def test_get_yum_var_files_owned_by_pkgs(monkeypatch, pkg_names, owned_files, ex
     action = yum_variables.BackUpYumVariables()
 
     def mock_get_files_owned_by_package(pkg):
-        return [file for file in owned_files if "/{}_".format(pkg) in file]
+        return [file for file in owned_files if f"/{pkg}_" in file]
 
     monkeypatch.setattr(pkghandler, "get_files_owned_by_package", mock_get_files_owned_by_package)
 

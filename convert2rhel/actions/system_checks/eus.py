@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import datetime
 
@@ -21,7 +20,6 @@ from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import EUS_MINOR_VERSIONS, system_info
 from convert2rhel.toolopts import tool_opts
-
 
 logger = root_logger.getChild(__name__)
 
@@ -31,9 +29,9 @@ class EusSystemCheck(actions.Action):
 
     def run(self):
         """Warn the user if their system is under EUS and past the EUS release date without using the --eus cli option."""
-        super(EusSystemCheck, self).run()
+        super().run()
 
-        current_version = "{}.{}".format(system_info.version.major, system_info.version.minor)
+        current_version = f"{system_info.version.major}.{system_info.version.minor}"
         eus_versions = list(EUS_MINOR_VERSIONS.keys())
         if current_version in eus_versions:
             eus_release_date = EUS_MINOR_VERSIONS.get(current_version, False)
@@ -50,4 +48,3 @@ class EusSystemCheck(actions.Action):
                     description="Current system version is under Extended Update Support (EUS). You may want to consider using the --eus"
                     " command line option to land on a system patched with the latest security errata.",
                 )
-        return
