@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2021 Red Hat, Inc.
 #
@@ -15,18 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import json
 
 import pytest
 import six
 
-
 from convert2rhel import breadcrumbs, pkghandler, pkgmanager
 from convert2rhel.unit_tests import create_pkg_information, create_pkg_obj
 from convert2rhel.unit_tests.conftest import centos7
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -241,18 +237,18 @@ def test_save_rhsm_facts(pretend_os, monkeypatch, tmpdir, caplog):
     )
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
-    assert "Writing RHSM custom facts to '{}'".format(rhsm_file) in caplog.records[-1].message
+    assert f"Writing RHSM custom facts to '{rhsm_file}'" in caplog.records[-1].message
 
 
 def test_save_rhsm_facts_no_rhsm_folder(monkeypatch, tmpdir, caplog):
     rhsm_folder = str(tmpdir.join("rhsm").join("facts"))
-    rhsm_file = "{}/convert2rhel.facts".format(rhsm_folder)
+    rhsm_file = f"{rhsm_folder}/convert2rhel.facts"
     monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FOLDER", rhsm_folder)
     monkeypatch.setattr(breadcrumbs, "RHSM_CUSTOM_FACTS_FILE", rhsm_file)
 
     breadcrumbs.breadcrumbs._save_rhsm_facts()
-    assert "No RHSM facts folder found at '{}'.".format(rhsm_folder) in caplog.records[-2].message
-    assert "Writing RHSM custom facts to '{}'".format(rhsm_file) in caplog.records[-1].message
+    assert f"No RHSM facts folder found at '{rhsm_folder}'." in caplog.records[-2].message
+    assert f"Writing RHSM custom facts to '{rhsm_file}'" in caplog.records[-1].message
 
 
 def test_save_migration_results(tmpdir, monkeypatch, caplog):
@@ -263,7 +259,7 @@ def test_save_migration_results(tmpdir, monkeypatch, caplog):
 
     breadcrumbs.breadcrumbs._save_migration_results()
 
-    assert "Writing breadcrumbs to '{}'.".format(migration_results) in caplog.records[-1].message
+    assert f"Writing breadcrumbs to '{migration_results}'." in caplog.records[-1].message
     assert write_obj_to_array_json_mock.call_count == 1
 
 

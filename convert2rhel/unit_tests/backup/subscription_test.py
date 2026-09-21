@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import errno
 
@@ -27,7 +25,6 @@ from convert2rhel.backup.subscription import (
     RestorableDisableRepositories,
     RestorableSystemSubscription,
 )
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

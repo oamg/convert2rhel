@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import abc
 import collections
@@ -22,14 +20,12 @@ import importlib
 import itertools
 import pkgutil
 import traceback
-
 from functools import wraps
 
 import six
 
 from convert2rhel import utils
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -135,7 +131,7 @@ class DependencyError(ActionError):
     """
 
     def __init__(self, *args, **kwargs):
-        super(DependencyError, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.unresolved_actions = kwargs.pop("unresolved_actions", [])
         self.resolved_actions = kwargs.pop("resolved_actions", [])
 
@@ -203,7 +199,7 @@ class Action:
             instead.
         """
         if self._has_run:
-            raise ActionError("Action {} has already run".format(self.id))
+            raise ActionError(f"Action {self.id} has already run")
 
         self._has_run = True
 
@@ -324,16 +320,7 @@ class ActionMessageBase:
         return hash((self.level, self.id, self.title, self.description, self.diagnosis, self.remediations))
 
     def __repr__(self):
-        return "{}(level={}, id={}, title={}, description={}, diagnosis={}, remediations={}, variables={})".format(
-            self.__class__.__name__,
-            _STATUS_NAME_FROM_CODE[self.level],
-            self.id,
-            self.title,
-            self.description,
-            self.diagnosis,
-            self.remediations,
-            self.variables,
-        )
+        return f"{self.__class__.__name__}(level={_STATUS_NAME_FROM_CODE[self.level]}, id={self.id}, title={self.title}, description={self.description}, diagnosis={self.diagnosis}, remediations={self.remediations}, variables={self.variables})"
 
     def to_dict(self):
         """
@@ -364,9 +351,9 @@ class ActionMessage(ActionMessageBase):
         # None of the result status codes are legal as a message.  So we error if any
         # of them were given here.
         if not (STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]):
-            raise InvalidMessageError("Invalid level '{}', set for a non-result message".format(level))
+            raise InvalidMessageError(f"Invalid level '{level}', set for a non-result message")
 
-        super(ActionMessage, self).__init__(level, id, title, description, diagnosis, remediations, variables)
+        super().__init__(level, id, title, description, diagnosis, remediations, variables)
 
 
 class ActionResult(ActionMessageBase):
@@ -392,10 +379,10 @@ class ActionResult(ActionMessageBase):
 
         elif STATUS_CODE["SUCCESS"] < STATUS_CODE[level] < STATUS_CODE["SKIP"]:
             raise InvalidMessageError(
-                "Invalid level '{}', the level for result must be SKIP or more fatal or SUCCESS.".format(level)
+                f"Invalid level '{level}', the level for result must be SKIP or more fatal or SUCCESS."
             )
 
-        super(ActionResult, self).__init__(level, id, title, description, diagnosis, remediations, variables)
+        super().__init__(level, id, title, description, diagnosis, remediations, variables)
 
 
 def get_actions(actions_path, prefix):
@@ -520,10 +507,10 @@ class Stage:
             running is WARNING or better (WARNING or SUCCESS) and
             failure as worse than WARNING (OVERRIDABLE, ERROR)
         """
-        logger.task("{}".format(self.task_header))
+        logger.task(f"{self.task_header}")
 
         if self._has_run:
-            raise ActionError("Stage {} has already run.".format(self.stage_name))
+            raise ActionError(f"Stage {self.stage_name} has already run.")
         self._has_run = True
 
         # Make a mutable copy of these parameters so we don't overwrite the caller's data.
@@ -548,10 +535,7 @@ class Stage:
                 to_be = "was"
                 if len(failed_deps) > 1:
                     to_be = "were"
-                diagnosis = "Skipped because {} {} not successful".format(
-                    utils.format_sequence_as_message(failed_deps),
-                    to_be,
-                )
+                diagnosis = f"Skipped because {utils.format_sequence_as_message(failed_deps)} {to_be} not successful"
 
                 action.set_result(
                     level="SKIP",
@@ -559,13 +543,11 @@ class Stage:
                     title="Skipped action",
                     description="This action was skipped due to another action failing.",
                     diagnosis=diagnosis,
-                    remediations="Please ensure that the {} check passes so that this Action can evaluate your system".format(
-                        utils.format_sequence_as_message(failed_deps)
-                    ),
+                    remediations=f"Please ensure that the {utils.format_sequence_as_message(failed_deps)} check passes so that this Action can evaluate your system",
                 )
                 skips.append(action)
                 failed_action_ids.add(action.id)
-                logger.error("Skipped {}. {}".format(action.id, diagnosis))
+                logger.error(f"Skipped {action.id}. {diagnosis}")
                 continue
 
             # Run the Action
@@ -575,10 +557,10 @@ class Stage:
                 # Uncaught exceptions are handled by constructing a generic
                 # failure message here that should be reported
                 description = (
-                    "Unhandled exception was caught: {}\n"
+                    f"Unhandled exception was caught: {e}\n"
                     "Please file a bug at https://issues.redhat.com/ to have this"
                     " fixed or a specific error message added.\n"
-                    "Traceback: {}".format(e, traceback.format_exc())
+                    f"Traceback: {traceback.format_exc()}"
                 )
                 action.set_result(
                     level="ERROR", id="UNEXPECTED_ERROR", title="Unhandled exception caught", description=description
@@ -586,7 +568,7 @@ class Stage:
 
             # Categorize the results
             if action.result.level <= STATUS_CODE["WARNING"]:
-                logger.info("{} has succeeded".format(action.id))
+                logger.info(f"{action.id} has succeeded")
                 successes.append(action)
 
             if action.result.level > STATUS_CODE["WARNING"]:
@@ -752,7 +734,7 @@ def run_pre_actions():
     except DependencyError as e:
         # We want to fail early if dependencies are not properly set.  This
         # way we should fail in testing before release.
-        logger.critical("Some dependencies were set on Actions but not present in convert2rhel: {}".format(e))
+        logger.critical(f"Some dependencies were set on Actions but not present in convert2rhel: {e}")
 
     # Run the Actions in system_checks and all subsequent Stages.
     results = system_checks.run()
@@ -781,7 +763,7 @@ def run_post_actions():
     except DependencyError as e:
         # We want to fail early if dependencies are not properly set.  This
         # way we should fail in testing before release.
-        logger.critical("Some dependencies were set on Actions but not present in convert2rhel: {}".format(e))
+        logger.critical(f"Some dependencies were set on Actions but not present in convert2rhel: {e}")
 
     # Run the Actions in conversion and all subsequent Stages.
     results = conversion.run()

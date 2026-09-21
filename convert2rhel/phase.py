@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -58,7 +57,7 @@ class ConversionPhases:
 
     @classmethod
     def get(cls, key):  # type: (str) -> ConversionPhase
-        return next((phase for phase in cls.__dict__ if isinstance(phase, ConversionPhase) and phase.name == key))
+        return next(phase for phase in cls.__dict__ if isinstance(phase, ConversionPhase) and phase.name == key)
 
     @classmethod
     def has(cls, key):  # type: (str) -> bool
@@ -78,7 +77,7 @@ class ConversionPhases:
         elif isinstance(phase, ConversionPhase) and phase.name in cls.__dict__:
             cls.current_phase = phase
         else:
-            raise NotImplementedError("The {} phase is not implemented in the {} class".format(phase, cls.__name__))
+            raise NotImplementedError(f"The {phase} phase is not implemented in the {cls.__name__} class")
 
         if cls.current_phase:
             cls.current_phase.last_stage = previous_phase
@@ -91,4 +90,6 @@ class ConversionPhases:
             return cls.current_phase == phase
         elif isinstance(phase, list):
             return any(cls.is_current(phase_single) for phase_single in phase)
-        raise TypeError("Unexpected type, wanted str, {0}, or a list of str or {0}".format(ConversionPhase.__name__))
+        raise TypeError(
+            f"Unexpected type, wanted str, {ConversionPhase.__name__}, or a list of str or {ConversionPhase.__name__}"
+        )

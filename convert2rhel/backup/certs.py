@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import errno
 import os
@@ -25,7 +23,6 @@ from convert2rhel import exceptions, utils
 from convert2rhel.backup import RestorableChange
 from convert2rhel.logger import root_logger
 from convert2rhel.utils import files
-
 
 logger = root_logger.getChild(__name__)
 
@@ -40,7 +37,7 @@ class RestorableRpmKey(RestorableChange):
         :arg keyfile: Filepath for a GPG key.  The RestorableRpmKey instance will be able to import
             this into the rpmdb when enabled and remove it when restored.
         """
-        super(RestorableRpmKey, self).__init__()
+        super().__init__()
         self.previously_installed = None
         self.keyfile = keyfile
         self.keyid = utils.find_keyid(keyfile)
@@ -54,43 +51,43 @@ class RestorableRpmKey(RestorableChange):
         if not self.installed:
             output, ret_code = utils.run_subprocess(["rpm", "--import", self.keyfile], print_output=False)
             if ret_code != 0:
-                raise utils.ImportGPGKeyError("Failed to import the GPG key {}: {}".format(self.keyfile, output))
+                raise utils.ImportGPGKeyError(f"Failed to import the GPG key {self.keyfile}: {output}")
 
             self.previously_installed = False
 
         else:
             self.previously_installed = True
 
-        super(RestorableRpmKey, self).enable()
+        super().enable()
 
     @property
     def installed(self):
         """Whether the GPG key has been imported into the rpmdb."""
-        output, status = utils.run_subprocess(["rpm", "-q", "gpg-pubkey-{}".format(self.keyid)], print_output=False)
+        output, status = utils.run_subprocess(["rpm", "-q", f"gpg-pubkey-{self.keyid}"], print_output=False)
 
         if status == 0:
             return True
 
-        if status == 1 and "package gpg-pubkey-{} is not installed".format(self.keyid) in output:
+        if status == 1 and f"package gpg-pubkey-{self.keyid} is not installed" in output:
             return False
 
         raise utils.ImportGPGKeyError(
-            "Searching the rpmdb for the gpg key {} failed: Code {}: {}".format(self.keyid, status, output)
+            f"Searching the rpmdb for the gpg key {self.keyid} failed: Code {status}: {output}"
         )
 
     def restore(self):
         """Ensure the rpmdb has or does not have the GPG key according to the state before we ran."""
         if self.enabled and self.previously_installed is False:
-            utils.run_subprocess(["rpm", "-e", "gpg-pubkey-{}".format(self.keyid)])
+            utils.run_subprocess(["rpm", "-e", f"gpg-pubkey-{self.keyid}"])
 
-        super(RestorableRpmKey, self).restore()
+        super().restore()
 
 
 class RestorablePEMCert(RestorableChange):
     """Handling certificates needed for verifying Red Hat services."""
 
     def __init__(self, source_cert_dir, target_cert_dir):
-        super(RestorablePEMCert, self).__init__()
+        super().__init__()
 
         self._target_cert_dir = target_cert_dir
         self._source_cert_dir = source_cert_dir
@@ -112,27 +109,25 @@ class RestorablePEMCert(RestorableChange):
             return
 
         if os.path.exists(self._target_cert_path):
-            logger.info("Certificate already present at {}. Skipping copy.".format(self._target_cert_path))
+            logger.info(f"Certificate already present at {self._target_cert_path}. Skipping copy.")
             self.previously_installed = True
         else:
             try:
                 files.mkdir_p(self._target_cert_dir)
                 shutil.copy2(self._source_cert_path, self._target_cert_dir)
-            except (OSError, IOError) as err:
+            except OSError as err:
                 # IOError for py2 and OSError for py3
-                logger.critical_no_exit("Error({0}): {1}".format(err.errno, err.strerror))
+                logger.critical_no_exit(f"Error({err.errno}): {err.strerror}")
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_CERTIFICATE",
                     title="Failed to install certificate.",
                     description="convert2rhel was unable to install a required certificate. This certificate allows the pre-conversion analysis to verify that packages are legitimate RHEL packages.",
-                    diagnosis="Failed to install certificate {} to {}. Errno: {}, Error: {}".format(
-                        self._get_source_cert_path, self._target_cert_dir, err.errno, err.strerror
-                    ),
+                    diagnosis=f"Failed to install certificate {self._get_source_cert_path} to {self._target_cert_dir}. Errno: {err.errno}, Error: {err.strerror}",
                 )
 
-            logger.info("Certificate {} copied to {}.".format(self._cert_filename, self._target_cert_dir))
+            logger.info(f"Certificate {self._cert_filename} copied to {self._target_cert_dir}.")
 
-        super(RestorablePEMCert, self).enable()
+        super().enable()
 
     def restore(self):
         """Remove certificate (.pem), which was copied to system's cert dir."""
@@ -141,9 +136,9 @@ class RestorablePEMCert(RestorableChange):
         if self.enabled and not self.previously_installed:
             self._restore()
         else:
-            logger.info("Certificate {} was present before conversion. Skipping removal.".format(self._cert_filename))
+            logger.info(f"Certificate {self._cert_filename} was present before conversion. Skipping removal.")
 
-        super(RestorablePEMCert, self).restore()
+        super().restore()
 
     def _restore(self):
         """The actual code to remove the certificate.  Done in a helper method so we can handle all
@@ -172,16 +167,14 @@ class RestorablePEMCert(RestorableChange):
             if "not owned by any package" in output:
                 file_unowned = True
             elif "No such file or directory" in output:
-                logger.info("Certificate already removed from {}".format(self._target_cert_path))
+                logger.info(f"Certificate already removed from {self._target_cert_path}")
             else:
                 logger.warning(
-                    "Unable to determine if a package owns certificate {}. Skipping removal.".format(
-                        self._target_cert_path
-                    )
+                    f"Unable to determine if a package owns certificate {self._target_cert_path}. Skipping removal."
                 )
         else:
             logger.info(
-                "A package was installed that owns the certificate {}. Skipping removal.".format(self._target_cert_path)
+                f"A package was installed that owns the certificate {self._target_cert_path}. Skipping removal."
             )
 
         # Not safe to remove the certificate because the file might be owned by
@@ -191,7 +184,7 @@ class RestorablePEMCert(RestorableChange):
 
         try:
             os.remove(self._target_cert_path)
-            logger.info("Certificate {} removed".format(self._target_cert_path))
+            logger.info(f"Certificate {self._target_cert_path} removed")
         except OSError as err:
             if err.errno == errno.ENOENT:
                 # Resolves RHSM error when removing certs, as the system might not have installed any certs yet
@@ -205,12 +198,12 @@ class RestorablePEMCert(RestorableChange):
 def _get_cert(cert_dir):
     """Return the .pem certificate filename."""
     if not os.access(cert_dir, os.R_OK | os.X_OK):
-        logger.critical("Error: Could not access {}.".format(cert_dir))
+        logger.critical(f"Error: Could not access {cert_dir}.")
     pem_filename = None
     for filename in os.listdir(cert_dir):
         if filename.endswith(".pem"):
             pem_filename = filename
             break
     if not pem_filename:
-        logger.critical("Error: No certificate (.pem) found in {}.".format(cert_dir))
+        logger.critical(f"Error: No certificate (.pem) found in {cert_dir}.")
     return pem_filename

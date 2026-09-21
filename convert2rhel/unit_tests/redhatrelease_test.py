@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,23 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
 import pytest
 import six
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 
 from six.moves import mock
 
-from convert2rhel import unit_tests  # Imports unit_tests/__init__.py
-from convert2rhel import pkgmanager, redhatrelease, systeminfo, utils
+from convert2rhel import (
+    pkgmanager,
+    redhatrelease,
+    systeminfo,
+    unit_tests,  # Imports unit_tests/__init__.py
+    utils,
+)
 from convert2rhel.redhatrelease import PkgManagerConf, get_system_release_filepath
 from convert2rhel.systeminfo import system_info
-
 
 PKG_MANAGER_CONF_WITHOUT_DISTROVERPKG = """[main]
 installonly_limit=3
