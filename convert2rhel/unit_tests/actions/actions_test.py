@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -15,16 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os.path
 import re
-
 from collections import defaultdict
 
 import pytest
 import six
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -40,14 +36,13 @@ class _ActionForTesting(actions.Action):
     id = None
 
     def __init__(self, **kwargs):
-        super(_ActionForTesting, self).__init__()
+        super().__init__()
 
         for attr_name, attr_value in kwargs.items():
             setattr(self, attr_name, attr_value)
 
     def run(self):
-        super(_ActionForTesting, self).run()
-        pass
+        super().run()
 
 
 class TestAction:
@@ -230,14 +225,12 @@ class TestGetActions:
         filesystem_detected_actions_count = 0
         for rootdir, dirnames, filenames in os.walk(os.path.dirname(actions.__file__)):
             for directory in dirnames:
-                if "{}.{}.".format(actions.__name__, directory) == "convert2rhel.actions.post_ponr":
+                if f"{actions.__name__}.{directory}." == "convert2rhel.actions.post_ponr":
                     continue
 
                 # Add to the actions that the production code finds here as it is non-recursive
                 computed_actions.extend(
-                    actions.get_actions(
-                        [os.path.join(rootdir, directory)], "{}.{}.".format(actions.__name__, directory)
-                    )
+                    actions.get_actions([os.path.join(rootdir, directory)], f"{actions.__name__}.{directory}.")
                 )
 
             for filename in (os.path.join(rootdir, filename) for filename in filenames):
@@ -281,7 +274,7 @@ class TestGetActions:
         test_data = os.path.join(data_dir, test_dir_name)
         computed_action_names = sorted(
             m.__name__
-            for m in actions.get_actions([test_data], "convert2rhel.unit_tests.actions.data.{}.".format(test_dir_name))
+            for m in actions.get_actions([test_data], f"convert2rhel.unit_tests.actions.data.{test_dir_name}.")
         )
         assert computed_action_names == sorted(expected_action_names)
 

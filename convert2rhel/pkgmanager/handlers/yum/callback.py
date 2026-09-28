@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -56,12 +55,9 @@
 #
 #       https://github.com/rpm-software-management/yum/blob/master/yum/callbacks.py
 
-__metaclass__ = type
-
 
 from convert2rhel import pkgmanager
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 """Instance of the logger used in this module."""
@@ -69,7 +65,7 @@ logger = root_logger.getChild(__name__)
 
 # We need to double inherit here, both from the callback class and the base
 # object class, just to initialize properly with `super`
-class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
+class PackageDownloadCallback(pkgmanager.DownloadProgress):
     """Package download callback for YUM transaction."""
 
     def __init__(self):
@@ -78,7 +74,7 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
         We initialize a few properties here for keeping track of progression of
         the downloaded files.
         """
-        super(PackageDownloadCallback, self).__init__()
+        super().__init__()
         # Same strategy as used in yum.rpmtrans.SimpleCliCallBack. We
         # hold the last package name to not print it twice, avoiding
         # spamming msgs.
@@ -114,12 +110,12 @@ class PackageDownloadCallback(pkgmanager.DownloadProgress, object):
         self.last_package_seen = name
 
 
-class TransactionDisplayCallback(pkgmanager.TransactionDisplay, object):
+class TransactionDisplayCallback(pkgmanager.TransactionDisplay):
     """Transaction display callback for YUM transaction."""
 
     def __init__(self):
         """Constructor that overrides initialization for SimpleCliCallBack()."""
-        super(TransactionDisplayCallback, self).__init__()
+        super().__init__()
         # Hold the last package name to not print it twice, avoiding
         # spamming msgs.
         self.last_package_seen = None

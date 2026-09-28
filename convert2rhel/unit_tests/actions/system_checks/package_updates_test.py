@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -15,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import pytest
 import six
@@ -24,7 +21,6 @@ import six
 from convert2rhel import actions, pkgmanager
 from convert2rhel.actions.system_checks import package_updates
 from convert2rhel.unit_tests.conftest import centos8, oracle8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -64,7 +60,7 @@ def test_check_package_updates_skip_on_not_latest_ol(pretend_os, caplog, package
 
 @centos8
 def test_check_package_updates(pretend_os, monkeypatch, caplog, package_updates_action, global_tool_opts):
-    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=lambda: [])
+    monkeypatch.setattr(package_updates, "get_total_packages_to_update", value=list)
 
     package_updates_action.run()
     assert "System is up-to-date." in caplog.records[-1].message

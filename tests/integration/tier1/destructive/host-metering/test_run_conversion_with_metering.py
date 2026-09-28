@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from conftest import TEST_VARS
 import configparser
+
+from conftest import TEST_VARS
 
 
 def setup_test_metering_endpoint():

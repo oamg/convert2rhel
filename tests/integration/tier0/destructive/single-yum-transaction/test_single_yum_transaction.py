@@ -20,7 +20,7 @@ def test_single_yum_transaction(convert2rhel, shell):
         )
     ) as c2r:
         c2r.expect("no modifications to the system will happen this time.", timeout=1200)
-        c2r.expect("Successfully validated the {} transaction set.".format(pkgmanager), timeout=600)
+        c2r.expect(f"Successfully validated the {pkgmanager} transaction set.", timeout=600)
         c2r.expect("This process may take some time to finish.", timeout=300)
         c2r.expect("System packages replaced successfully.", timeout=900)
         c2r.expect("Conversion successful!")
