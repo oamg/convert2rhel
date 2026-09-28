@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import re
 
 from convert2rhel import __version__, logger, pkghandler, utils
-
 
 RPM_SPEC_VERSION_RE = re.compile(r"^Version: +(.+)$")
 
