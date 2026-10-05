@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import difflib
 import os
@@ -21,7 +20,6 @@ import os
 from convert2rhel import actions, utils
 from convert2rhel.logger import LOG_DIR, root_logger
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 
@@ -34,7 +32,7 @@ class ModifiedRPMFilesDiff(actions.Action):
         Get a list of modified rpm files after the conversion and
         compare it to the one from before the conversion.
         """
-        super(ModifiedRPMFilesDiff, self).run()
+        super().run()
 
         logger.task("Show RPM files modified by the conversion")
 
@@ -69,15 +67,12 @@ class ModifiedRPMFilesDiff(actions.Action):
 
         if modified_rpm_files_diff:
             logger.info(
-                "Comparison of modified rpm files from before and after the conversion:\n{}".format(
-                    modified_rpm_files_diff
-                )
+                f"Comparison of modified rpm files from before and after the conversion:\n{modified_rpm_files_diff}"
             )
             self.add_message(
                 level="INFO",
                 id="FOUND_MODIFIED_RPM_FILES",
                 title="Modified rpm files from before and after the conversion were found.",
-                description="Comparison of modified rpm files from before and after " "the conversion: \n{}".format(
-                    modified_rpm_files_diff
-                ),
+                description="Comparison of modified rpm files from before and after "
+                f"the conversion: \n{modified_rpm_files_diff}",
             )

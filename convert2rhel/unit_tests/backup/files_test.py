@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 import hashlib
 import os
 
@@ -294,7 +292,7 @@ class TestRestorableFile:
         backup_dir = str(tmpdir)
         monkeypatch.setattr(files, "BACKUP_DIR", backup_dir)
         path, name = os.path.split(filepath)
-        expected = "{}/{}/{}".format(backup_dir, hashlib.md5(path.encode()).hexdigest(), name)
+        expected = f"{backup_dir}/{hashlib.md5(path.encode()).hexdigest()}/{name}"
         file = RestorableFile(filepath)
 
         result = file._hash_backup_path()

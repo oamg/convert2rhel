@@ -13,12 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, exceptions, pkgmanager
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -39,7 +36,7 @@ class ValidatePackageManagerTransaction(actions.Action):
 
     def run(self):
         """Validate the package manager transaction is passing the tests."""
-        super(ValidatePackageManagerTransaction, self).run()
+        super().run()
 
         try:
             logger.task("Validate the %s transaction", pkgmanager.TYPE)

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import datetime
 
@@ -21,7 +20,6 @@ from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import ELS_RELEASE_DATE, system_info
 from convert2rhel.toolopts import tool_opts
-
 
 logger = root_logger.getChild(__name__)
 
@@ -31,7 +29,7 @@ class ElsSystemCheck(actions.Action):
 
     def run(self):
         """Warn the user if their system is under ELS and past the ELS release date without using the --els cli option."""
-        super(ElsSystemCheck, self).run()
+        super().run()
 
         if system_info.version.major == 7:
             current_datetime = datetime.date.today()
@@ -47,4 +45,3 @@ class ElsSystemCheck(actions.Action):
                     description="Current system version is under Extended Lifecycle Support (ELS). You may want to consider using the --els"
                     " command line option to land on a system patched with the latest security errata.",
                 )
-        return

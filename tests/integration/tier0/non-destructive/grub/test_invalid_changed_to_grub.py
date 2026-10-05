@@ -1,12 +1,9 @@
-from __future__ import print_function
-
 import fileinput
 import os.path
 
 import pytest
 
 from conftest import TEST_VARS
-
 
 target_line = "GRUB_CMDLINE_LINUX"
 

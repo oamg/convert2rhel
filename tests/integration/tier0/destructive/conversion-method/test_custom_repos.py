@@ -16,12 +16,12 @@ def test_system_conversion_using_custom_repositories(shell, convert2rhel):
     if SystemInformationRelease.is_eus:
         shell("touch /eus_repos_used")
 
-    with convert2rhel("-y --no-rhsm {} --debug".format(enable_repo_opt_c2r)) as c2r:
+    with convert2rhel(f"-y --no-rhsm {enable_repo_opt_c2r} --debug") as c2r:
         c2r.expect("Conversion successful!")
     assert c2r.exitstatus == 0
 
     enable_repo_opt_yum = " ".join(f"--enable {repo}" for repo in get_custom_repos_names())
-    shell("yum-config-manager {}".format(enable_repo_opt_yum))
+    shell(f"yum-config-manager {enable_repo_opt_yum}")
 
     if SYSTEM_RELEASE_ENV == "amazon2":
         # The conversion transaction may remove or replace python3,

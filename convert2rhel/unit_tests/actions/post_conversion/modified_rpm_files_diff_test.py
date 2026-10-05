@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 
@@ -23,7 +22,6 @@ import six
 from convert2rhel import actions, logger, systeminfo, utils
 from convert2rhel.actions.post_conversion import modified_rpm_files_diff
 from convert2rhel.systeminfo import system_info
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

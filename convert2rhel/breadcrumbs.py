@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2021 Red Hat, Inc.
 #
@@ -15,21 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import json
 import os
 import re
 import sys
-
 from datetime import datetime
 
 from convert2rhel import pkghandler, utils
 from convert2rhel.logger import root_logger
-from convert2rhel.systeminfo import system_info, SystemInfo
+from convert2rhel.systeminfo import SystemInfo, system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import files
-
 
 # Path to the migration results of the old breadcrumbs.
 MIGRATION_RESULTS_FILE = "/etc/migration-results"
@@ -205,7 +201,7 @@ class Breadcrumbs:
     def _save_rhsm_facts(self):
         """Write the results of the breadcrumbs to the rhsm custom facts file."""
         if not os.path.exists(RHSM_CUSTOM_FACTS_FOLDER):
-            logger.debug("No RHSM facts folder found at '{}'. Creating a new one...".format(RHSM_CUSTOM_FACTS_FOLDER))
+            logger.debug(f"No RHSM facts folder found at '{RHSM_CUSTOM_FACTS_FOLDER}'. Creating a new one...")
             # Using mkdir_p here as the `/etc/rhsm` might not exist at all.
             # Usually this can happen if we fail in the first run and we want to
             # save the custom facts gathered so far, or, if the `--no-rhsm` option

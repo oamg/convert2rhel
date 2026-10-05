@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 import sys
@@ -24,7 +22,6 @@ import pytest
 import six
 
 from convert2rhel import cli, toolopts
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -122,7 +119,7 @@ class TestTooloptsParseFromCLI:
         message = (
             "Failed to parse a valid subscription-manager server from the --serverurl option.\n"
             "Please check for typos and run convert2rhel again with a corrected --serverurl.\n"
-            "Supplied serverurl: {}\nError: ".format(serverurl)
+            f"Supplied serverurl: {serverurl}\nError: "
         )
         assert message in caplog.records[-1].message
         assert caplog.records[-1].levelname == "CRITICAL"
@@ -143,8 +140,7 @@ class TestTooloptsParseFromCLI:
         cli.CLI()
 
         message = (
-            "Ignoring the --serverurl option. It has no effect when no credentials to"
-            " subscribe the system were given."
+            "Ignoring the --serverurl option. It has no effect when no credentials to subscribe the system were given."
         )
         assert message in caplog.text
 
