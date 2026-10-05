@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 import shutil
@@ -21,7 +20,6 @@ import shutil
 from convert2rhel import actions, grub, systeminfo
 from convert2rhel.grub import CENTOS_EFIDIR_CANONICAL_PATH, RHEL_EFIDIR_CANONICAL_PATH
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -32,7 +30,7 @@ class NewDefaultEfiBin(actions.Action):
 
     def run(self):
         """Check that the expected RHEL UEFI binaries exist."""
-        super(NewDefaultEfiBin, self).run()
+        super().run()
 
         logger.task("Configure the bootloader")
 
@@ -48,10 +46,10 @@ class NewDefaultEfiBin(actions.Action):
         for filename in grub.DEFAULT_INSTALLED_EFIBIN_FILENAMES:
             efi_path = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, filename)
             if os.path.exists(efi_path):
-                logger.info("UEFI binary found: {}".format(efi_path))
+                logger.info(f"UEFI binary found: {efi_path}")
                 new_default_efibin = efi_path
                 break
-            logger.debug("UEFI binary {} not found. Checking next possibility...".format(efi_path))
+            logger.debug(f"UEFI binary {efi_path} not found. Checking next possibility...")
             missing_binaries.append(efi_path)
         if not new_default_efibin:
             self.set_result(
@@ -65,9 +63,9 @@ class NewDefaultEfiBin(actions.Action):
                 remediations=(
                     "Verify the bootloader configuration as follows and reboot the system."
                     " Ensure that `grubenv` and `grub.cfg` files"
-                    " are present in the {} directory. Verify that `efibootmgr -v`"
+                    f" are present in the {grub.RHEL_EFIDIR_CANONICAL_PATH} directory. Verify that `efibootmgr -v`"
                     " shows a bootloader entry for Red Hat Enterprise Linux"
-                    " that points to to '\\EFI\\redhat\\shimx64.efi'.".format(grub.RHEL_EFIDIR_CANONICAL_PATH)
+                    " that points to to '\\EFI\\redhat\\shimx64.efi'."
                 ),
             )
 
@@ -78,7 +76,7 @@ class EfibootmgrUtilityInstalled(actions.Action):
 
     def run(self):
         """Check if the Efibootmgr utility is installed"""
-        super(EfibootmgrUtilityInstalled, self).run()
+        super().run()
 
         if not grub.is_efi():
             logger.info(
@@ -112,7 +110,7 @@ class MoveGrubFiles(actions.Action):
         The move of the centos/ directory should be ok. In case of the conversion
         from Oracle Linux, the redhat/ directory is already used.
         """
-        super(MoveGrubFiles, self).run()
+        super().run()
 
         if not grub.is_efi():
             logger.info("Unable to collect data about UEFI on a BIOS system, did not perform moving of Grub2 files.")
@@ -125,7 +123,7 @@ class MoveGrubFiles(actions.Action):
         # TODO(pstodulk): check behaviour for efibin from a different dir or with a different name for the possibility of
         #  the different grub content...
         # E.g. if the efibin is located in a different directory, are these two files valid?
-        logger.info("Moving GRUB2 configuration files to the new UEFI directory {}.".format(RHEL_EFIDIR_CANONICAL_PATH))
+        logger.info(f"Moving GRUB2 configuration files to the new UEFI directory {RHEL_EFIDIR_CANONICAL_PATH}.")
         src_files = [
             os.path.join(CENTOS_EFIDIR_CANONICAL_PATH, filename) for filename in ["grubenv", "grub.cfg", "user.cfg"]
         ]
@@ -154,35 +152,29 @@ class MoveGrubFiles(actions.Action):
             # Skip non-existing file in destination directory
             if not os.path.exists(src_file):
                 logger.debug(
-                    "The {} file does not exist in {} folder. Moving skipped.".format(
-                        os.path.basename(src_file), CENTOS_EFIDIR_CANONICAL_PATH
-                    )
+                    f"The {os.path.basename(src_file)} file does not exist in {CENTOS_EFIDIR_CANONICAL_PATH} folder. Moving skipped."
                 )
                 continue
             # Skip already existing file in destination directory
             dst_file = os.path.join(RHEL_EFIDIR_CANONICAL_PATH, os.path.basename(src_file))
             if os.path.exists(dst_file):
                 logger.debug(
-                    "The {} file already exists in {} folder. Moving skipped.".format(
-                        os.path.basename(src_file), RHEL_EFIDIR_CANONICAL_PATH
-                    )
+                    f"The {os.path.basename(src_file)} file already exists in {RHEL_EFIDIR_CANONICAL_PATH} folder. Moving skipped."
                 )
                 continue
 
-            logger.info("Moving '{}' to '{}'".format(src_file, dst_file))
+            logger.info(f"Moving '{src_file}' to '{dst_file}'")
 
             try:
                 shutil.move(src_file, dst_file)
-            except (OSError, IOError) as err:
+            except OSError as err:
                 # IOError for py2 and OSError for py3
                 self.set_result(
                     level="ERROR",
                     id="GRUB_FILES_NOT_MOVED_TO_BOOT_DIRECTORY",
                     title="GRUB files have not been moved to boot directory",
                     description=(
-                        "I/O error({}): '{}'. Some GRUB files have not been moved to /boot/efi/EFI/redhat.".format(
-                            err.errno, err.strerror
-                        )
+                        f"I/O error({err.errno}): '{err.strerror}'. Some GRUB files have not been moved to /boot/efi/EFI/redhat."
                     ),
                 )
 
@@ -200,7 +192,7 @@ class RemoveEfiCentos(actions.Action):
         UEFI files are present, we should keep the directory for now, until we
         deal with it.
         """
-        super(RemoveEfiCentos, self).run()
+        super().run()
 
         if not grub.is_efi():
             logger.info(
@@ -214,14 +206,14 @@ class RemoveEfiCentos(actions.Action):
             return
         try:
             os.rmdir(CENTOS_EFIDIR_CANONICAL_PATH)
-        except (OSError, IOError) as err:
+        except OSError as err:
             warning_message = (
-                "Failed to remove the {dir} directory as files still exist."
+                f"Failed to remove the {CENTOS_EFIDIR_CANONICAL_PATH} directory as files still exist."
                 " During conversion we make sure to move over files needed to their RHEL counterpart."
                 " However, some files we didn't expect likely exist in the directory that needs human oversight."
                 " Make sure that the files within the directory is taken care of and proceed with deleting the directory"
-                " manually after conversion. We received error: '{err}'."
-            ).format(dir=CENTOS_EFIDIR_CANONICAL_PATH, err=err)
+                f" manually after conversion. We received error: '{err}'."
+            )
 
             logger.warning(warning_message)
             self.add_message(
@@ -248,12 +240,11 @@ class ReplaceEfiBootEntry(actions.Action):
         The current (original) UEFI bootloader entry is removed under some conditions
         (see `py:grub._remove_orig_boot_entry()` for more info).
         """
-        super(ReplaceEfiBootEntry, self).run()
+        super().run()
 
         if not grub.is_efi():
             logger.info(
-                "Unable to collect data about UEFI on a BIOS system, did not perform UEFI bootloader "
-                "entry replacement."
+                "Unable to collect data about UEFI on a BIOS system, did not perform UEFI bootloader entry replacement."
             )
             return
 
@@ -267,6 +258,6 @@ class ReplaceEfiBootEntry(actions.Action):
                 description=(
                     "As the current UEFI bootloader entry could be invalid or missing we need to ensure that a "
                     "RHEL UEFI entry exists. The UEFI boot entry could not be replaced due to the following"
-                    " error: '{err}'".format(err=e.message)
+                    f" error: '{e.message}'"
                 ),
             )

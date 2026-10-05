@@ -1,5 +1,4 @@
 import subprocess
-
 from collections import namedtuple
 
 import click
@@ -18,7 +17,7 @@ def live_shell():
             click.echo("This shell call is set to hide_command=True, so it won't show the called command.")
         if not silent and not hide_command:
             click.echo(
-                "\nExecuting a command:\n{}\n\n".format(command),
+                f"\nExecuting a command:\n{command}\n\n",
                 color="green",
             )
         # pylint: disable=consider-using-with

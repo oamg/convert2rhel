@@ -1,7 +1,6 @@
 import json
 import os.path
 
-
 C2R_LOG = "/var/log/convert2rhel/convert2rhel.log"
 C2R_FACTS = "/etc/rhsm/facts/convert2rhel.facts"
 
@@ -22,13 +21,9 @@ def test_logfile_starts_with_command(convert2rhel):
     activation_key = "a-map-of-a-key"
     organization = "SoMe_NumberS-8_a_lettER"
 
-    command_long = "--debug --serverurl {} --username {} --password {} --activationkey {} --org {}".format(
-        serverurl, username, password, activation_key, organization
-    )
-    command_short = "--debug --serverurl {} -u {} -p {} -k {} -o {}".format(
-        serverurl, username, password, activation_key, organization
-    )
-    command_verification = "convert2rhel --debug --serverurl {}".format(serverurl)
+    command_long = f"--debug --serverurl {serverurl} --username {username} --password {password} --activationkey {activation_key} --org {organization}"
+    command_short = f"--debug --serverurl {serverurl} -u {username} -p {password} -k {activation_key} -o {organization}"
+    command_verification = f"convert2rhel --debug --serverurl {serverurl}"
 
     commands = [command_long, command_short]
 

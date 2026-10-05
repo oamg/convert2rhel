@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import copy
 import json
@@ -29,7 +28,6 @@ from convert2rhel.actions import (
     level_for_combined_action_data,
 )
 from convert2rhel.logger import colorize, root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -295,7 +293,7 @@ def format_report_section_heading(status_code):
     status_header = STATUS_HEADER[status_code]
     highlight = "=" * 10
 
-    heading = "{highlight} {status_header} {highlight}".format(highlight=highlight, status_header=status_header)
+    heading = f"{highlight} {status_header} {highlight}"
     return heading
 
 
