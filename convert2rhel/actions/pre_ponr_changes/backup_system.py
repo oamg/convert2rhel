@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 import re
@@ -28,7 +26,6 @@ from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import warn_deprecated_env
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
-
 
 # Regex explanation:
 # Match missing or SM5DLUGTP (letters can be replaced by dots or ?) - output of rpm -Va:
@@ -53,7 +50,7 @@ class BackupRedhatRelease(actions.Action):
         """Backup redhat release file before starting conversion process"""
         logger.task("Backup Redhat Release Files")
 
-        super(BackupRedhatRelease, self).run()
+        super().run()
 
         try:
             # TODO(r0x0d): We need to keep calling those global objects from
@@ -80,9 +77,9 @@ class BackupRepository(actions.Action):
         """Backup .repo files in /etc/yum.repos.d/ so the repositories can be restored on rollback."""
         logger.task("Backup Repository Files")
 
-        super(BackupRepository, self).run()
+        super().run()
 
-        logger.info("Backing up .repo files from {}.".format(DEFAULT_YUM_REPOFILE_DIR))
+        logger.info(f"Backing up .repo files from {DEFAULT_YUM_REPOFILE_DIR}.")
 
         if not os.listdir(DEFAULT_YUM_REPOFILE_DIR):
             logger.info("Repository folder %s seems to be empty.", DEFAULT_YUM_REPOFILE_DIR)
@@ -91,7 +88,7 @@ class BackupRepository(actions.Action):
             # backing up redhat.repo so repo files are properly backed up when doing satellite conversions
 
             if not repo.endswith(".repo"):
-                logger.info("Skipping backup as {} is not a repository file.".format(repo))
+                logger.info(f"Skipping backup as {repo} is not a repository file.")
                 continue
 
             repo_path = os.path.join(DEFAULT_YUM_REPOFILE_DIR, repo)
@@ -109,7 +106,7 @@ class BackupPackageFiles(actions.Action):
 
     def run(self):
         """Backup changed package files"""
-        super(BackupPackageFiles, self).run()
+        super().run()
 
         logger.task("Backup package files")
 
@@ -154,7 +151,7 @@ class BackupPackageFiles(actions.Action):
             with open(path, "r") as f:
                 output = f.read()
         # Catch the IOError due Python 2 compatibility
-        except IOError as err:
+        except OSError as err:
             warn_deprecated_env("CONVERT2RHEL_INCOMPLETE_ROLLBACK")
             if tool_opts.incomplete_rollback:
                 logger.debug(
@@ -166,8 +163,8 @@ class BackupPackageFiles(actions.Action):
             else:
                 # The file should be there
                 # If missing conversion is in unknown state
-                logger.warning("Error({}): {}".format(err.errno, err.strerror))
-                logger.critical("Missing file {rpm_va_output} in it's location".format(rpm_va_output=path))
+                logger.warning(f"Error({err.errno}): {err.strerror}")
+                logger.critical(f"Missing file {path} in it's location")
 
         lines = output.strip().split("\n")
         for line in lines:
@@ -185,7 +182,7 @@ class BackupPackageFiles(actions.Action):
         if not match:  # line not matching the regex
             if line.strip() != "":
                 # Line is not empty string
-                logger.debug("Skipping invalid output {}".format(line))
+                logger.debug(f"Skipping invalid output {line}")
             return {"status": None, "file_type": None, "path": None}
 
         line = line.split()

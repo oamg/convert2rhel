@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 
 from convert2rhel import actions, subscription
-
 
 loggerinst = logging.getLogger(__name__)
 
@@ -29,19 +27,17 @@ class RHSMCustomFactsConfig(actions.Action):
     dependencies = ()
 
     def run(self):
-        super(RHSMCustomFactsConfig, self).run()
+        super().run()
         loggerinst.task("Update RHSM custom facts")
         ret_code, output = subscription.update_rhsm_custom_facts()
 
         if not output:
-            return None
+            return
 
         if ret_code != 0:
             self.add_message(
                 level="WARNING",
                 id="FAILED_TO_UPDATE_RHSM_CUSTOM_FACTS",
                 title="Failed to update RHSM custom facts",
-                description="Failed to update the RHSM custom facts with return code: {0} and output: {1}.".format(
-                    ret_code, output
-                ),
+                description=f"Failed to update the RHSM custom facts with return code: {ret_code} and output: {output}.",
             )
