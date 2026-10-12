@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2022 Red Hat, Inc.
 #
@@ -15,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from contextlib import contextmanager
 
@@ -25,13 +22,12 @@ from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 
-
 logger = root_logger.getChild(__name__)
 
 try:
     # this is used in pkghandler.py to parse version strings in the _parse_pkg_with_yum function
     from rpmUtils.miscutils import splitFilename  # type: ignore  # noqa: F401
-    from yum import *  # type: ignore # noqa: F403
+    from yum import *  # type: ignore
     from yum.callbacks import DownloadBaseCallback as DownloadProgress  # type: ignore
 
     # This is added here to prevent a generic try-except in the
@@ -44,8 +40,7 @@ try:
 # WARNING: if there is a bug in the yum import section, we might try to import dnf incorrectly
 except ImportError:
     import hawkey  # noqa: F401
-
-    from dnf import *  # noqa: F403
+    from dnf import *
     from dnf.callback import Depsolve, DownloadProgress  # noqa: F401
 
     # This is added here to prevent a generic try-except in the
@@ -98,10 +93,10 @@ def clean_yum_metadata():
     output, ret_code = utils.run_subprocess(
         ("yum", "clean", "metadata", "--enablerepo=*", "--quiet"), print_output=False
     )
-    logger.debug("Output of yum clean metadata:\n{}".format(output))
+    logger.debug(f"Output of yum clean metadata:\n{output}")
 
     if ret_code != 0:
-        logger.warning("Failed to clean yum metadata:\n{}".format(output))
+        logger.warning(f"Failed to clean yum metadata:\n{output}")
         return
 
     logger.info("Cached repositories metadata cleaned successfully.")
@@ -221,16 +216,16 @@ def call_yum_cmd(
         repos_to_disable = tool_opts.disablerepo
 
     for repo in repos_to_disable:
-        cmd.append("--disablerepo={}".format(repo))
+        cmd.append(f"--disablerepo={repo}")
 
     if set_releasever:
         if not custom_releasever and not system_info.releasever:
             raise AssertionError("custom_releasever or system_info.releasever must be set.")
 
         if custom_releasever:
-            cmd.append("--releasever={}".format(custom_releasever))
+            cmd.append(f"--releasever={custom_releasever}")
         else:
-            cmd.append("--releasever={}".format(system_info.releasever))
+            cmd.append(f"--releasever={system_info.releasever}")
 
     # Without the release package installed, dnf can't determine the modularity platform ID.
     if system_info.version.major >= 8:
@@ -243,13 +238,13 @@ def call_yum_cmd(
         # When using subscription-manager for the conversion, use those repos for the yum call that have been enabled
         # through subscription-manager
         repos_to_enable = system_info.get_enabled_rhel_repos()
-        logger.debug("Custom epos in yum cmd: {repos_to_enable}".format(repos_to_enable=repos_to_enable))
+        logger.debug(f"Custom epos in yum cmd: {repos_to_enable}")
 
     for repo in repos_to_enable:
-        cmd.append("--enablerepo={}".format(repo))
+        cmd.append(f"--enablerepo={repo}")
 
     if setopts:
-        opts = ["--setopt={}".format(opt) for opt in setopts]
+        opts = [f"--setopt={opt}" for opt in setopts]
         cmd.extend(opts)
 
     cmd.extend(args)

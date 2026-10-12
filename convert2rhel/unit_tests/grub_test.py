@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2021 Red Hat, Inc.
 #
@@ -15,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import copy
 import os
-
 from collections import namedtuple
 
 import pytest
@@ -28,10 +25,8 @@ import six
 from convert2rhel import grub, utils
 from convert2rhel.unit_tests import EFIBootInfoMocked, RunSubprocessMocked
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
 
 # TODO(pstodulk): put here a real examples of an output..
 _SEC_STDOUT_ENABLED = "secure boot enabled"
@@ -98,7 +93,7 @@ def test__get_partition(monkeypatch, caplog, expected_res, directory, exception,
     if exception:
         with pytest.raises(exception):
             grub._get_partition(directory)
-        assert "grub2-probe returned {}. Output:\n{}".format(subproc[1], subproc[0]) in caplog.records[-1].message
+        assert f"grub2-probe returned {subproc[1]}. Output:\n{subproc[0]}" in caplog.records[-1].message
     else:
         assert grub._get_partition(directory) == expected_res
         assert len(caplog.records) == 0

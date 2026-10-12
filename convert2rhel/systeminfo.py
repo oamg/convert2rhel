@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,23 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 import re
 import time
-
 from collections import namedtuple
 
 from six.moves import configparser
 
 from convert2rhel import utils
-from convert2rhel.logger import root_logger, LOG_DIR
+from convert2rhel.logger import LOG_DIR, root_logger
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess
 from convert2rhel.utils.rpm import PRE_RPM_VA_LOG_FILENAME
-
 
 # Number of times to retry checking the status of dbus
 CHECK_DBUS_STATUS_RETRIES = 3
@@ -98,9 +93,9 @@ class Version(namedtuple("Version", ["major", "minor"])):
         :rtype: str
         """
         if self.minor:
-            return "{major}.{minor}".format(major=self.major, minor=self.minor)
+            return f"{self.major}.{self.minor}"
 
-        return "{major}".format(major=self.major)
+        return f"{self.major}"
 
 
 class SystemInfo:
@@ -236,9 +231,7 @@ class SystemInfo:
         )
 
         if not matched:
-            logger.critical_no_exit(
-                "Couldn't parse the /etc/system-release content: {}".format(system_release_file_content)
-            )
+            logger.critical_no_exit(f"Couldn't parse the /etc/system-release content: {system_release_file_content}")
             return {}
 
         name = matched.group("name")
@@ -329,9 +322,7 @@ class SystemInfo:
         if option_name in self.cfg_content:
             return self.cfg_content[option_name]
         else:
-            logger.error(
-                "Internal error: {} option not found in {} config file.".format(option_name, self.cfg_filename)
-            )
+            logger.error(f"Internal error: {option_name} option not found in {self.cfg_filename} config file.")
 
     def _get_gpg_key_ids(self):
         return self._get_cfg_opt("gpg_key_ids").split()
@@ -352,10 +343,8 @@ class SystemInfo:
 
                 if old_package in pkgs_to_swap:
                     logger.warning(
-                        "Package {old_package} redefined in swap packages list.\n"
-                        "Old package {old_package} will be swapped by {newest_package} instead of {new_package}.".format(
-                            old_package=old_package, new_package=pkgs_to_swap[old_package], newest_package=new_package
-                        )
+                        f"Package {old_package} redefined in swap packages list.\n"
+                        f"Old package {old_package} will be swapped by {new_package} instead of {pkgs_to_swap[old_package]}."
                     )
                 pkgs_to_swap.update({old_package: new_package})
 
@@ -389,10 +378,8 @@ class SystemInfo:
             return releasever_cfg or RELEASE_VER_MAPPING[repr(self.version)]
         except KeyError:
             logger.critical(
-                "{os_name} of version {current_version} is not allowed for conversion.\n"
-                "Allowed versions are: {allowed_versions}".format(
-                    os_name=self.name, current_version=self.version, allowed_versions=list(RELEASE_VER_MAPPING.keys())
-                )
+                f"{self.name} of version {self.version} is not allowed for conversion.\n"
+                f"Allowed versions are: {list(RELEASE_VER_MAPPING.keys())}"
             )
 
     def _get_kmods_to_ignore(self):
@@ -400,7 +387,7 @@ class SystemInfo:
 
     def _get_booted_kernel(self):
         kernel_vra = run_subprocess(["uname", "-r"], print_output=False)[0].rstrip()
-        logger.debug("Booted kernel VRA (version, release, architecture): {0}".format(kernel_vra))
+        logger.debug(f"Booted kernel VRA (version, release, architecture): {kernel_vra}")
         return kernel_vra
 
     def generate_rpm_va(self, log_filename=PRE_RPM_VA_LOG_FILENAME):
@@ -423,7 +410,7 @@ class SystemInfo:
         rpm_va, _ = utils.run_subprocess(["rpm", "-Va", "--nodeps"], print_output=False)
         output_file = os.path.join(LOG_DIR, log_filename)
         utils.store_content_to_file(output_file, rpm_va)
-        logger.info("The 'rpm -Va' output has been stored in the {} file.".format(output_file))
+        logger.info(f"The 'rpm -Va' output has been stored in the {output_file} file.")
 
     @staticmethod
     def is_rpm_installed(name):

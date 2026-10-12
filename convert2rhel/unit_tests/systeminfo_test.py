@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 import os
@@ -28,7 +26,6 @@ from convert2rhel import logger, systeminfo, utils
 from convert2rhel.systeminfo import RELEASE_VER_MAPPING, Version, system_info
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import all_systems, centos8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -161,7 +158,7 @@ def test_get_dbus_status_in_progress(monkeypatch, states, expected):
 
     side_effects = []
     for state in states:
-        side_effects.append(("ActiveState={}\n".format(state), 0))
+        side_effects.append((f"ActiveState={state}\n", 0))
 
     run_subprocess_mocked = RunSubprocessMocked(side_effect=side_effects)
     monkeypatch.setattr(utils, "run_subprocess", run_subprocess_mocked)

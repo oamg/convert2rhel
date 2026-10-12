@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2022 Red Hat, Inc.
 #
@@ -14,14 +13,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 import hashlib
 import os
 
 import pytest
 import six
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -32,7 +29,6 @@ from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RemovePkgsMocked, create_pkg_information, mock_decorator
 from convert2rhel.unit_tests.conftest import centos7
-
 
 SYSTEM_PACKAGES = [
     create_pkg_information(
