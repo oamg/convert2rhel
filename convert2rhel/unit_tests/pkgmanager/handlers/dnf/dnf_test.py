@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2022 Red Hat, Inc.
 #
@@ -14,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 import pytest
 import six
@@ -25,7 +23,6 @@ from convert2rhel.pkgmanager.handlers.dnf.callback import DependencySolverProgre
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import create_pkg_information
 from convert2rhel.unit_tests.conftest import centos8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

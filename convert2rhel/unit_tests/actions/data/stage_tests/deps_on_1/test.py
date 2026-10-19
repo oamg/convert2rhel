@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 from convert2rhel import actions
 
 
@@ -8,8 +6,7 @@ class TestI(actions.Action):
     dependencies = ("REALTEST",)
 
     def run(self):
-        super(TestI, self).run()
-        return
+        super().run()
 
 
 class TestII(actions.Action):
@@ -17,5 +14,4 @@ class TestII(actions.Action):
     dependencies = ("REALTEST", "FOURTHTEST")
 
     def run(self):
-        super(TestII, self).run()
-        return
+        super().run()

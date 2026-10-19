@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,23 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os.path
-import tempfile
 import re
-
+import tempfile
 from contextlib import closing
 
 from six.moves import urllib
 
 from convert2rhel import exceptions
 from convert2rhel.logger import root_logger
+from convert2rhel.pkgmanager import TYPE, call_yum_cmd
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import TMP_DIR, store_content_to_file
-from convert2rhel.pkgmanager import TYPE, call_yum_cmd
-
 
 DEFAULT_YUM_REPOFILE_DIR = os.path.normcase("/etc/yum.repos.d")
 DEFAULT_YUM_VARS_DIR = os.path.normcase("/etc/yum/vars")
@@ -60,14 +56,14 @@ def get_rhel_repoids():
     return repos_needed
 
 
-class DisableReposDuringAnalysis(object):
+class DisableReposDuringAnalysis:
     _instance = None
     _repos_to_disable = None
 
     def __new__(cls):
         """Singleton pattern"""
         if cls._instance is None:
-            cls._instance = super(DisableReposDuringAnalysis, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             # Cannot call the _set_rhel_repos_to_disable() directly due Python 2 support
             cls._instance._initialized = False
 
@@ -151,9 +147,9 @@ def _get_valid_custom_repos(repos_to_check):
         if problematic_reponame_line:
             reponame = problematic_reponame_line.group(1)
             logger.debug(
-                "Removed the {reponame} repository from the list of repositories to disable in certain"
+                f"Removed the {reponame} repository from the list of repositories to disable in certain"
                 " pre-conversion analysis checks as it is inaccessible at the moment and yum fails when trying to"
-                " disable an inaccessible repository.".format(reponame=reponame)
+                " disable an inaccessible repository."
             )
             repos_to_check.remove(reponame)
             return _get_valid_custom_repos(repos_to_check)
@@ -191,9 +187,7 @@ def download_repofile(repofile_url):
             contents = response.read()
 
             if not contents:
-                description = "The requested repository file seems to be empty. No content received when checking for url: {}".format(
-                    repofile_url
-                )
+                description = f"The requested repository file seems to be empty. No content received when checking for url: {repofile_url}"
                 logger.critical_no_exit(description)
                 raise exceptions.CriticalError(
                     id_="REPOSITORY_FILE_EMPTY_CONTENT",
@@ -201,14 +195,14 @@ def download_repofile(repofile_url):
                     description=description,
                 )
 
-            logger.info("Successfully downloaded a repository file from {}.".format(repofile_url))
+            logger.info(f"Successfully downloaded a repository file from {repofile_url}.")
             return contents.decode()
     except urllib.error.URLError as err:
         raise exceptions.CriticalError(
             id_="DOWNLOAD_REPOSITORY_FILE_FAILED",
             title="Failed to download a repository file",
-            description="Failed to download a repository file from {}.".format(repofile_url),
-            diagnosis="Reason: {}.".format(err.reason),
+            description=f"Failed to download a repository file from {repofile_url}.",
+            diagnosis=f"Reason: {err.reason}.",
         )
 
 
@@ -224,20 +218,20 @@ def write_temporary_repofile(contents):
     """
     try:
         repofile_dir = tempfile.mkdtemp(prefix="downloaded_repofiles.", dir=TMP_DIR)
-    except (OSError, IOError) as err:
+    except OSError as err:
         raise exceptions.CriticalError(
             id_="CREATE_TMP_DIR_FOR_REPOFILES_FAILED",
             title="Failed to create a temporary directory",
-            description="Failed to create a temporary directory for storing a repository file under {}.\n"
-            "Reason: {}".format(TMP_DIR, str(err)),
+            description=f"Failed to create a temporary directory for storing a repository file under {TMP_DIR}.\n"
+            f"Reason: {err!s}",
         )
     with tempfile.NamedTemporaryFile(mode="w", suffix=".repo", delete=False, dir=repofile_dir) as f:
         try:
             store_content_to_file(filename=f.name, content=contents)
             return f.name
-        except (OSError, IOError) as err:
+        except OSError as err:
             raise exceptions.CriticalError(
                 id_="STORE_REPOFILE_FAILED",
                 title="Failed to store a repository file",
-                description="Failed to write a repository file contents to {}.\n" "Reason: {}".format(f.name, str(err)),
+                description=f"Failed to write a repository file contents to {f.name}.\nReason: {err!s}",
             )

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 import re
@@ -24,7 +21,6 @@ import re
 from convert2rhel import pkgmanager, utils
 from convert2rhel.backup.files import RestorableFile
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -46,8 +42,8 @@ def get_system_release_content():
     filepath = get_system_release_filepath()
     try:
         return utils.get_file_content(filepath)
-    except EnvironmentError as err:
-        logger.critical("{}\n{} file is essential for running this tool.".format(err, filepath))
+    except OSError as err:
+        logger.critical(f"{err}\n{filepath} file is essential for running this tool.")
 
 
 class PkgManagerConf:
@@ -79,11 +75,9 @@ class PkgManagerConf:
             # package is replaced but this config file is left unchanged and it keeps the original distroverpkg setting.
             self._comment_out_distroverpkg_tag()
             self._write_altered_pkg_manager_conf()
-            logger.info("{} patched.".format(self._pkg_manager_conf_path))
+            logger.info(f"{self._pkg_manager_conf_path} patched.")
         else:
             logger.info("Skipping patching, package manager configuration file has not been modified.")
-
-        return
 
     def _comment_out_distroverpkg_tag(self):
         if re.search(r"^distroverpkg=", self._pkg_manager_conf_content, re.MULTILINE):
@@ -99,9 +93,7 @@ class PkgManagerConf:
         output, _ = utils.run_subprocess(["rpm", "-Vf", self._pkg_manager_conf_path], print_output=False)
         # rpm -Vf does not return information about the queried file but about all files owned by the rpm
         # that owns the queried file. Character '5' on position 3 means that the file was modified.
-        return (
-            True if re.search(r"^.{{2}}5.*? {}$".format(self._pkg_manager_conf_path), output, re.MULTILINE) else False
-        )
+        return True if re.search(rf"^.{{2}}5.*? {self._pkg_manager_conf_path}$", output, re.MULTILINE) else False
 
 
 # Code to be executed upon module import

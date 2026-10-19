@@ -2,7 +2,6 @@ import pytest
 
 from conftest import SYSTEM_RELEASE_ENV, TEST_VARS
 
-
 DUPLICATE_PKG_URL_MAPPING = {
     "centos-7": "https://vault.centos.org/7.4.1708/os/x86_64/Packages/python2-cryptography-1.7.2-1.el7.x86_64.rpm",
     "oracle-7": "https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/abrt-2.1.11-50.0.1.el7.x86_64.rpm",
