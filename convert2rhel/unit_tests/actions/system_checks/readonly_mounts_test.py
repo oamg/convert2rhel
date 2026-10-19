@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -15,17 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import six
 
 from convert2rhel import unit_tests
 from convert2rhel.actions.system_checks import readonly_mounts
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 import pytest
-
 from six.moves import mock
 
 

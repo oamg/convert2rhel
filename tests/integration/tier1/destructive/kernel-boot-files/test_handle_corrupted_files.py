@@ -3,7 +3,6 @@ import subprocess
 
 from conftest import TEST_VARS, SystemInformationRelease
 
-
 INITRAMFS_FILE = "/boot/initramfs-%s.img"
 BACKUP_INITRAMFS_FILE = "/boot/initramfs-%s.backup.img"
 
@@ -13,7 +12,7 @@ def get_latest_installed_kernel_version(kernel_name):
 
     output = subprocess.check_output(["rpm", "-q", "--last", kernel_name]).decode()
     latest_installed_kernel = output.split("\n", maxsplit=1)[0].split(" ")[0]
-    latest_installed_kernel = latest_installed_kernel.split("{}-".format(kernel_name))[-1]
+    latest_installed_kernel = latest_installed_kernel.split(f"{kernel_name}-")[-1]
     return latest_installed_kernel.strip()
 
 
@@ -26,10 +25,10 @@ def corrupt_initramfs_file(shell, kernel_version):
     assert os.path.exists(initramfs_file)
 
     # Copy the original file as a backup, so we can restore it later
-    assert shell("cp {} {}".format(initramfs_file, initramfs_backup)).returncode == 0
+    assert shell(f"cp {initramfs_file} {initramfs_backup}").returncode == 0
 
     # Corrupt the file
-    cmd = ["dd", "if=/dev/urandom", "bs=1024", "count=1", "of={}".format(initramfs_file)]
+    cmd = ["dd", "if=/dev/urandom", "bs=1024", "count=1", f"of={initramfs_file}"]
     subprocess.run(cmd, check=False)
 
 
@@ -42,10 +41,10 @@ def restore_original_initramfs(shell, kernel_version):
     assert os.path.exists(initramfs_file)
 
     # Delete it as we will restore from the backup
-    assert shell("rm -rf {}".format(initramfs_file)).returncode == 0
+    assert shell(f"rm -rf {initramfs_file}").returncode == 0
 
     # Move the backup to be the original one again
-    assert shell("mv {} {}".format(initramfs_backup, initramfs_file)).returncode == 0
+    assert shell(f"mv {initramfs_backup} {initramfs_file}").returncode == 0
 
     # Assert that the file exists
     assert os.path.exists(initramfs_file)

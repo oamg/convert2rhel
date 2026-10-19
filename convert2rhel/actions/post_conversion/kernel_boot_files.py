@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
@@ -21,7 +20,6 @@ from convert2rhel import actions, checks, grub
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
-
 
 logger = root_logger.getChild(__name__)
 
@@ -37,7 +35,7 @@ class KernelBootFiles(actions.Action):
 
     def run(self):
         """Check if the required kernel files exist and are valid under the boot partition."""
-        super(KernelBootFiles, self).run()
+        super().run()
 
         logger.task("Check kernel boot files")
 
@@ -74,18 +72,14 @@ class KernelBootFiles(actions.Action):
         remediations = (
             "In order to fix this problem you might need to free/increase space in your boot partition"
             " and then run the following commands in your terminal:\n"
-            "1. yum reinstall {kernel_name}-{latest_installed_kernel} -y\n"
-            "2. grub2-mkconfig -o {grub2_config_file}\n"
-            "3. reboot".format(
-                kernel_name=kernel_name,
-                latest_installed_kernel=latest_installed_kernel,
-                grub2_config_file=grub2_config_file,
-            )
+            f"1. yum reinstall {kernel_name}-{latest_installed_kernel} -y\n"
+            f"2. grub2-mkconfig -o {grub2_config_file}\n"
+            "3. reboot"
         )
         logger.warning(
             "Couldn't verify the kernel boot files in the boot partition. This"
             " might cause problems during the next boot of your system.\n"
-            "{0}".format(remediations),
+            f"{remediations}",
         )
         self.add_message(
             level="WARNING",
