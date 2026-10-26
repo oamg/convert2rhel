@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os.path
 
@@ -26,7 +24,6 @@ from convert2rhel.backup.subscription import (
     RestorableSystemSubscription,
 )
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -46,7 +43,7 @@ class InstallRedHatCertForYumRepositories(actions.Action):
     id = "INSTALL_RED_HAT_CERT_FOR_YUM"
 
     def run(self):
-        super(InstallRedHatCertForYumRepositories, self).run()
+        super().run()
 
         # We need to make sure the redhat-uep.pem file exists since RHEL yum repositories use it.
         # The subscription-manager-rhsm-certificates package contains this cert but for
@@ -61,7 +58,7 @@ class InstallRedHatGpgKeyForRpm(actions.Action):
     id = "INSTALL_RED_HAT_GPG_KEY"
 
     def run(self):
-        super(InstallRedHatGpgKeyForRpm, self).run()
+        super().run()
 
         # Import the Red Hat GPG Keys for installing Subscription-manager
         # and for later.
@@ -78,7 +75,7 @@ class PreSubscription(actions.Action):
     )
 
     def run(self):
-        super(PreSubscription, self).run()
+        super().run()
 
         if toolopts.tool_opts.no_rhsm:
             # Note: we don't use subscription.should_subscribe here because we
@@ -137,7 +134,7 @@ class PreSubscription(actions.Action):
                 id="UNABLE_TO_REGISTER",
                 title="System unregistration failure",
                 description="The system is already registered with subscription-manager even though it is running CentOS not RHEL. We have failed to remove that registration.",
-                diagnosis="Failed to unregister the system: {}".format(e),
+                diagnosis=f"Failed to unregister the system: {e}",
                 remediations="You may want to unregister the system manually and re-run convert2rhel.",
             )
 
@@ -152,7 +149,7 @@ class SubscribeSystem(actions.Action):
     )
 
     def run(self):
-        super(SubscribeSystem, self).run()
+        super().run()
 
         if not subscription.should_subscribe():
             if toolopts.tool_opts.no_rhsm:
@@ -227,7 +224,7 @@ class SubscribeSystem(actions.Action):
                 id="MISSING_SUBSCRIPTION_MANAGER_BINARY",
                 title="Missing subscription-manager binary",
                 description="There is a missing subscription-manager binary",
-                diagnosis="Failed to execute command: {}".format(e),
+                diagnosis=f"Failed to execute command: {e}",
             )
         except exceptions.CriticalError as e:
             self.set_result(
@@ -255,7 +252,5 @@ class SubscribeSystem(actions.Action):
                 id="MISSING_REGISTRATION_COMBINATION",
                 title="Missing registration combination",
                 description="There are missing registration combinations",
-                diagnosis="One or more combinations were missing for subscription-manager parameters: {}".format(
-                    str(e)
-                ),
+                diagnosis=f"One or more combinations were missing for subscription-manager parameters: {e!s}",
             )

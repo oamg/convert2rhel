@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 
@@ -27,7 +24,6 @@ from convert2rhel.backup import BACKUP_DIR, RestorableChange
 # split this out.
 from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
-
 
 logger = root_logger.getChild(__name__)
 
@@ -47,7 +43,7 @@ class RestorablePackage(RestorableChange):
         :param custom_releasever str: Custom releasever in case it need to be
             overwritten and it differs from the `py:system_info.releasever`.
         """
-        super(RestorablePackage, self).__init__()
+        super().__init__()
 
         self.pkgs = pkgs
         self.reposdir = reposdir
@@ -81,11 +77,11 @@ class RestorablePackage(RestorableChange):
             return
 
         if not os.path.isdir(BACKUP_DIR):
-            logger.warning("Can't access {}".format(BACKUP_DIR))
+            logger.warning(f"Can't access {BACKUP_DIR}")
             return
 
         logger.info("Backing up the packages: {}.".format(",".join(self.pkgs)))
-        logger.debug("Using repository files stored in {}.".format(self.reposdir))
+        logger.debug(f"Using repository files stored in {self.reposdir}.")
 
         if self.reposdir:
             # Check if the reposdir exists and if the directory is empty
@@ -110,7 +106,7 @@ class RestorablePackage(RestorableChange):
         # TODO(r0x0d): Maybe we want to set the enabled value only when we
         # backup something?
         # Set the enabled value
-        super(RestorablePackage, self).enable()
+        super().enable()
 
     def restore(self):
         """Restore system to the original state."""
@@ -129,12 +125,12 @@ class RestorablePackage(RestorableChange):
                     "While attempting to roll back changes, we encountered "
                     "an unexpected failure while we cannot find a package backup."
                 ),
-                diagnosis="Couldn't find a backup for {} package.".format(utils.format_sequence_as_message(self.pkgs)),
+                diagnosis=f"Couldn't find a backup for {utils.format_sequence_as_message(self.pkgs)} package.",
             )
 
         self._install_local_rpms(replace=True, critical=True)
 
-        super(RestorablePackage, self).restore()
+        super().restore()
 
     def _install_local_rpms(self, replace=False, critical=True):
         """Install packages locally available."""
@@ -156,7 +152,7 @@ class RestorablePackage(RestorableChange):
             pkgs_as_str = utils.format_sequence_as_message(self.pkgs)
             logger.debug(output.strip())
             if critical:
-                logger.critical_no_exit("Error: Couldn't install {} packages.".format(pkgs_as_str))
+                logger.critical_no_exit(f"Error: Couldn't install {pkgs_as_str} packages.")
                 raise exceptions.CriticalError(
                     id_="FAILED_TO_INSTALL_PACKAGES",
                     title="Couldn't install packages.",
@@ -170,7 +166,7 @@ class RestorablePackage(RestorableChange):
                     % (pkgs_as_str, cmd, output, ret_code),
                 )
 
-            logger.warning("Couldn't install {} packages.".format(pkgs_as_str))
+            logger.warning(f"Couldn't install {pkgs_as_str} packages.")
             return False
 
         return True
@@ -228,7 +224,7 @@ class RestorablePackageSet(RestorableChange):
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
 
-        super(RestorablePackageSet, self).__init__()
+        super().__init__()
 
     def enable(self):
         if self.enabled:
@@ -236,7 +232,7 @@ class RestorablePackageSet(RestorableChange):
 
         self._enable()
 
-        super(RestorablePackageSet, self).enable()
+        super().enable()
 
     def _enable(self):
         """
@@ -249,7 +245,7 @@ class RestorablePackageSet(RestorableChange):
 
         formatted_pkgs_sequence = utils.format_sequence_as_message(self.pkgs_to_install)
 
-        logger.debug("RPMs scheduled for installation: {}".format(formatted_pkgs_sequence))
+        logger.debug(f"RPMs scheduled for installation: {formatted_pkgs_sequence}")
 
         output, ret_code = call_yum_cmd(
             command="install",
@@ -267,35 +263,33 @@ class RestorablePackageSet(RestorableChange):
 
         if ret_code:
             logger.critical_no_exit(
-                "Failed to install scheduled packages. Check the yum output below for details:\n\n {}".format(output)
+                f"Failed to install scheduled packages. Check the yum output below for details:\n\n {output}"
             )
             raise exceptions.CriticalError(
                 id_="FAILED_TO_INSTALL_SCHEDULED_PACKAGES",
                 title="Failed to install scheduled packages.",
                 description="convert2rhel was unable to install scheduled packages.",
-                diagnosis="Failed to install packages {}. Output: {}, Status: {}".format(
-                    formatted_pkgs_sequence, output, ret_code
-                ),
+                diagnosis=f"Failed to install packages {formatted_pkgs_sequence}. Output: {output}, Status: {ret_code}",
             )
 
         # Need to do this here instead of in pkghandler.call_yum_cmd() to avoid
         # double printing the output if an error occurred.
         logger.info(output.rstrip("\n"))
-        logger.info("\nPackages we installed or updated:\n{}".format(formatted_pkgs_sequence))
+        logger.info(f"\nPackages we installed or updated:\n{formatted_pkgs_sequence}")
 
         # We could rely on these always being installed/updated when
         # self.enabled is True but putting the values into separate attributes
         # is more friendly if outside code needs to inspect the values.
         self.installed_pkgs = self.pkgs_to_install[:]
 
-        super(RestorablePackageSet, self).enable()
+        super().enable()
 
     def restore(self):
         if not self.enabled:
             return
 
         logger.task("Remove installed packages")
-        logger.info("Removing set of installed pkgs: {}".format(utils.format_sequence_as_message(self.installed_pkgs)))
+        logger.info(f"Removing set of installed pkgs: {utils.format_sequence_as_message(self.installed_pkgs)}")
         utils.remove_pkgs(self.installed_pkgs, critical=False)
 
-        super(RestorablePackageSet, self).restore()
+        super().restore()

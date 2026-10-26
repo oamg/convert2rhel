@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 import re
@@ -22,7 +20,6 @@ import re
 from convert2rhel import actions, systeminfo
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 
@@ -43,17 +40,17 @@ def _is_modules_cleanup_enabled():
     """
     # Return True is the config file does not exist.
     if not os.path.exists(FIREWALLD_CONFIG_FILE):
-        logger.debug("{} does not exist.".format(FIREWALLD_CONFIG_FILE))
+        logger.debug(f"{FIREWALLD_CONFIG_FILE} does not exist.")
         return True
 
     contents = []
     with open(FIREWALLD_CONFIG_FILE, mode="r") as handler:
-        contents = [line.strip() for line in handler.readlines() if line.strip()]
+        contents = [line.strip() for line in handler if line.strip()]
 
     # Contents list is empty for some reason, better to assume that there
     # is no content in the file that was read.
     if not contents:
-        logger.debug("{} is empty.".format(FIREWALLD_CONFIG_FILE))
+        logger.debug(f"{FIREWALLD_CONFIG_FILE} is empty.")
         return True
 
     # If the CleanupModulesOnExit is not present inside the contents list, we
@@ -71,12 +68,12 @@ def _is_modules_cleanup_enabled():
     # If the config file has this option set to true/yes, then we need to
     # return True to ask the user to change it to False.
     if list(filter(CLEANUP_MODULES_ON_EXIT_REGEX.match, contents)):
-        logger.debug("CleanupModulesOnExit option enabled in {}".format(FIREWALLD_CONFIG_FILE))
+        logger.debug(f"CleanupModulesOnExit option enabled in {FIREWALLD_CONFIG_FILE}")
         return True
 
     # Default to return False as it is possible that the CleanupModulesOnExit
     # is set to no in the config already.
-    logger.debug("CleanupModulesOnExit option is disabled in {}".format(FIREWALLD_CONFIG_FILE))
+    logger.debug(f"CleanupModulesOnExit option is disabled in {FIREWALLD_CONFIG_FILE}")
     return False
 
 
@@ -85,7 +82,7 @@ class CheckFirewalldAvailability(actions.Action):
 
     def run(self):
         """Error out if the firewalld service is running on the system."""
-        super(CheckFirewalldAvailability, self).run()
+        super().run()
         logger.task("Check that firewalld is running")
 
         if system_info.id == "oracle" and system_info.version.major == 8 and system_info.version.minor >= 8:

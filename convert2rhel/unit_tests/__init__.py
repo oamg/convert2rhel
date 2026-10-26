@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -14,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 import collections
 import functools
@@ -43,10 +41,8 @@ from convert2rhel.actions import STATUS_CODE, report
 from convert2rhel.pkghandler import PackageInformation, PackageNevra
 from convert2rhel.utils import run_subprocess
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
-from six.moves import mock as six_mock  # noqa: E402
-
+from six.moves import mock as six_mock
 
 TMP_DIR = "/tmp/convert2rhel_test/"
 NONEXISTING_DIR = os.path.join(TMP_DIR, "nonexisting_dir/")
@@ -160,7 +156,7 @@ def mock(class_or_module, orig_obj, mock_obj):
             # (e.g. to have the mocked function just as a wrapper for the
             # original function), save it as a temporary attribute
             # named "<original object name>_orig"
-            orig_obj_attr = "{}_orig".format(orig_obj)
+            orig_obj_attr = f"{orig_obj}_orig"
             setattr(class_or_module, orig_obj_attr, orig_obj_saved)
             # Call the decorated test function
             return_value = None
@@ -205,7 +201,7 @@ def is_rpm_based_os():
     """Check if the OS is rpm based."""
     try:
         run_subprocess(["rpm"])
-    except EnvironmentError:
+    except OSError:
         return False
     else:
         return True
@@ -250,7 +246,7 @@ class MockFunctionObject:
     def __getattr__(self, name):
         # Need to use a base class's methods for looking up attributes which might not exist
         # to avoid infinite recursion. (This could be called before self._mock has been created)
-        _mock = super(MockFunctionObject, self).__getattribute__("_mock")
+        _mock = super().__getattribute__("_mock")
         return getattr(_mock, name)
 
     def __call__(self, *args, **kwargs):
@@ -264,10 +260,10 @@ class SysExitCallableObject(MockFunctionObject):
 
     def __init__(self, msg, **kwargs):
         self.msg = msg
-        super(SysExitCallableObject, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, *args, **kwargs):
-        super(SysExitCallableObject, self).__call__(*args, **kwargs)
+        super().__call__(*args, **kwargs)
         return sys.exit(self.msg)
 
 
@@ -284,10 +280,10 @@ class CriticalErrorCallableObject(MockFunctionObject):
         self.remediations = remediations
         self.variables = {} if variables is None else variables
 
-        super(CriticalErrorCallableObject, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, *args, **kwargs):
-        super(CriticalErrorCallableObject, self).__call__(*args, **kwargs)
+        super().__call__(*args, **kwargs)
         raise exceptions.CriticalError(
             self.id,
             self.title,
@@ -325,7 +321,7 @@ class RestorablePackageMocked(MockFunctionObject):
     def __init__(self, **kwargs):
         self.pkgs = None
 
-        super(RestorablePackageMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, pkgs, reposdir, set_releasever, custom_releasever, *args, **kwargs):
         self.pkgs = pkgs
@@ -333,9 +329,7 @@ class RestorablePackageMocked(MockFunctionObject):
         self.set_releasever = set_releasever
         self.custom_releasever = custom_releasever
 
-        return super(RestorablePackageMocked, self).__call__(
-            pkgs, reposdir, set_releasever, custom_releasever, *args, **kwargs
-        )
+        return super().__call__(pkgs, reposdir, set_releasever, custom_releasever, *args, **kwargs)
 
 
 #
@@ -409,13 +403,13 @@ class CallYumCmdMocked(MockFunctionObject):
             if fail_once:
                 side_effect = itertools.chain([(return_string, 1)], side_effect)
 
-        super(CallYumCmdMocked, self).__init__(side_effect=side_effect, **kwargs)
+        super().__init__(side_effect=side_effect, **kwargs)
 
     def __call__(self, command, *other_args, **kwargs):
         self.command = command
         self.args = kwargs.get("args", [])
 
-        return super(CallYumCmdMocked, self).__call__(command, *other_args, **kwargs)
+        return super().__call__(command, *other_args, **kwargs)
 
 
 class ClearVersionlockMocked(MockFunctionObject):
@@ -495,7 +489,7 @@ class GetInstalledPkgInformationMocked(MockFunctionObject):
             if pkg_selection is not None:
                 kwargs["return_value"] = self.prebaked_pkgs[pkg_selection]
 
-        super(GetInstalledPkgInformationMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class GetInstalledPkgsWDifferentKeyIdMocked(GetInstalledPkgInformationMocked):
@@ -613,12 +607,12 @@ class RemovePkgsMocked(MockFunctionObject):
     def __init__(self, **kwargs):
         self.pkgs = None
 
-        super(RemovePkgsMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, pkgs_to_remove, *args, **kwargs):
         self.pkgs = pkgs_to_remove
 
-        return super(RemovePkgsMocked, self).__call__(pkgs_to_remove, *args, **kwargs)
+        return super().__call__(pkgs_to_remove, *args, **kwargs)
 
 
 class DownloadPkgMocked(MockFunctionObject):
@@ -637,7 +631,7 @@ class DownloadPkgMocked(MockFunctionObject):
         self.enable_repos = []
         self.disable_repos = []
 
-        super(DownloadPkgMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, pkg, *args, **kwargs):
         self.pkg = pkg
@@ -645,7 +639,7 @@ class DownloadPkgMocked(MockFunctionObject):
         self.enable_repos = kwargs.get("enable_repos", [])
         self.disable_repos = kwargs.get("disable_repos", [])
 
-        return super(DownloadPkgMocked, self).__call__(pkg, *args, **kwargs)
+        return super().__call__(pkg, *args, **kwargs)
 
 
 class PromptUserMocked(MockFunctionObject):
@@ -658,10 +652,10 @@ class PromptUserMocked(MockFunctionObject):
         if "return_value" not in kwargs:
             kwargs["return_value"] = "test"
 
-        super(PromptUserMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, question, *args, **kwargs):
-        return_value = super(PromptUserMocked, self).__call__(question, *args, **kwargs)
+        return_value = super().__call__(question, *args, **kwargs)
         self.prompts[question] += 1
 
         # Emulate the user not providing a valid value until retries times.
@@ -697,13 +691,13 @@ class RunSubprocessMocked(MockFunctionObject):
             return_string = "Test output" if return_string is None else return_string
             kwargs["return_value"] = (return_string, return_code)
 
-        super(RunSubprocessMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, cmd, *args, **kwargs):
         self.cmd = cmd
         self.cmds.append(cmd)
 
-        return super(RunSubprocessMocked, self).__call__(cmd, *args, **kwargs)
+        return super().__call__(cmd, *args, **kwargs)
 
 
 class RunCmdInPtyMocked(RunSubprocessMocked):
@@ -723,13 +717,13 @@ class StoreContentToFileMocked(MockFunctionObject):
         self.filename = None
         self.content = None
 
-        super(StoreContentToFileMocked, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, filename, content, *args, **kwargs):
         self.filename = filename
         self.content = content
 
-        super(StoreContentToFileMocked, self).__call__(filename, content, *args, **kwargs)
+        super().__call__(filename, content, *args, **kwargs)
 
         return True
 
@@ -858,41 +852,41 @@ class EFIBootInfoMocked:
 class MinimalRestorable(backup.RestorableChange):
     def __init__(self):
         self.called = collections.defaultdict(int)
-        super(MinimalRestorable, self).__init__()
+        super().__init__()
 
     def enable(self):
         self.called["enable"] += 1
-        super(MinimalRestorable, self).enable()
+        super().enable()
 
     def restore(self):
         self.called["restore"] += 1
-        super(MinimalRestorable, self).restore()
+        super().restore()
 
 
 class FilePathRestorable(MinimalRestorable):
     def __init__(self, filepath=None):
         self.backup_path = filepath
-        super(FilePathRestorable, self).__init__()
+        super().__init__()
 
     def __eq__(self, value):
         if self.backup_path:
             return self.backup_path == value.backup_path
-        return super(FilePathRestorable, self).__eq__(value)
+        return super().__eq__(value)
 
 
 class ErrorOnRestoreRestorable(MinimalRestorable):
     def __init__(self, exception=None):
         self.exception = exception or Exception()
-        super(ErrorOnRestoreRestorable, self).__init__()
+        super().__init__()
 
     def restore(self):
-        super(ErrorOnRestoreRestorable, self).restore()
+        super().restore()
         raise self.exception
 
 
 class RestorablePackageMock(MinimalRestorable):
     def __init__(self, pkg_name=None, reposdir=None, set_releasever=False, custom_releasever=None):
-        super(RestorablePackageMock, self).__init__()
+        super().__init__()
 
         self.pkg_name = pkg_name
         self.reposdir = reposdir

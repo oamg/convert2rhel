@@ -2,6 +2,7 @@ import os
 import re
 
 import pytest
+
 from test_helpers.common_functions import get_log_file_data
 
 log_data = get_log_file_data()
@@ -46,14 +47,14 @@ def test_check_empty_exclude_in_critical_commands(log_file_data=log_data):
     """
     number_of_repoquery_calls = len(re.findall("Calling command 'repoquery", log_file_data))
     number_of_repoquery_calls_with_exclude = len(
-        re.findall("Calling command 'repoquery.*--setopt=exclude=\s.*", log_file_data)
+        re.findall(r"Calling command 'repoquery.*--setopt=exclude=\s.*", log_file_data)
     )
     assert number_of_repoquery_calls != 0
     assert number_of_repoquery_calls == number_of_repoquery_calls_with_exclude
 
     number_of_yumdownloader_calls = len(re.findall("Calling command 'yumdownloader", log_file_data))
     number_of_yumdownloader_calls_with_exclude = len(
-        re.findall("Calling command 'yumdownloader.*--setopt=exclude=\s.*", log_file_data)
+        re.findall(r"Calling command 'yumdownloader.*--setopt=exclude=\s.*", log_file_data)
     )
     assert number_of_yumdownloader_calls == number_of_yumdownloader_calls_with_exclude
 

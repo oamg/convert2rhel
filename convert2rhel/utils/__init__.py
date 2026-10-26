@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import fcntl
 import getpass
@@ -30,18 +28,15 @@ import sys
 import tempfile
 import termios
 import traceback
-
 from functools import wraps
 
 import pexpect
 import rpm
-
 from six import moves
 
 from convert2rhel import exceptions, i18n
 from convert2rhel.logger import root_logger
 from convert2rhel.toolopts import tool_opts
-
 
 logger = root_logger.getChild(__name__)
 
@@ -77,8 +72,6 @@ class UnableToSerialize(Exception):
     Internal class that is used to declare that a object was not able to be
     serialized with Pickle inside the Process subclass.
     """
-
-    pass
 
 
 class Process(multiprocessing.Process):
@@ -127,7 +120,7 @@ class Process(multiprocessing.Process):
             try:
                 self._cconn.send(e)
             except pickle.PicklingError:
-                self._cconn.send(UnableToSerialize("Child process raised {}: {}".format(type(e), str(e))))
+                self._cconn.send(UnableToSerialize(f"Child process raised {type(e)}: {e!s}"))
 
     @property
     def exception(self):
@@ -469,7 +462,7 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
     def __init__(self, *args, **kwargs):
         try:
             # With pexpect-2.4+, dimensions is a valid keyword arg
-            super(PexpectSpawnWithDimensions, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
         except TypeError:
             #
             # This is a kludge to give us a dimensions kwarg on pexpect 2.3 or less.
@@ -494,7 +487,7 @@ class PexpectSpawnWithDimensions(pexpect.spawn):
             self.setwinsize = _setwinsize
 
             # Call pexpect.spawn.__init__() which will use the monkeypatched setwinsize()
-            super(PexpectSpawnWithDimensions, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
             # Restore the real setwinsize
             self.setwinsize = real_setwinsize
@@ -556,11 +549,11 @@ def remove_tmp_dir():
     """Remove temporary folder (TMP_DIR), not needed post-conversion."""
     try:
         shutil.rmtree(TMP_DIR)
-        logger.info("Temporary folder {} removed".format(TMP_DIR))
+        logger.info(f"Temporary folder {TMP_DIR} removed")
     except OSError as err:
-        logger.warning("Failed removing temporary folder {}\nError ({}): {}".format(TMP_DIR, err.errno, err.strerror))
+        logger.warning(f"Failed removing temporary folder {TMP_DIR}\nError ({err.errno}): {err.strerror}")
     except TypeError:
-        logger.warning("TypeError error while removing temporary folder {}".format(TMP_DIR))
+        logger.warning(f"TypeError error while removing temporary folder {TMP_DIR}")
 
 
 class DictWListValues(dict):
@@ -570,7 +563,7 @@ class DictWListValues(dict):
         if item not in iter(self.keys()):
             self[item] = []
 
-        return super(DictWListValues, self).__getitem__(item)
+        return super().__getitem__(item)
 
 
 def download_pkgs(
@@ -631,29 +624,29 @@ def download_pkg(
     """
     from convert2rhel.systeminfo import system_info
 
-    logger.debug("Downloading the {} package.".format(pkg))
+    logger.debug(f"Downloading the {pkg} package.")
 
     # On RHEL 7, it's necessary to invoke yumdownloader with -v, otherwise there's no output to stdout.
-    cmd = ["yumdownloader", "-v", "--setopt=exclude=", "--destdir={}".format(dest)]
+    cmd = ["yumdownloader", "-v", "--setopt=exclude=", f"--destdir={dest}"]
     if reposdir:
-        cmd.append("--setopt=reposdir={}".format(reposdir))
+        cmd.append(f"--setopt=reposdir={reposdir}")
 
     if isinstance(disable_repos, list):
         for repo in disable_repos:
-            cmd.append("--disablerepo={}".format(repo))
+            cmd.append(f"--disablerepo={repo}")
 
     if isinstance(enable_repos, list):
         for repo in enable_repos:
-            cmd.append("--enablerepo={}".format(repo))
+            cmd.append(f"--enablerepo={repo}")
 
     if set_releasever:
         if not custom_releasever and not system_info.releasever:
             raise AssertionError("custom_releasever or system_info.releasever must be set.")
 
         if custom_releasever:
-            cmd.append("--releasever={}".format(custom_releasever))
+            cmd.append(f"--releasever={custom_releasever}")
         else:
-            cmd.append("--releasever={}".format(system_info.releasever))
+            cmd.append(f"--releasever={system_info.releasever}")
 
     if system_info.version.major >= 8:
         cmd.append("--setopt=module_platform_id=platform:el" + str(system_info.version.major))
@@ -670,8 +663,8 @@ def download_pkg(
         report_on_a_download_error(output, pkg)
         return None
 
-    logger.info("Successfully downloaded the {} package.".format(pkg))
-    logger.debug("Path of the downloaded package: {}".format(path))
+    logger.info(f"Successfully downloaded the {pkg} package.")
+    logger.debug(f"Path of the downloaded package: {path}")
 
     return path
 
@@ -701,7 +694,7 @@ def remove_pkgs(pkgs_to_remove, critical=True):
         # handle the epoch well and considers the package we want to remove as not installed. On the other hand, the
         # epoch in NEVRA returned by dnf is handled by rpm just fine.
         nvra = _remove_epoch_from_yum_nevra_notation(nevra)
-        logger.info("Removing package: {}".format(nvra))
+        logger.info(f"Removing package: {nvra}")
         _, ret_code = run_subprocess(["rpm", "-e", "--nodeps", nvra])
         if ret_code != 0:
             pkgs_failed_to_remove.append(nevra)
@@ -711,15 +704,15 @@ def remove_pkgs(pkgs_to_remove, critical=True):
     if pkgs_failed_to_remove:
         pkgs_as_str = format_sequence_as_message(pkgs_failed_to_remove)
         if critical:
-            logger.critical_no_exit("Error: Couldn't remove {}.".format(pkgs_as_str))
+            logger.critical_no_exit(f"Error: Couldn't remove {pkgs_as_str}.")
             raise exceptions.CriticalError(
                 id_="FAILED_TO_REMOVE_PACKAGES",
                 title="Couldn't remove packages.",
                 description="While attempting to roll back changes, we encountered an unexpected failure while attempting to remove one or more of the packages we installed earlier.",
-                diagnosis="Couldn't remove {}.".format(pkgs_as_str),
+                diagnosis=f"Couldn't remove {pkgs_as_str}.",
             )
         else:
-            logger.warning("Couldn't remove {}.".format(pkgs_as_str))
+            logger.warning(f"Couldn't remove {pkgs_as_str}.")
 
     return pkgs_removed
 
@@ -749,7 +742,7 @@ def report_on_a_download_error(output, pkg):
     :param output: Output of the yumdownloader call
     :param pkg: Name of a package to be downloaded
     """
-    logger.warning("Output from the yumdownloader call:\n{}".format(output))
+    logger.warning(f"Output from the yumdownloader call:\n{output}")
 
     # Note: Using toolopts here is a temporary solution. We need to
     # restructure this to raise an exception on error and have the caller
@@ -781,28 +774,28 @@ def report_on_a_download_error(output, pkg):
         warn_deprecated_env("CONVERT2RHEL_INCOMPLETE_ROLLBACK")
         if not tool_opts.incomplete_rollback:
             logger.critical(
-                "Couldn't download the {} package. This means we will not be able to do a"
+                f"Couldn't download the {pkg} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
-                "Check to make sure that the {} repositories are enabled"
+                f"Check to make sure that the {system_info.name} repositories are enabled"
                 " and the package is updated to its latest version.\n"
                 "If you would rather disregard this check set the incomplete_rollback option in the"
-                " /etc/convert2rhel.ini config file to true.".format(pkg, system_info.name)
+                " /etc/convert2rhel.ini config file to true."
             )
         else:
             logger.warning(
-                "Couldn't download the {} package. This means we will not be able to do a"
+                f"Couldn't download the {pkg} package. This means we will not be able to do a"
                 " complete rollback and may put the system in a broken state.\n"
                 "You have set the incomplete rollback inhibitor override, continuing"
-                " conversion.".format(pkg)
+                " conversion."
             )
     else:
         logger.critical(
-            "Couldn't download the {} package which is needed to do a rollback of this action."
-            " Check to make sure that the {} repositories are enabled and the package is"
+            f"Couldn't download the {pkg} package which is needed to do a rollback of this action."
+            f" Check to make sure that the {system_info.name} repositories are enabled and the package is"
             " updated to its latest version.\n"
             "Note that you can choose to disregard this check when running a conversion by"
             " setting the incomplete_rollback option in the /etc/convert2rhel.ini config file to true,"
-            " but not during a pre-conversion analysis.".format(pkg, system_info.name)
+            " but not during a pre-conversion analysis."
         )
 
 
@@ -815,7 +808,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
       RHEL 8: "[SKIPPED] oraclelinux-release-8.2-1.0.8.el8.x86_64.rpm: Already downloaded"
     """
     if not output:
-        logger.warning("The output of running yumdownloader is unexpectedly empty. Command:\n{}".format(cmd))
+        logger.warning(f"The output of running yumdownloader is unexpectedly empty. Command:\n{cmd}")
         return None
 
     rpm_name_match = re.search(r"\S+\.rpm", output)
@@ -828,7 +821,7 @@ def get_rpm_path_from_yumdownloader_output(cmd, output, dest):
     else:
         logger.warning(
             "Couldn't find the name of the downloaded rpm in the output of yumdownloader.\n"
-            "Command:\n{}\nOutput:\n{}".format(cmd, output)
+            f"Command:\n{cmd}\nOutput:\n{output}"
         )
         return None
 
@@ -887,7 +880,7 @@ def find_keyid(keyfile):
             print_output=False,
         )
         if ret_code != 0:
-            raise ImportGPGKeyError("Failed to import the rpm gpg key into a temporary keyring: {}".format(output))
+            raise ImportGPGKeyError(f"Failed to import the rpm gpg key into a temporary keyring: {output}")
 
         # Step 2: Print the information about the keys in the temporary keyfile.
         # --with-colons give us guaranteed machine parsable, stable output.
@@ -905,7 +898,7 @@ def find_keyid(keyfile):
             print_output=False,
         )
         if ret_code != 0:
-            raise ImportGPGKeyError("Failed to read the temporary keyring with the rpm gpg key: {}".format(output))
+            raise ImportGPGKeyError(f"Failed to read the temporary keyring with the rpm gpg key: {output}")
     finally:
         # Try five times to work around a race condition:
         #
@@ -915,7 +908,7 @@ def find_keyid(keyfile):
         # occurs. This will cause a FileNotFoundError (OSError on Python
         # 2).  If we encounter that, try to run shutil.rmtree again since
         # we should now be able to remove all the files that were left.
-        for _dummy in range(0, 5):
+        for _dummy in range(5):
             try:
                 # Remove the temporary keyring.  We can't use the context manager
                 # for this because it isn't available on Python-2.7 (RHEL7)
@@ -931,9 +924,7 @@ def find_keyid(keyfile):
             # If we get here, we tried and failed to rmtree five times
             # Don't make this fatal but do let the user know so they can clean
             # it up themselves.
-            logger.info(
-                "Failed to remove temporary directory {} that held Red Hat gpg public keys.".format(temporary_dir)
-            )
+            logger.info(f"Failed to remove temporary directory {temporary_dir} that held Red Hat gpg public keys.")
 
     keyid = None
     for line in output.splitlines():
@@ -946,7 +937,7 @@ def find_keyid(keyfile):
             break
 
     if not keyid:
-        raise ImportGPGKeyError("Unable to determine the gpg keyid for the rpm key file: {}".format(keyfile))
+        raise ImportGPGKeyError(f"Unable to determine the gpg keyid for the rpm key file: {keyfile}")
 
     return keyid.lower()
 
@@ -1030,14 +1021,12 @@ def hide_secrets(
             # Handle the case where the secret option and its parameter are both in one argument ("--password=SECRET")
             for option in secret_options:
                 if arg.startswith(option + "="):
-                    arg = "{0}={1}".format(option, OBFUSCATION_STRING)
+                    arg = f"{option}={OBFUSCATION_STRING}"
 
         sanitized_list.append(arg)
 
     if hide_next:
-        logger.debug(
-            "Passed arguments had an option, '{0}', without an expected secret parameter".format(sanitized_list[-1])
-        )
+        logger.debug(f"Passed arguments had an option, '{sanitized_list[-1]}', without an expected secret parameter")
 
     return sanitized_list
 
@@ -1132,11 +1121,11 @@ def warn_deprecated_env(env_name):
 
     if env_name not in os.environ:
         # Nothing to do here.
-        return None
+        return
 
     root_logger.warning(
-        "The environment variable {} is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
-        "Please, use the configuration file instead.".format(env_name)
+        f"The environment variable {env_name} is deprecated and is set to be removed on Convert2RHEL 2.4.0.\n"
+        "Please, use the configuration file instead."
     )
     key = env_var_to_toolopts_map[env_name]
     value = os.getenv(env_name, None)

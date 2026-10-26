@@ -13,13 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.utils import get_file_content
-
 
 logger = root_logger.getChild(__name__)
 
@@ -38,8 +35,8 @@ def readonly_mount_detection(mount_point):
         if file_mount_point == mount_point:
             if "ro" in flags:
                 return True
-            logger.debug("{} mount point is not read-only.".format(file_mount_point))
-    logger.info("Read-only {} mount point not detected.".format(mount_point))
+            logger.debug(f"{file_mount_point} mount point is not read-only.")
+    logger.info(f"Read-only {mount_point} mount point not detected.")
     return False
 
 
@@ -47,7 +44,7 @@ class ReadonlyMountMnt(actions.Action):
     id = "READ_ONLY_MOUNTS_MNT"
 
     def run(self):
-        super(ReadonlyMountMnt, self).run()
+        super().run()
         logger.task("Check if /mnt is read-write")
 
         if readonly_mount_detection("/mnt"):
@@ -66,7 +63,7 @@ class ReadonlyMountSys(actions.Action):
     id = "READ_ONLY_MOUNTS_SYS"
 
     def run(self):
-        super(ReadonlyMountSys, self).run()
+        super().run()
         logger.task("Check if /sys is read-write")
 
         if readonly_mount_detection("/sys"):
