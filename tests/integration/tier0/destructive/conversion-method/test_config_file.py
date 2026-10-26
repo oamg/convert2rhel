@@ -1,9 +1,7 @@
 import os
-
 from collections import namedtuple
 
 from conftest import TEST_VARS
-
 
 Config = namedtuple("Config", "path content")
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,15 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import re
 
 from convert2rhel import subscription, utils
 from convert2rhel.backup import RestorableChange
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -35,7 +31,7 @@ class RestorableSystemSubscription(RestorableChange):
 
     # We need this __init__ because it is an abstractmethod in the base class
     def __init__(self):
-        super(RestorableSystemSubscription, self).__init__()
+        super().__init__()
 
     def enable(self):
         """Register and attach a specific subscription to OS."""
@@ -45,7 +41,7 @@ class RestorableSystemSubscription(RestorableChange):
         subscription.register_system()
         subscription.attach_subscription()
 
-        super(RestorableSystemSubscription, self).enable()
+        super().enable()
 
     def restore(self):
         """Rollback subscription related changes"""
@@ -61,7 +57,7 @@ class RestorableSystemSubscription(RestorableChange):
         except OSError:
             logger.warning("subscription-manager not installed, skipping")
 
-        super(RestorableSystemSubscription, self).restore()
+        super().restore()
 
 
 class RestorableAutoAttachmentSubscription(RestorableChange):
@@ -70,7 +66,7 @@ class RestorableAutoAttachmentSubscription(RestorableChange):
     """
 
     def __init__(self):
-        super(RestorableAutoAttachmentSubscription, self).__init__()
+        super().__init__()
         self._is_attached = False
 
     def enable(self):
@@ -78,13 +74,13 @@ class RestorableAutoAttachmentSubscription(RestorableChange):
             return
 
         self._is_attached = subscription.auto_attach_subscription()
-        super(RestorableAutoAttachmentSubscription, self).enable()
+        super().enable()
 
     def restore(self):
         if self._is_attached:
             logger.task("Removing auto-attached subscription")
             subscription.remove_subscription()
-            super(RestorableAutoAttachmentSubscription, self).restore()
+            super().restore()
 
 
 class RestorableDisableRepositories(RestorableChange):
@@ -99,7 +95,7 @@ class RestorableDisableRepositories(RestorableChange):
     ENABLED_REPOS_PATTERN = re.compile(r"Repo ID:\s+(?P<repo_id>\S+)")
 
     def __init__(self):
-        super(RestorableDisableRepositories, self).__init__()
+        super().__init__()
         self._repos_to_enable = []
 
     def _get_enabled_repositories(self):
@@ -129,7 +125,7 @@ class RestorableDisableRepositories(RestorableChange):
             )
 
         subscription.disable_repos()
-        super(RestorableDisableRepositories, self).enable()
+        super().enable()
 
     def restore(self):
         if not self.enabled:
@@ -146,4 +142,4 @@ class RestorableDisableRepositories(RestorableChange):
             subscription.disable_repos()
             subscription.submgr_enable_repos(self._repos_to_enable)
 
-        super(RestorableDisableRepositories, self).restore()
+        super().restore()

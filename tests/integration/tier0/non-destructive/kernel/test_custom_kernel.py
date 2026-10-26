@@ -67,7 +67,7 @@ def custom_kernel(shell, workaround_hybrid_rocky_image, backup_directory):
     kernel_info_storage = os.path.join(backup_directory, "original-kernel")
     if os.environ["TMT_REBOOT_COUNT"] == "0":
         # Store the current running kernel NVRA in a file
-        shell("echo $(uname -r) > {}".format(kernel_info_storage))
+        shell(f"echo $(uname -r) > {kernel_info_storage}")
 
         # The version of yum on el7 like systems does not allow the --repofrompath option.
         # Therefore, we need to install the rpm directly
@@ -140,9 +140,7 @@ def test_custom_kernel(convert2rhel, shell, custom_kernel):
                 c2r.expect("Continue with the system conversion?")
                 c2r.sendline("y")
 
-                c2r.expect(
-                    "WARNING - Custom kernel detected. The booted kernel needs to be signed by {}".format(os_vendor)
-                )
+                c2r.expect(f"WARNING - Custom kernel detected. The booted kernel needs to be signed by {os_vendor}")
                 c2r.expect_exact("RHEL_COMPATIBLE_KERNEL::INVALID_KERNEL_PACKAGE_SIGNATURE")
 
                 c2r.sendcontrol("c")
