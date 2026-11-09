@@ -66,4 +66,4 @@ def test_correct_distro():
             break
     else:
         # We did not find a known destination_distro
-        assert False, "Unknown destination distro '{}'".format(destination_distro)
+        assert False, f"Unknown destination distro '{destination_distro}'"

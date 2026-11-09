@@ -13,14 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, pkgmanager, utils
 from convert2rhel.logger import root_logger
 from convert2rhel.pkghandler import get_total_packages_to_update
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 
@@ -30,7 +27,7 @@ class PackageUpdates(actions.Action):
 
     def run(self):
         """Ensure that the system packages installed are up-to-date."""
-        super(PackageUpdates, self).run()
+        super().run()
         logger.task("Check if the installed packages are up-to-date")
 
         if system_info.id == "oracle" and system_info.eus_system:
@@ -63,7 +60,7 @@ class PackageUpdates(actions.Action):
             package_up_to_date_error_message = (
                 "There was an error while checking whether the installed packages are up-to-date. Having an updated system is"
                 " an important prerequisite for a successful conversion. Consider verifying the system is up to date manually"
-                " before proceeding with the conversion. {}".format(str(e))
+                f" before proceeding with the conversion. {e!s}"
             )
 
             logger.warning(package_up_to_date_error_message)

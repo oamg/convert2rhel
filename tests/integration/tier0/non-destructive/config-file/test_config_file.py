@@ -1,12 +1,10 @@
 import os
 import shutil
-
 from collections import namedtuple
 
 import pytest
 
 from conftest import TEST_VARS
-
 
 Config = namedtuple("Config", "path content")
 

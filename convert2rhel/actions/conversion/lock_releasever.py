@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from convert2rhel import actions, logger, utils
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
-
 
 loggerinst = logger.root_logger.getChild(__name__)
 
@@ -38,7 +36,7 @@ class LockReleaseverInRHELRepositories(actions.Action):
         keeps receiving updates for the specific EUS minor version instead of the latest minor version which is the
         default.
         """
-        super(LockReleaseverInRHELRepositories, self).run()
+        super().run()
         loggerinst.task("Lock releasever in RHEL repositories")
 
         # We only lock the releasever on rhel repos if we detect that the running system is an EUS correspondent and if
@@ -51,17 +49,15 @@ class LockReleaseverInRHELRepositories(actions.Action):
             )
             return
         loggerinst.info(
-            "Updating /etc/yum.repos.d/rehat.repo to point to RHEL {} instead of the default latest minor version.".format(
-                system_info.releasever
-            )
+            f"Updating /etc/yum.repos.d/rehat.repo to point to RHEL {system_info.releasever} instead of the default latest minor version."
         )
         cmd = [
             "subscription-manager",
             "release",
-            "--set={}".format(system_info.releasever),
+            f"--set={system_info.releasever}",
         ]
         _, ret_code = utils.run_subprocess(cmd, print_output=False)
         if ret_code != 0:
             loggerinst.warning("Locking RHEL repositories failed.")
             return
-        loggerinst.info("RHEL repositories locked to the {} minor version.".format(system_info.releasever))
+        loggerinst.info(f"RHEL repositories locked to the {system_info.releasever} minor version.")

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2022 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import abc
 
@@ -49,4 +47,3 @@ class TransactionHandlerBase:
         :param validate_transaction: Determines if the transaction needs to be tested or not.
         :type validate_transaction: bool
         """
-        pass

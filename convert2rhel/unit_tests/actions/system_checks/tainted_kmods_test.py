@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
@@ -27,7 +26,6 @@ from convert2rhel.actions.system_checks.tainted_kmods import (
     LINK_PREVENT_KMODS_FROM_LOADING,
     LINK_TAINTED_KMOD_DOCS,
 )
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -75,18 +73,16 @@ def test_check_tainted_kmods(monkeypatch, command_return, is_error, tainted_kmod
             diagnosis=(
                 "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
                 "components are not supported per our software support"
-                " policy:\n{}\n".format(LINK_KMODS_RH_POLICY)
+                f" policy:\n{LINK_KMODS_RH_POLICY}\n"
             ),
             remediations=(
-                "Prevent the modules from loading by following {0}"
+                f"Prevent the modules from loading by following {LINK_PREVENT_KMODS_FROM_LOADING}"
                 " and run convert2rhel again to continue with the conversion."
                 " Although it is not recommended, you can disregard this message by setting the"
                 " tainted_kernel_module_check_skip inhibitor override in the /etc/convert2rhel.ini"
                 " config file to true. Overriding this check can be dangerous"
                 " so it is recommended that you do a system backup beforehand."
-                " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
-                    LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
-                )
+                f" For information on what a tainted kernel module is, please refer to this documentation {LINK_TAINTED_KMOD_DOCS}"
             ),
         )
 
@@ -132,14 +128,12 @@ def test_check_tainted_kmods_skip(monkeypatch, command_return, is_error, tainted
                     diagnosis=(
                         "Tainted kernel modules detected:\n  system76_io\n  system76_acpi\nThird-party "
                         "components are not supported per our software support"
-                        " policy:\n{}\n".format(LINK_KMODS_RH_POLICY)
+                        f" policy:\n{LINK_KMODS_RH_POLICY}\n"
                     ),
                     remediations=(
-                        "Prevent the modules from loading by following {0}"
+                        f"Prevent the modules from loading by following {LINK_PREVENT_KMODS_FROM_LOADING}"
                         " and run convert2rhel again to continue with the conversion."
-                        " For information on what a tainted kernel module is, please refer to this documentation {1}".format(
-                            LINK_PREVENT_KMODS_FROM_LOADING, LINK_TAINTED_KMOD_DOCS
-                        )
+                        f" For information on what a tainted kernel module is, please refer to this documentation {LINK_TAINTED_KMOD_DOCS}"
                     ),
                 ),
                 actions.ActionMessage(

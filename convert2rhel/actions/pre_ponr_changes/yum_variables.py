@@ -13,16 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 import shutil
 
-from convert2rhel import actions
-from convert2rhel import backup
+from convert2rhel import actions, backup, pkghandler
 from convert2rhel.backup.files import InstalledFile, RestorableFile
 from convert2rhel.logger import root_logger
-from convert2rhel import pkghandler
 from convert2rhel.repo import DEFAULT_DNF_VARS_DIR, DEFAULT_YUM_VARS_DIR
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts.config import loggerinst
@@ -45,7 +42,7 @@ class BackUpYumVariables(actions.Action):
         """
         logger.task("Back up yum variables")
 
-        super(BackUpYumVariables, self).run()
+        super().run()
 
         logger.debug("Getting a list of files owned by packages affecting variables in .repo files.")
         yum_var_affecting_pkgs = []
@@ -119,33 +116,29 @@ class RestoreYumVarFiles(actions.Action):
         but also after a successful conversion. With such a flag we would add a new post-conversion Action to run the
         backup controller restoration but only for the activities recorded with this flag.
         """
-        super(RestoreYumVarFiles, self).run()
+        super().run()
 
         backed_up_yum_var_dirs = backup.get_backed_up_yum_var_dirs()
         loggerinst.task("Restoring yum variable files")
         loggerinst.info(
-            "We need to restore {0} yum variables as they are oftentimes necessary for accessing the {0} repositories.".format(
-                system_info.name
-            )
+            f"We need to restore {system_info.name} yum variables as they are oftentimes necessary for accessing the {system_info.name} repositories."
         )
         for orig_yum_var_dir, backed_up_yum_var_dir in backed_up_yum_var_dirs.items():
             if not os.path.exists(backed_up_yum_var_dir):
-                logger.info("No file from {} backed up. Nothing to restore.".format(orig_yum_var_dir))
+                logger.info(f"No file from {orig_yum_var_dir} backed up. Nothing to restore.")
                 continue
             for backed_up_yum_var_filename in os.listdir(backed_up_yum_var_dir):
                 backed_up_yum_var_filepath = os.path.join(backed_up_yum_var_dir, backed_up_yum_var_filename)
                 try:
                     shutil.copy2(backed_up_yum_var_filepath, orig_yum_var_dir)
-                    logger.debug("Copied {} from backup to {}.".format(backed_up_yum_var_filepath, orig_yum_var_dir))
-                except (OSError, IOError) as err:
+                    logger.debug(f"Copied {backed_up_yum_var_filepath} from backup to {orig_yum_var_dir}.")
+                except OSError as err:
                     # IOError for py2 and OSError for py3
                     # Not being able to restore the yum variables might or might not cause problems down the road. No
                     # need to stop the conversion because of that. The warning message below should be enough of a clue
                     # for resolving subsequent yum errors.
                     logger.warning(
-                        "Couldn't copy {} to {}. Error: {}".format(
-                            backed_up_yum_var_filepath, orig_yum_var_dir, err.strerror
-                        )
+                        f"Couldn't copy {backed_up_yum_var_filepath} to {orig_yum_var_dir}. Error: {err.strerror}"
                     )
                     return
                 restored_file = InstalledFile(

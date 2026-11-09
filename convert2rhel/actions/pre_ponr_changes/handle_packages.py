@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
@@ -23,7 +22,6 @@ from convert2rhel.backup.packages import RestorablePackage
 from convert2rhel.logger import root_logger
 from convert2rhel.repo import DEFAULT_YUM_REPOFILE_DIR
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 AMZN2_EXTRAS_REPOFILE_PATH = "/etc/yum.repos.d/amzn2-extras.repo"
@@ -37,7 +35,7 @@ class ListThirdPartyPackages(actions.Action):
         List packages not packaged by the original OS vendor or Red Hat and
         warn that these are not going to be converted.
         """
-        super(ListThirdPartyPackages, self).run()
+        super().run()
 
         logger.task("List third-party packages")
         third_party_pkgs = pkghandler.get_third_party_pkgs()
@@ -49,9 +47,9 @@ class ListThirdPartyPackages(actions.Action):
                 sorted(third_party_pkgs, key=self.extract_packages), disable_repos=repos_to_disable
             )
             warning_message = (
-                "Only packages signed by {} are to be"
+                f"Only packages signed by {system_info.name} are to be"
                 " replaced. Red Hat support won't be provided"
-                " for the following third party packages:\n".format(system_info.name)
+                " for the following third party packages:\n"
             )
 
             logger.warning(warning_message)
@@ -97,7 +95,7 @@ class RemoveSpecialPackages(actions.Action):
         got merged together into this one, making possible to remove and back
         up all the packages in a single transaction.
         """
-        super(RemoveSpecialPackages, self).run()
+        super().run()
 
         all_pkgs = []
         pkgs_removed = []
@@ -170,7 +168,7 @@ class RemoveSpecialPackages(actions.Action):
                     " conversion. This list includes packages that are known to cause a conversion failure."
                 ),
                 remediations=(
-                    "Remove the packages manually before running convert2rhel again:\n" "yum remove -y {}".format(
+                    "Remove the packages manually before running convert2rhel again:\nyum remove -y {}".format(
                         " ".join(pkgs_not_removed)
                     )
                 ),
@@ -205,11 +203,11 @@ def _remove_packages_unless_from_redhat(pkgs_list, disable_repos=None):
         return []
 
     # this call can return None, which is not ideal to use with sorted.
-    logger.warning("Removing the following {} packages:\n".format(len(pkgs_list)))
+    logger.warning(f"Removing the following {len(pkgs_list)} packages:\n")
     pkghandler.print_pkg_info(pkgs_list, disable_repos)
 
     pkgs_removed = utils.remove_pkgs(pkghandler.get_pkg_nevras(pkgs_list))
-    logger.debug("Successfully removed {} packages".format(len(pkgs_list)))
+    logger.debug(f"Successfully removed {len(pkgs_list)} packages")
 
     return pkgs_removed
 
@@ -219,7 +217,7 @@ def _fix_repos_directory():
     repo_dir = DEFAULT_YUM_REPOFILE_DIR
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
-        logger.debug("Recreated repository directory {} as it was removed with some special package.".format(repo_dir))
+        logger.debug(f"Recreated repository directory {repo_dir} as it was removed with some special package.")
 
 
 def _cleanup_amzn2_extras_repofile():

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 import re
@@ -32,10 +31,8 @@ from convert2rhel.unit_tests import assert_actions_result, run_subprocess_side_e
 from convert2rhel.unit_tests.conftest import centos7, centos8
 from convert2rhel.utils import run_subprocess
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
 
 MODINFO_STUB = (
     "/lib/modules/5.8.0-7642-generic/kernel/lib/a.ko.xz\n"
@@ -162,7 +159,7 @@ def test_ensure_compatibility_of_kmods(
         ),
         (
             HOST_MODULES_STUB_BAD,
-            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\n" "kernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
+            "kernel-core-0:4.18.0-240.10.1.el8_3.x86_64\nkernel-core-0:4.19.0-240.10.1.el8_3.i486\n",
             ("", 0),
             "CANNOT_COMPARE_PACKAGE_VERSIONS",
             "ERROR",

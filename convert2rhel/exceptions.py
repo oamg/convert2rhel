@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -14,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 """
 This module can be used for exceptions that are used across files.  It is not necessary to use it for every exception but it is especially useful to break circular imports.
@@ -50,12 +48,4 @@ class CriticalError(Exception):
         self.variables = variables or {}
 
     def __repr__(self):
-        return "{}({!r}, {!r}, description={!r}, diagnosis={!r}, remediations={!r}, variables={!r})".format(
-            self.__class__.__name__,
-            self.id,
-            self.title,
-            self.description,
-            self.diagnosis,
-            self.remediations,
-            self.variables,
-        )
+        return f"{self.__class__.__name__}({self.id!r}, {self.title!r}, description={self.description!r}, diagnosis={self.diagnosis!r}, remediations={self.remediations!r}, variables={self.variables!r})"

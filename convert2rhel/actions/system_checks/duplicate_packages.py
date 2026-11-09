@@ -13,13 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, utils
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 
@@ -29,7 +26,7 @@ class DuplicatePackages(actions.Action):
 
     def run(self):
         """Ensure that there are no duplicate system packages installed."""
-        super(DuplicatePackages, self).run()
+        super().run()
 
         logger.task("Check if there are any duplicate installed packages on the system")
         output, ret_code = utils.run_subprocess(["/usr/bin/package-cleanup", "--dupes", "--quiet"], print_output=False)

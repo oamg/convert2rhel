@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
@@ -24,7 +23,6 @@ from convert2rhel import actions, checks, grub
 from convert2rhel.actions.post_conversion import kernel_boot_files
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.unit_tests.conftest import centos8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -132,10 +130,10 @@ def test_check_kernel_boot_files_missing(
                 diagnosis=None,
                 remediations=(
                     "In order to fix this problem you might need to free/increase space in your boot partition and then run the following commands in your terminal:\n"
-                    "1. yum reinstall kernel-core-{} -y\n"
+                    f"1. yum reinstall kernel-core-{latest_installed_kernel} -y\n"
                     "2. grub2-mkconfig -o /boot/grub2/grub.cfg\n"
                     "3. reboot"
-                ).format(latest_installed_kernel),
+                ),
             ),
         )
     )

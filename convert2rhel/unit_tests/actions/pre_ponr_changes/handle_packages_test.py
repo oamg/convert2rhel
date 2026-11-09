@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
@@ -32,10 +31,8 @@ from convert2rhel.unit_tests import (
 )
 from convert2rhel.unit_tests.conftest import centos8
 
-
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
-
 
 AMZN2_EXTRAS_REPOFILE_PATH = "/etc/yum.repos.d/amzn2-extras.repo"
 
@@ -274,8 +271,8 @@ def test_remove_packages_unless_from_redhat(pkgs_to_remove, monkeypatch, caplog)
     monkeypatch.setattr(pkghandler, "format_pkg_info", FormatPkgInfoMocked())
     handle_packages._remove_packages_unless_from_redhat(pkgs_list=pkgs_to_remove)
 
-    assert "Removing the following {} packages".format(len(pkgs_to_remove)) in caplog.records[-3].message
-    assert "Successfully removed {} packages".format(len(pkgs_to_remove)) in caplog.records[-1].message
+    assert f"Removing the following {len(pkgs_to_remove)} packages" in caplog.records[-3].message
+    assert f"Successfully removed {len(pkgs_to_remove)} packages" in caplog.records[-1].message
 
 
 @pytest.mark.parametrize("dir_exists", (True, False))
@@ -348,10 +345,7 @@ def test_cleanup_amzn2_extras_repofile_kept_when_file_owned(monkeypatch, caplog)
     handle_packages._cleanup_amzn2_extras_repofile()
 
     assert utils.run_subprocess.call_count == 2
-    assert (
-        "Keeping {} as it is still owned by amazon-linux-extras-2.0.3.".format(AMZN2_EXTRAS_REPOFILE_PATH)
-        in caplog.text
-    )
+    assert f"Keeping {AMZN2_EXTRAS_REPOFILE_PATH} as it is still owned by amazon-linux-extras-2.0.3." in caplog.text
     remove_mock.assert_not_called()
 
 
@@ -386,4 +380,4 @@ def test_cleanup_amzn2_extras_repofile_remove_failure(monkeypatch, caplog):
 
     handle_packages._cleanup_amzn2_extras_repofile()
 
-    assert "Failed to remove leftover repository file {}".format(AMZN2_EXTRAS_REPOFILE_PATH) in caplog.text
+    assert f"Failed to remove leftover repository file {AMZN2_EXTRAS_REPOFILE_PATH}" in caplog.text
