@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -36,15 +35,13 @@ def get_version():
             return re.findall(
                 r'^__version__ = "([^"]+)"$',
                 f.read(),
-                re.M,
+                re.MULTILINE,
             )[0]
         except IndexError:
             raise ValueError(
-                (
-                    "Unable to extract the version from {} file. Make sure the "
-                    "first line has the following form: `__version__ = "
-                    '"some.version.here"`'
-                ).format(version_source)
+                f"Unable to extract the version from {version_source} file. Make sure the "
+                "first line has the following form: `__version__ = "
+                '"some.version.here"`'
             )
 
 

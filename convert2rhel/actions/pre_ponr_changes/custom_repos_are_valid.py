@@ -13,14 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.pkgmanager import call_yum_cmd
 from convert2rhel.toolopts import tool_opts
-
 
 logger = root_logger.getChild(__name__)
 
@@ -35,7 +32,7 @@ class CustomReposAreValid(actions.Action):
         - YUM/DNF is able to find the repoids (to rule out a typo)
         - the repository "baseurl" is accessible and contains repository metadata
         """
-        super(CustomReposAreValid, self).run()
+        super().run()
         logger.task("Check if --enablerepo repositories are accessible")
 
         if not tool_opts.enablerepo:
@@ -54,9 +51,9 @@ class CustomReposAreValid(actions.Action):
                 title="Unable to access repositories",
                 description="Access could not be made to the custom repositories.",
                 diagnosis="Unable to access the repositories passed through the --enablerepo option.",
-                remediations="For more details, see YUM/DNF output:\n{0}".format(output),
+                remediations=f"For more details, see YUM/DNF output:\n{output}",
             )
             return
 
-        logger.debug("Output of the previous yum command:\n{0}".format(output))
+        logger.debug(f"Output of the previous yum command:\n{output}")
         logger.info("The repositories passed through the --enablerepo option are all accessible.")

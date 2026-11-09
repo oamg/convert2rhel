@@ -11,7 +11,7 @@ def test_upgrade_amzn2_kernel(shell):
     target_kernel = os.environ.get("C2R_AL2_TARGET_KERNEL")
 
     enabled_kernel = shell(
-        "amazon-linux-extras | grep -oP 'kernel-[\d.]+=\S+\s+enabled' | grep -oP 'kernel-[\d.]+'"
+        r"amazon-linux-extras | grep -oP 'kernel-[\d.]+=\S+\s+enabled' | grep -oP 'kernel-[\d.]+'"
     ).output.strip()
 
     if enabled_kernel != target_kernel:
@@ -19,7 +19,7 @@ def test_upgrade_amzn2_kernel(shell):
 
     assert shell(f"amazon-linux-extras install -y {target_kernel}").returncode == 0
     vmlinuz = shell(
-        "rpm -q --last kernel | head -1 | cut -d ' ' -f1 | sed 's/kernel-/\/boot\/vmlinux-/'"
+        r"rpm -q --last kernel | head -1 | cut -d ' ' -f1 | sed 's/kernel-/\/boot\/vmlinux-/'"
     ).output.strip()
     assert shell(f"grubby --set-default {vmlinuz}").returncode == 0
     assert shell("grub2-mkconfig -o /boot/grub2/grub.cfg").returncode == 0

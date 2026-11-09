@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import pytest
 import six
@@ -22,7 +21,6 @@ from convert2rhel import actions
 from convert2rhel.actions.pre_ponr_changes import special_cases
 from convert2rhel.unit_tests import run_subprocess_side_effect
 from convert2rhel.unit_tests.conftest import centos8, oracle8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

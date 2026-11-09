@@ -4,15 +4,12 @@ import logging
 import os
 import sys
 import warnings
-
 from contextlib import contextmanager
 from typing import ContextManager
 
 import pexpect
 import pytest
-
 from _pytest.warning_types import PytestUnknownMarkWarning
-
 
 try:
     from pathlib import Path
@@ -30,7 +27,6 @@ from test_helpers.shell import live_shell
 from test_helpers.subscription_manager import SubscriptionManager
 from test_helpers.vars import SYSTEM_RELEASE_ENV, TEST_VARS
 from test_helpers.workarounds import workaround_grub_setup
-
 
 logging.basicConfig(level=os.environ.get("DEBUG", "INFO"), stream=sys.stderr)
 logger = logging.getLogger(__name__)
@@ -191,15 +187,7 @@ def convert2rhel(shell):
                         action.id == "REMOVE_EXCLUDED_PACKAGES"
                         and action["result"].id == "EXCLUDED_PACKAGE_REMOVAL_FAILED"
                         and "unknown" in action["result"].description
-                    ):
-                        message.extend(
-                            (
-                                "== Action caught SystemExit while removing packages:",
-                                "{}: {}".format(action.id, action["result"]),
-                            )
-                        )
-
-                    elif (
+                    ) or (
                         action.id == "REMOVE_EXCLUDED_PACKAGES"
                         and action["result"].id == "REPOSITORY_FILE_PACKAGE_REMOVAL_FAILED"
                         and "unknown" in action["result"].description

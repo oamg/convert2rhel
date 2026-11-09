@@ -13,14 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
 from convert2rhel.utils import run_subprocess
-
 
 logger = root_logger.getChild(__name__)
 
@@ -45,7 +42,7 @@ class RemoveIwlax2xxFirmware(actions.Action):
 
         Related: https://bugzilla.redhat.com/show_bug.cgi?id=2078916
         """
-        super(RemoveIwlax2xxFirmware, self).run()
+        super().run()
 
         logger.task("Resolve possible edge case")
         iwl7260_firmware = system_info.is_rpm_installed(name="iwl7260-firmware")

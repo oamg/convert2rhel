@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2016 Red Hat, Inc.
 #
@@ -15,14 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 
-from convert2rhel import actions, applock, backup, breadcrumbs, cli, exceptions
+from convert2rhel import (
+    actions,
+    applock,
+    backup,
+    breadcrumbs,
+    cli,
+    exceptions,
+    pkghandler,
+    pkgmanager,
+    subscription,
+    systeminfo,
+    utils,
+)
 from convert2rhel import logger as logger_module
-from convert2rhel import pkghandler, pkgmanager, subscription, systeminfo, utils
 from convert2rhel.actions import level_for_raw_action_data, report
 from convert2rhel.phase import ConversionPhase, ConversionPhases  # noqa: F401 ignoring due to type comments
 from convert2rhel.toolopts import tool_opts
@@ -87,8 +95,8 @@ def initialize_file_logging(log_name, log_dir):
     """
     try:
         logger_module.archive_old_logger_files(log_name, log_dir)
-    except (IOError, OSError) as e:
-        loggerinst.warning("Unable to archive previous log: {}".format(e))
+    except OSError as e:
+        loggerinst.warning(f"Unable to archive previous log: {e}")
 
     logger_module.add_file_handler(log_name, log_dir)
 
@@ -248,10 +256,10 @@ def _raise_for_skipped_failures(results):
     if failures:
         # The report will be handled in the error handler, after rollback.
         message = (
-            "The {method} process failed.\n\n"
-            "A problem was encountered during {method} and a rollback will be "
+            f"The {tool_opts.activity} process failed.\n\n"
+            f"A problem was encountered during {tool_opts.activity} and a rollback will be "
             "initiated to restore the system as the previous state."
-        ).format(method=tool_opts.activity)
+        )
         raise _InhibitorsFound(message)
 
 
@@ -364,7 +372,6 @@ def show_eula():
         loggerinst.info(eula_text)
     else:
         loggerinst.critical("EULA file not found.")
-    return
 
 
 #
@@ -408,8 +415,6 @@ def rollback_changes():
             loggerinst.info("During rollback there were no backups to restore")
         else:
             raise
-
-    return
 
 
 def provide_status_after_rollback(pre_conversion_results, include_all_reports):

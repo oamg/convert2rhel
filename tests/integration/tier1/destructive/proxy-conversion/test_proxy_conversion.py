@@ -1,6 +1,7 @@
 import socket
 
 import pytest
+
 from conftest import TEST_VARS, SubscriptionManager
 
 

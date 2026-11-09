@@ -52,21 +52,19 @@ def test_detect_correct_boot_partition(convert2rhel):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        assert c2r.expect("Calling command '/usr/sbin/blkid -p -s PART_ENTRY_NUMBER {}'".format(boot_device)) == 0
+        assert c2r.expect(f"Calling command '/usr/sbin/blkid -p -s PART_ENTRY_NUMBER {boot_device}'") == 0
 
         # This assertion should always match what comes from boot_partition.
-        assert c2r.expect("Block device: {}".format(boot_device_name)) == 0
-        assert c2r.expect("ESP device number: {}".format(boot_partition)) == 0
+        assert c2r.expect(f"Block device: {boot_device_name}") == 0
+        assert c2r.expect(f"ESP device number: {boot_partition}") == 0
 
-        assert c2r.expect("Adding 'Red Hat Enterprise Linux {}' UEFI bootloader entry.".format(rhel_version)) == 0
+        assert c2r.expect(f"Adding 'Red Hat Enterprise Linux {rhel_version}' UEFI bootloader entry.") == 0
 
         # Only asserting half of the command as we care mostly about the
         # `--disk` and `--part`.
         assert (
             c2r.expect(
-                "Calling command '/usr/sbin/efibootmgr --create --disk {} --part {}".format(
-                    boot_device_name, boot_partition
-                )
+                f"Calling command '/usr/sbin/efibootmgr --create --disk {boot_device_name} --part {boot_partition}"
             )
             == 0
         )

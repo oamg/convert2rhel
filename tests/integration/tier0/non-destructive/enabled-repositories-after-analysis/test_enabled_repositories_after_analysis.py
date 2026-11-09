@@ -1,6 +1,5 @@
 import pytest
 
-
 RHEL_CERTIFICATE_69_PEM = "/usr/share/convert2rhel/rhel-certs/69.pem"
 
 

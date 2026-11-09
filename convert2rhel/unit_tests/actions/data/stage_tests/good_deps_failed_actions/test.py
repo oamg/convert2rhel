@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 from convert2rhel import actions
 
 
@@ -8,15 +6,14 @@ class ATest(actions.Action):
     dependencies = ("BTEST",)
 
     def run(self):
-        super(ATest, self).run()
-        return
+        super().run()
 
 
 class BTest(actions.Action):
     id = "BTEST"
 
     def run(self):
-        super(BTest, self).run()
+        super().run()
         self.set_status(
             level=actions.STATUS_CODES["ERROR"],
             id="BTEST_FAILURE",
