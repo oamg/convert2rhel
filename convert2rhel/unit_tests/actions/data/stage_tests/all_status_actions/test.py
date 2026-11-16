@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 from convert2rhel import actions
 
 
@@ -8,7 +6,7 @@ class ErrorTest(actions.Action):
     dependencies = ("SUCCESSTEST",)
 
     def run(self):
-        super(ErrorTest, self).run()
+        super().run()
         self.set_result(
             level="ERROR",
             id="ERROR_ID",
@@ -24,7 +22,7 @@ class OverridableTest(actions.Action):
     dependencies = ("SUCCESSTEST",)
 
     def run(self):
-        super(OverridableTest, self).run()
+        super().run()
         self.set_result(
             level="OVERRIDABLE",
             id="OVERRIDABLE_ID",
@@ -41,8 +39,7 @@ class SkipSingleTest(actions.Action):
     dependencies = ("ERRORTEST",)
 
     def run(self):
-        super(SkipSingleTest, self).run()
-        return
+        super().run()
 
 
 # Skip because of multiple dependencies have failed
@@ -51,15 +48,14 @@ class SkipMultipleTest(actions.Action):
     dependencies = ("ERRORTEST", "OVERRIDABLETEST")
 
     def run(self):
-        super(SkipMultipleTest, self).run()
-        return
+        super().run()
 
 
 class WarningTest(actions.Action):
     id = "WARNINGTEST"
 
     def run(self):
-        super(WarningTest, self).run()
+        super().run()
         self.add_message(
             level="WARNING",
             id="WARNING_ID",
@@ -74,5 +70,4 @@ class SuccessTest(actions.Action):
     id = "SUCCESSTEST"
 
     def run(self):
-        super(SuccessTest, self).run()
-        return
+        super().run()

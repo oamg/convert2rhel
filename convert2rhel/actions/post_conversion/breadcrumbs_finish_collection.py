@@ -13,12 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import logging
 
 from convert2rhel import actions, breadcrumbs
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +29,7 @@ class BreadcumbsFinishCollection(actions.Action):
     )
 
     def run(self):
-        super(BreadcumbsFinishCollection, self).run()
+        super().run()
 
         logger.task("Update breadcrumbs")
         breadcrumbs.breadcrumbs.finish_collection(success=True)

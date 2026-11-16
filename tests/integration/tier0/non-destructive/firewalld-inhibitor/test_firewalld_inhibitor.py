@@ -4,7 +4,6 @@ import pytest
 
 from conftest import TEST_VARS
 
-
 FIREWALLD_CONFIG_FILE = "/etc/firewalld/firewalld.conf"
 
 

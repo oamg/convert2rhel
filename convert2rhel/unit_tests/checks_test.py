@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -14,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-__metaclass__ = type
 
 import os
 
@@ -45,7 +43,7 @@ def testis_initramfs_file_valid(latest_installed_kernel, subprocess_output, expe
 
     if not expected:
         assert "Couldn't verify initramfs file. It may be corrupted." in caplog.records[-2].message
-        assert "Output of lsinitrd: {}".format(subprocess_output[0]) in caplog.records[-1].message
+        assert f"Output of lsinitrd: {subprocess_output[0]}" in caplog.records[-1].message
 
 
 def test_is_initramfs_file_valid_unicodedecodeerror(monkeypatch):

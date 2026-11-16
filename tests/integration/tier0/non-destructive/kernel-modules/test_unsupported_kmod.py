@@ -4,7 +4,6 @@ import pytest
 
 from conftest import TEST_VARS
 
-
 ORIGIN_KMOD_LOCATION = Path("/lib/modules/$(uname -r)/kernel/drivers/net/bonding/bonding.ko.xz")
 CUSTOM_KMOD_DIRECTORY = ORIGIN_KMOD_LOCATION.parent / "custom_module_location"
 

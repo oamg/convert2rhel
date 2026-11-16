@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, backup, grub, utils
 from convert2rhel.backup.files import RestorableFile
@@ -33,7 +31,7 @@ class FixGrubSettingsOnAL2(actions.Action):
         Additionally the GRUB_DISTRIBUTOR and GRAB_DISABLE_SUBMENU are missing causing the GRUB menu to be in
         an unsatisfactory format. Ensure the options to yield correct values.
         """
-        super(FixGrubSettingsOnAL2, self).run()
+        super().run()
 
         logger.task("Fix GRUB2 settings on Amazon Linux 2")
         if system_info.version.major != 2:
@@ -55,26 +53,26 @@ class FixGrubSettingsOnAL2(actions.Action):
 
         if old_value in content:
             content = content.replace(old_value, new_value)
-            logger.debug("Replaced {} with {} in {}.".format(old_value, new_value, file_path))
+            logger.debug(f"Replaced {old_value} with {new_value} in {file_path}.")
             content_modified = True
         else:
-            logger.info("{} not found in {}. Nothing to do.".format(old_value, file_path))
+            logger.info(f"{old_value} not found in {file_path}. Nothing to do.")
 
         for opt in missing_grub_opts:
             key = opt.split("=", 1)[0]
             lines = content.splitlines()
             if any(line.startswith(key + "=") for line in lines):
                 content = "\n".join(opt if line.startswith(key + "=") else line for line in lines) + "\n"
-                logger.debug("Replaced existing {} entry in {}.".format(key, file_path))
+                logger.debug(f"Replaced existing {key} entry in {file_path}.")
             else:
                 content = content.rstrip("\n") + "\n" + opt + "\n"
-                logger.debug("Added {} to {}.".format(opt, file_path))
+                logger.debug(f"Added {opt} to {file_path}.")
             content_modified = True
 
         if content_modified:
             with open(file_path, "w") as file:
                 file.write(content)
-            logger.info("Successfully updated {}.".format(file_path))
+            logger.info(f"Successfully updated {file_path}.")
 
 
 class UpdateGrub(actions.Action):
@@ -88,7 +86,7 @@ class UpdateGrub(actions.Action):
         generates images that expect different format of a config file. To be on the safe side we
         rather re-generate the GRUB2 config file and install the GRUB2 image.
         """
-        super(UpdateGrub, self).run()
+        super().run()
 
         logger.task("Update GRUB2 configuration")
 
@@ -100,7 +98,7 @@ class UpdateGrub(actions.Action):
         output, ret_code = utils.run_subprocess(
             ["/usr/sbin/grub2-mkconfig", "-o", grub2_config_file], print_output=False
         )
-        logger.debug("Output of the grub2-mkconfig call:\n{}".format(output))
+        logger.debug(f"Output of the grub2-mkconfig call:\n{output}")
 
         if ret_code != 0:
             logger.warning("GRUB2 config file generation failed.")
@@ -111,8 +109,8 @@ class UpdateGrub(actions.Action):
                 description="There may be issues with the bootloader configuration."
                 " Follow the recommended remediation before rebooting the system.",
                 diagnosis="The grub2-mkconfig call failed with output:\n'{0}'".format(output.rstrip("\n")),
-                remediations="Resolve the problem reported in the diagnosis and then run 'grub2-mkconfig -o {0}' and"
-                " 'grub2-install [block device, e.g. /dev/sda]'.".format(grub2_config_file),
+                remediations=f"Resolve the problem reported in the diagnosis and then run 'grub2-mkconfig -o {grub2_config_file}' and"
+                " 'grub2-install [block device, e.g. /dev/sda]'.",
             )
             return
 
@@ -138,10 +136,10 @@ class UpdateGrub(actions.Action):
                 )
                 return
 
-            logger.debug("Device to install the GRUB2 image to: '{}'".format(blk_device))
+            logger.debug(f"Device to install the GRUB2 image to: '{blk_device}'")
 
             output, ret_code = utils.run_subprocess(["/usr/sbin/grub2-install", blk_device], print_output=False)
-            logger.debug("Output of the grub2-install call:\n{}".format(output))
+            logger.debug(f"Output of the grub2-install call:\n{output}")
 
             if ret_code != 0:
                 logger.warning("Couldn't install the new images with GRUB2.")
@@ -150,8 +148,8 @@ class UpdateGrub(actions.Action):
                     id="GRUB2_INSTALL_FAILED",
                     title="The grub2-install call failed to complete",
                     description=(
-                        "The grub2-install call failed with output: '{0}'. The conversion will continue but"
-                        " there may be issues with the current grub2 image formats.".format(output)
+                        f"The grub2-install call failed with output: '{output}'. The conversion will continue but"
+                        " there may be issues with the current grub2 image formats."
                     ),
                     remediations="If there are issues with the current grub2 image we recommend manually"
                     " re-generating it with 'grub2-install [block device, e.g. /dev/sda]'.",

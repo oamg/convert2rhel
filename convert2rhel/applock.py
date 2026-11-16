@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -15,14 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import errno
 import os
 import tempfile
 
 from convert2rhel.logger import root_logger
-
 
 _DEFAULT_LOCK_DIR = "/var/run/lock"
 logger = root_logger.getChild(__name__)
@@ -32,7 +29,7 @@ class ApplicationLockedError(Exception):
     """Raised when this application is already locked."""
 
     def __init__(self, message):
-        super(ApplicationLockedError, self).__init__(message)
+        super().__init__(message)
         self.message = message
 
 
@@ -99,7 +96,7 @@ class ApplicationLock:
                 if exc.errno == errno.EEXIST:
                     return False
                 raise exc
-        logger.debug("{}.".format(self))
+        logger.debug(f"{self}.")
         return True
 
     @property
@@ -139,14 +136,14 @@ class ApplicationLock:
             self._locked = True
             return
         if _recursive:
-            raise ApplicationLockedError("Cannot lock {}".format(self._name))
+            raise ApplicationLockedError(f"Cannot lock {self._name}")
 
         with open(self._pidfile, "r") as f:
             file_contents = f.read()
         try:
             pid = int(file_contents.rstrip())
         except ValueError:
-            raise ApplicationLockedError("Lock file {} is corrupt".format(self._pidfile))
+            raise ApplicationLockedError(f"Lock file {self._pidfile} is corrupt")
 
         if self._pid_exists(pid):
             raise ApplicationLockedError("%s locked by process %d" % (self._pidfile, pid))
@@ -167,7 +164,7 @@ class ApplicationLock:
             return
         os.unlink(self._pidfile)
         self._locked = False
-        logger.debug("{}.".format(self))
+        logger.debug(f"{self}.")
 
     def __enter__(self):
         self.try_to_lock()

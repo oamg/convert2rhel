@@ -20,7 +20,7 @@ def test_yum_conf_patch(convert2rhel, shell):
             TEST_VARS["RHSM_SCA_PASSWORD"],
         )
     ) as c2r:
-        c2r.expect("{} patched.".format(pkgmanager_conf))
+        c2r.expect(f"{pkgmanager_conf} patched.")
     assert c2r.exitstatus == 0
 
     # The tsflags will prevent updating the RHEL-8.5 versions to RHEL-8.6
