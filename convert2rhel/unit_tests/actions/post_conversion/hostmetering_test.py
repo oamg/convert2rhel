@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import pytest
 import six
@@ -24,7 +22,6 @@ from convert2rhel import actions, systeminfo, toolopts
 from convert2rhel.actions.post_conversion import hostmetering
 from convert2rhel.systeminfo import Version, system_info
 from convert2rhel.unit_tests import RunSubprocessMocked, assert_actions_result, run_subprocess_side_effect
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -137,7 +134,7 @@ def test_configure_host_metering(
     monkeypatch.setattr(toolopts, "tool_opts", global_tool_opts)
     monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", envvar)
     monkeypatch.setattr(system_info, "version", os_version)
-    fake_release = "CentOS Linux release {version} (Core)".format(version=repr(os_version))
+    fake_release = f"CentOS Linux release {os_version!r} (Core)"
     monkeypatch.setattr(hostmetering.SystemInfo, "get_system_release_file_content", staticmethod(lambda: fake_release))
     monkeypatch.setattr(hostmetering, "get_rhsm_facts", mock.Mock(return_value=rhsm_facts))
     yum_mock = mock.Mock(return_value=(0, ""))
@@ -347,7 +344,7 @@ def test_configure_host_metering_messages_and_results(
         monkeypatch.setenv("CONVERT2RHEL_CONFIGURE_HOST_METERING", env_var)
     monkeypatch.setattr(system_info, "version", os_version)
     if os_version:
-        fake_release = "CentOS Linux release {version} (Core)".format(version=repr(os_version))
+        fake_release = f"CentOS Linux release {os_version!r} (Core)"
         monkeypatch.setattr(
             hostmetering.SystemInfo, "get_system_release_file_content", staticmethod(lambda: fake_release)
         )

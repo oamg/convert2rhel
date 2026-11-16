@@ -3,7 +3,6 @@ import os
 import re
 import shutil
 import tarfile
-
 from collections import namedtuple
 
 import pytest
@@ -43,12 +42,12 @@ class SystemInformationRelease:
             if is_stream:
                 distribution = "stream"
             version = namedtuple("Version", ["major", "minor"])(int(match_version.group(1)), "latest")
-            system_release = "{}-{}-{}".format(distribution, version.major, version.minor)
+            system_release = f"{distribution}-{version.major}-{version.minor}"
         else:
             version = namedtuple("Version", ["major", "minor"])(
                 int(match_version.group(1)), int(match_version.group(2))
             )
-            system_release = "{}-{}.{}".format(distribution, version.major, version.minor)
+            system_release = f"{distribution}-{version.major}.{version.minor}"
 
         # Check if the release is a EUS candidate
         is_eus = False

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2018 Red Hat, Inc.
 #
@@ -15,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 
 import pytest
 import six
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -158,8 +155,8 @@ class TestCheckConvert2rhelLatest:
             id="OUT_OF_DATE",
             title="Outdated convert2rhel version detected",
             diagnosis=(
-                "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                "Only the latest version is supported for conversion.".format(running_version, latest_version)
+                f"You are currently running {running_version} and the latest version of convert2rhel is {latest_version}.\n"
+                "Only the latest version is supported for conversion."
             ),
             remediations="If you want to disregard this check, set the allow_older_version inhibitor"
             " override in the /etc/convert2rhel.ini config file to true.",
@@ -245,10 +242,8 @@ class TestCheckConvert2rhelLatest:
         running_version, latest_version = prepare_convert2rhel_latest_action
 
         log_msg = (
-            "You are currently running {} and the latest version of convert2rhel is {}.\n"
-            "You have set the option to allow older convert2rhel version, continuing conversion".format(
-                running_version, latest_version
-            )
+            f"You are currently running {running_version} and the latest version of convert2rhel is {latest_version}.\n"
+            "You have set the option to allow older convert2rhel version, continuing conversion"
         )
         assert log_msg in caplog.text
 
@@ -489,8 +484,8 @@ class TestCheckConvert2rhelLatest:
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
             diagnosis=(
-                "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                "Only the latest version is supported for conversion.".format(running_version, latest_version)
+                f"You are currently running {running_version} and the latest version of convert2rhel is {latest_version}.\n"
+                "Only the latest version is supported for conversion."
             ),
             remediations="If you want to disregard this check, then set the environment variable 'CONVERT2RHEL_ALLOW_OLDER_VERSION=1' to continue.",
         )
@@ -558,9 +553,7 @@ class TestCheckConvert2rhelLatest:
 
         log_msg = (
             "Some files in the convert2rhel package have changed so the installed convert2rhel is not what was packaged."
-            " We will check that the version of convert2rhel ({}) is the latest but ignore the rpm release.".format(
-                running_version
-            )
+            f" We will check that the version of convert2rhel ({running_version}) is the latest but ignore the rpm release."
         )
 
         assert log_msg in caplog.text
@@ -626,9 +619,7 @@ class TestCheckConvert2rhelLatest:
         running_version, latest_version = prepare_convert2rhel_latest_action
         convert2rhel_latest_action_instance.run()
 
-        log_msg = "Couldn't determine the rpm release; We will check that the version of convert2rhel ({}) is the latest but ignore the rpm release.".format(
-            running_version
-        )
+        log_msg = f"Couldn't determine the rpm release; We will check that the version of convert2rhel ({running_version}) is the latest but ignore the rpm release."
 
         assert log_msg in caplog.text
 
@@ -675,8 +666,8 @@ class TestCheckConvert2rhelLatest:
             title="Outdated convert2rhel version detected",
             description="An outdated convert2rhel version has been detected",
             diagnosis=(
-                "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                "Only the latest version is supported for conversion.".format(running_version, latest_version)
+                f"You are currently running {running_version} and the latest version of convert2rhel is {latest_version}.\n"
+                "Only the latest version is supported for conversion."
             ),
             remediations="If you want to disregard this check, set the allow_older_version inhibitor"
             " override in the /etc/convert2rhel.ini config file to true.",

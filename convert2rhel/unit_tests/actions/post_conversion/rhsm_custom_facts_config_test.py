@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import pytest
 import six
@@ -21,7 +20,6 @@ import six
 from convert2rhel import actions, subscription, utils
 from convert2rhel.actions.post_conversion.rhsm_custom_facts_config import RHSMCustomFactsConfig
 from convert2rhel.unit_tests import RunSubprocessMocked
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

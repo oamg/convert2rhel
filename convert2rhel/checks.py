@@ -13,14 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os
 
 from convert2rhel.logger import root_logger
 from convert2rhel.utils import run_subprocess
-
 
 logger = root_logger.getChild(__name__)
 

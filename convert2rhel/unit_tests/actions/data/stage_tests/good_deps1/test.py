@@ -1,5 +1,3 @@
-__metaclass__ = type
-
 from convert2rhel import actions
 
 
@@ -7,8 +5,7 @@ class RealTest(actions.Action):
     id = "REALTEST"
 
     def run(self):
-        super(RealTest, self).run()
-        return
+        super().run()
 
 
 class SecondTest(actions.Action):
@@ -16,8 +13,7 @@ class SecondTest(actions.Action):
     dependencies = ("REALTEST",)
 
     def run(self):
-        super(SecondTest, self).run()
-        return
+        super().run()
 
 
 class ThirdTest(actions.Action):
@@ -25,8 +21,7 @@ class ThirdTest(actions.Action):
     dependencies = ("REALTEST",)
 
     def run(self):
-        super(ThirdTest, self).run()
-        return
+        super().run()
 
 
 class FourthTest(actions.Action):
@@ -34,5 +29,4 @@ class FourthTest(actions.Action):
     dependencies = ("SECONDTEST", "THIRDTEST")
 
     def run(self):
-        super(FourthTest, self).run()
-        return
+        super().run()

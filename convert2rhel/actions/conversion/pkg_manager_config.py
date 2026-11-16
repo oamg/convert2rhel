@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from convert2rhel import actions, redhatrelease
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -31,7 +29,7 @@ class ConfigurePkgManager(actions.Action):
         Check if the distroverpkg tag inside the package manager config has been modified before the conversion and if so
         comment it out and write to the file.
         """
-        super(ConfigurePkgManager, self).run()
+        super().run()
 
         logger.task("Patch package manager configuration file")
 

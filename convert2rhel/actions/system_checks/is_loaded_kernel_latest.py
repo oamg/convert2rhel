@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, repo
 from convert2rhel.logger import root_logger
@@ -22,7 +20,6 @@ from convert2rhel.pkghandler import compare_package_versions
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import run_subprocess, warn_deprecated_env
-
 
 logger = root_logger.getChild(__name__)
 
@@ -34,7 +31,7 @@ class IsLoadedKernelLatest(actions.Action):
     # but we don't do that in an Action class
     def run(self):
         """Check if the loaded kernel is behind or of the same version as in yum repos."""
-        super(IsLoadedKernelLatest, self).run()
+        super().run()
         logger.task("Check if the loaded kernel version is the most recent")
 
         if system_info.id == "oracle" and system_info.eus_system:
@@ -124,7 +121,7 @@ class IsLoadedKernelLatest(actions.Action):
                 # Mainly for debugging purposes to see what is happening if we got
                 # anything else that does not have the C2R identifier at the start
                 # of the line.
-                logger.debug("Got a line without the C2R identifier: {}".format(line))
+                logger.debug(f"Got a line without the C2R identifier: {line}")
 
         # If we don't have any packages, then something went wrong, bail out by default
         if not packages:
@@ -134,9 +131,7 @@ class IsLoadedKernelLatest(actions.Action):
                 title="Kernel currency check failed",
                 description="Please refer to the diagnosis for further information",
                 diagnosis=(
-                    "Could not find any {} from repositories to compare against the loaded kernel.".format(
-                        package_to_check
-                    )
+                    f"Could not find any {package_to_check} from repositories to compare against the loaded kernel."
                 ),
                 remediations=(
                     "Please check if you have any vendor repositories enabled to proceed with the conversion.\n"
@@ -153,8 +148,8 @@ class IsLoadedKernelLatest(actions.Action):
         loaded_kernel = uname_output.rsplit(".", 1)[0]
         # append the package name to loaded_kernel and latest_kernel so they can be properly processed by
         # compare_package_versions()
-        latest_kernel_pkg = "{}-{}".format(package_to_check, latest_kernel)
-        loaded_kernel_pkg = "{}-{}".format(package_to_check, loaded_kernel)
+        latest_kernel_pkg = f"{package_to_check}-{latest_kernel}"
+        loaded_kernel_pkg = f"{package_to_check}-{loaded_kernel}"
         try:
             match = compare_package_versions(latest_kernel_pkg, loaded_kernel_pkg)
         except ValueError as exc:
@@ -175,15 +170,15 @@ class IsLoadedKernelLatest(actions.Action):
                 description="The loaded kernel version mismatch the latest one available in system repositories",
                 diagnosis=(
                     "The version of the loaded kernel is different from the latest version in system repositories. \n"
-                    " Latest kernel version available in {}: {}\n"
-                    " Loaded kernel version: {}".format(repoid, latest_kernel, loaded_kernel)
+                    f" Latest kernel version available in {repoid}: {latest_kernel}\n"
+                    f" Loaded kernel version: {loaded_kernel}"
                 ),
                 remediations=(
                     "To proceed with the conversion, update the kernel version by executing the following step:\n\n"
-                    "1. yum install {}-{} -y\n"
+                    f"1. yum install {package_to_check}-{latest_kernel} -y\n"
                     "2. reboot\n"
                     "If you wish to ignore this message, set the skip_kernel_currency_check inhibitor override in"
-                    " the /etc/convert2rhel.ini config file to true.".format(package_to_check, latest_kernel)
+                    " the /etc/convert2rhel.ini config file to true."
                 ),
             )
             return

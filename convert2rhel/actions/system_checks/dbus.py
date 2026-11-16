@@ -13,13 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, subscription
 from convert2rhel.logger import root_logger
 from convert2rhel.systeminfo import system_info
-
 
 logger = root_logger.getChild(__name__)
 
@@ -29,7 +26,7 @@ class DbusIsRunning(actions.Action):
 
     def run(self):
         """Error out if we need to register with rhsm and the dbus daemon is not running."""
-        super(DbusIsRunning, self).run()
+        super().run()
         logger.task("Check that DBus Daemon is running")
 
         if not subscription.should_subscribe():
