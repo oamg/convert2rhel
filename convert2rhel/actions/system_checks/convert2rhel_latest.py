@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 import os.path
 
@@ -28,7 +26,6 @@ from convert2rhel.pkghandler import parse_pkg_string
 from convert2rhel.systeminfo import system_info
 from convert2rhel.toolopts import tool_opts
 from convert2rhel.utils import warn_deprecated_env
-
 
 logger = root_logger.getChild(__name__)
 
@@ -47,7 +44,7 @@ class Convert2rhelLatest(actions.Action):
         """Make sure that we are running the latest downstream version of convert2rhel"""
         logger.task("Check if this is the latest version of Convert2RHEL")
 
-        super(Convert2rhelLatest, self).run()
+        super().run()
 
         repofile_path = self._download_convert2rhel_repofile()
         if not repofile_path:
@@ -55,8 +52,8 @@ class Convert2rhelLatest(actions.Action):
 
         cmd = [
             "repoquery",
-            "--releasever={}".format(system_info.version.major),
-            "--setopt=reposdir={}".format(os.path.dirname(repofile_path)),
+            f"--releasever={system_info.version.major}",
+            f"--setopt=reposdir={os.path.dirname(repofile_path)}",
             "--setopt=exclude=",
             "--qf",
             "C2R %{NAME}-%{EPOCH}:%{VERSION}-%{RELEASE}.%{ARCH}",
@@ -68,7 +65,7 @@ class Convert2rhelLatest(actions.Action):
         if return_code != 0:
             diagnosis = (
                 "Couldn't check if the current installed convert2rhel is the latest version.\n"
-                "repoquery failed with the following output:\n{}".format(raw_output_convert2rhel_versions)
+                f"repoquery failed with the following output:\n{raw_output_convert2rhel_versions}"
             )
             logger.warning(diagnosis)
             self.add_message(
@@ -95,7 +92,7 @@ class Convert2rhelLatest(actions.Action):
                 continue
             convert2rhel_versions.append(parsed_pkg)
 
-        logger.debug("Found {} convert2rhel package(s)".format(len(convert2rhel_versions)))
+        logger.debug(f"Found {len(convert2rhel_versions)} convert2rhel package(s)")
 
         # This loop will determine the latest available convert2rhel version in the yum repo.
         # It assigns the epoch, version, and release ex: ("0", "0.26", "1.el7") to the latest_available_version variable.
@@ -109,7 +106,7 @@ class Convert2rhelLatest(actions.Action):
             if ver_compare > 0:
                 latest_available_version = (package_version[1], package_version[2], package_version[3])
 
-        logger.debug("Found {} to be latest available version".format(latest_available_version[1]))
+        logger.debug(f"Found {latest_available_version[1]} to be latest available version")
         precise_available_version = ("0", latest_available_version[1], "0")
         precise_convert2rhel_version = ("0", running_convert2rhel_version, "0")
         # Get source files that we're running with import convert2rhel ; convert2rhel.__file__
@@ -132,9 +129,7 @@ class Convert2rhelLatest(actions.Action):
         # If we couldn't get a NEVRA above, then print a warning that we could not determine the rpm release and use convert2rhel.__version__ to compare with the latest packaged version
         if return_code != 0 or len(running_convert2rhel_NEVRA) != 1:
             logger.warning(
-                "Couldn't determine the rpm release; We will check that the version of convert2rhel ({}) is the latest but ignore the rpm release.".format(
-                    running_convert2rhel_version
-                )
+                f"Couldn't determine the rpm release; We will check that the version of convert2rhel ({running_convert2rhel_version}) is the latest but ignore the rpm release."
             )
 
         else:
@@ -149,9 +144,7 @@ class Convert2rhelLatest(actions.Action):
             if return_code != 0:
                 logger.warning(
                     "Some files in the convert2rhel package have changed so the installed convert2rhel is not what was packaged."
-                    " We will check that the version of convert2rhel ({}) is the latest but ignore the rpm release.".format(
-                        running_convert2rhel_version
-                    )
+                    f" We will check that the version of convert2rhel ({running_convert2rhel_version}) is the latest but ignore the rpm release."
                 )
 
             # Otherwise use the NEVRA from above to compare with the latest packaged version
@@ -175,10 +168,8 @@ class Convert2rhelLatest(actions.Action):
             warn_deprecated_env("CONVERT2RHEL_ALLOW_OLDER_VERSION")
             if tool_opts.allow_older_version:
                 diagnosis = (
-                    "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                    "You have set the option to allow older convert2rhel version, continuing conversion".format(
-                        formatted_convert2rhel_version, formatted_available_version
-                    )
+                    f"You are currently running {formatted_convert2rhel_version} and the latest version of convert2rhel is {formatted_available_version}.\n"
+                    "You have set the option to allow older convert2rhel version, continuing conversion"
                 )
                 logger.warning(diagnosis)
                 self.add_message(
@@ -195,10 +186,8 @@ class Convert2rhelLatest(actions.Action):
                     title="Outdated convert2rhel version detected",
                     description="An outdated convert2rhel version has been detected",
                     diagnosis=(
-                        "You are currently running {} and the latest version of convert2rhel is {}.\n"
-                        "Only the latest version is supported for conversion.".format(
-                            formatted_convert2rhel_version, formatted_available_version
-                        )
+                        f"You are currently running {formatted_convert2rhel_version} and the latest version of convert2rhel is {formatted_available_version}.\n"
+                        "Only the latest version is supported for conversion."
                     ),
                     remediations="If you want to disregard this check, set the allow_older_version inhibitor"
                     " override in the /etc/convert2rhel.ini config file to true.",
@@ -243,7 +232,7 @@ class Convert2rhelLatest(actions.Action):
 
 
 def _format_EVR(epoch, version, release):
-    return "{}".format(version)
+    return f"{version}"
 
 
 def _extract_convert2rhel_versions(raw_versions):
@@ -265,7 +254,7 @@ def _extract_convert2rhel_versions(raw_versions):
             # Mainly for debugging purposes to see what is happening if we got
             # anything else that does not have the C2R identifier at the start
             # of the line.
-            logger.debug("Got a line without the C2R identifier: {}".format(raw_version))
+            logger.debug(f"Got a line without the C2R identifier: {raw_version}")
     precise_raw_version = parsed_versions
 
     return precise_raw_version

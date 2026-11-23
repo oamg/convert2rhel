@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2023 Red Hat, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 from collections import namedtuple
 
@@ -31,7 +29,6 @@ from convert2rhel.actions.system_checks.rhel_compatible_kernel import (
 )
 from convert2rhel.unit_tests import RunSubprocessMocked, create_pkg_information
 from convert2rhel.unit_tests.conftest import centos8
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock
@@ -83,16 +80,14 @@ def test_check_rhel_compatible_kernel_failure(
         description="Please refer to the diagnosis for further information",
         diagnosis="The booted kernel version is incompatible with the standard RHEL kernel",
         remediations=(
-            "To proceed with the conversion, boot into a kernel that is available in the {0} {1} base repository"
+            f"To proceed with the conversion, boot into a kernel that is available in the {rhel_compatible_kernel.system_info.name} {rhel_compatible_kernel.system_info.version.major} base repository"
             " by executing the following steps:\n\n"
-            "1. Ensure that the {0} {1} base repository is enabled\n"
+            f"1. Ensure that the {rhel_compatible_kernel.system_info.name} {rhel_compatible_kernel.system_info.version.major} base repository is enabled\n"
             "2. Run: yum install kernel\n"
             "3. (optional) Run: grubby --set-default "
-            '/boot/vmlinuz-`rpm -q --qf "%{{BUILDTIME}}\\t%{{EVR}}.%{{ARCH}}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
+            '/boot/vmlinuz-`rpm -q --qf "%{BUILDTIME}\\t%{EVR}.%{ARCH}\\n" kernel | sort -nr | head -1 | cut -f2`\n'
             "4. Reboot the machine and if step 3 was not applied choose the kernel"
-            " installed in step 2 manually".format(
-                rhel_compatible_kernel.system_info.name, rhel_compatible_kernel.system_info.version.major
-            )
+            " installed in step 2 manually"
         ),
     )
 
@@ -295,7 +290,7 @@ def test_bad_kernel_package_signature_success(
     monkeypatch.setattr(rhel_compatible_kernel, "get_installed_pkg_information", get_installed_pkg_information_mocked)
     assert rhel_compatible_kernel._bad_kernel_package_signature(kernel_release) == exp_return
     run_subprocess_mocked.assert_called_with(
-        ["rpm", "-qf", "--qf", "%{NEVRA}", "/boot/vmlinuz-{}".format(kernel_release)],
+        ["rpm", "-qf", "--qf", "%{NEVRA}", f"/boot/vmlinuz-{kernel_release}"],
         print_output=False,
     )
 
@@ -349,7 +344,7 @@ def test_bad_kernel_package_signature_invalid_signature(
     assert excinfo.value.template == template
     assert excinfo.value.variables == variables
     run_subprocess_mocked.assert_called_with(
-        ["rpm", "-qf", "--qf", "%{NEVRA}", "/boot/vmlinuz-{}".format(kernel_release)],
+        ["rpm", "-qf", "--qf", "%{NEVRA}", f"/boot/vmlinuz-{kernel_release}"],
         print_output=False,
     )
 

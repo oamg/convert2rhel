@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os.path
 import shutil
-
 from collections import namedtuple
 from functools import partial
 
@@ -32,7 +30,6 @@ from convert2rhel.backup.subscription import RestorableDisableRepositories, Rest
 from convert2rhel.subscription import RefreshSubscriptionManagerError, SubscriptionAutoAttachmentError
 from convert2rhel.unit_tests import AutoAttachSubscriptionMocked, RefreshSubscriptionManagerMocked, RunSubprocessMocked
 from convert2rhel.utils import subscription as subscription_utils
-
 
 six.add_move(six.MovedModule("mock", "mock", "unittest.mock"))
 from six.moves import mock

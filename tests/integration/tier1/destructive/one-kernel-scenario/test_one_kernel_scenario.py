@@ -23,7 +23,7 @@ def one_kernel(shell):
             r"baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/$releasever/$basearch/os/"
         )
         new_url = "baseurl=http://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7.9/x86_64/os/"
-        shell('sed -i "s+{}+{}+g" /etc/yum.repos.d/rhel7.repo'.format(original_url, new_url))
+        shell(f'sed -i "s+{original_url}+{new_url}+g" /etc/yum.repos.d/rhel7.repo')
         shell("tmt-reboot -t 600")
 
     if os.environ["TMT_REBOOT_COUNT"] == "1":
@@ -72,7 +72,7 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
             # from Testing Farm
             shell("rm /etc/yum.repos.d/copr_build-convert2rhel-1.repo")
 
-        with convert2rhel("-y --no-rhsm {} --debug".format(enable_repo_opt)) as c2r:
+        with convert2rhel(f"-y --no-rhsm {enable_repo_opt} --debug") as c2r:
             c2r.expect("Conversion successful!")
 
         assert c2r.exitstatus == 0
@@ -82,11 +82,11 @@ def test_one_kernel_scenario(shell, convert2rhel, one_kernel):
             r"baseurl = https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/\$releasever/\$basearch/os/"
         )
         new_url = "baseurl=https://rhsm-pulp.corp.redhat.com/content/dist/rhel/server/7/7.9/x86_64/os/"
-        shell('sed -i "s+{}+{}+g" /etc/yum.repos.d/rhel7.repo'.format(new_url, original_url))
+        shell(f'sed -i "s+{new_url}+{original_url}+g" /etc/yum.repos.d/rhel7.repo')
 
         enable_repo_opt = (
             "--enable rhel-7-server-rpms --enable rhel-7-server-optional-rpms --enable rhel-7-server-extras-rpms"
         )
-        shell("yum-config-manager {}".format(enable_repo_opt))
+        shell(f"yum-config-manager {enable_repo_opt}")
 
         assert shell("yum install -y python3 --enablerepo=*").returncode == 0

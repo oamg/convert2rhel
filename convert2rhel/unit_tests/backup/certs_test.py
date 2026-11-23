@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright(C) 2024 Red Hat, Inc.
 #
@@ -15,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
 
 import os
 import shutil
 
 import pytest
-
 from six.moves import mock
 
 from convert2rhel import exceptions, unit_tests, utils
@@ -30,7 +27,6 @@ from convert2rhel.backup.certs import RestorablePEMCert, RestorableRpmKey
 from convert2rhel.systeminfo import system_info
 from convert2rhel.unit_tests import RunSubprocessMocked
 from convert2rhel.utils import files
-
 
 # Directory with all the tool data
 BASE_DATA_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../data/"))
@@ -46,7 +42,7 @@ def run_subprocess_with_empty_rpmdb(monkeypatch, tmpdir):
         def __call__(self, *args, **kwargs):
             # Call the super class for recordkeeping (update how we were
             # called)
-            super(RunSubprocessWithEmptyRpmdb, self).__call__(*args, **kwargs)
+            super().__call__(*args, **kwargs)
 
             if args[0][0] == "rpm":
                 args[0].extend(["--dbpath", rpmdb])
@@ -199,7 +195,7 @@ class TestPEMCert:
         assert system_cert_with_target_path.enabled
         assert system_cert_with_target_path.previously_installed
         assert (
-            "Certificate already present at {}. Skipping copy.".format(system_cert_with_target_path._target_cert_path)
+            f"Certificate already present at {system_cert_with_target_path._target_cert_path}. Skipping copy."
             == caplog.messages[-1]
         )
 
@@ -222,7 +218,7 @@ class TestPEMCert:
 
         system_cert_with_target_path.restore()
 
-        assert "Certificate {} removed".format(system_cert_with_target_path._target_cert_path) in caplog.messages[-1]
+        assert f"Certificate {system_cert_with_target_path._target_cert_path} removed" in caplog.messages[-1]
 
     def test_restore_cert_previously_installed(self, caplog, monkeypatch, system_cert_with_target_path):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
@@ -231,9 +227,7 @@ class TestPEMCert:
         system_cert_with_target_path.restore()
 
         assert (
-            "Certificate {} was present before conversion. Skipping removal.".format(
-                system_cert_with_target_path._cert_filename
-            )
+            f"Certificate {system_cert_with_target_path._cert_filename} was present before conversion. Skipping removal."
             in caplog.messages[-1]
         )
 
