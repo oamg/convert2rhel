@@ -2,11 +2,10 @@ import os.path
 import re
 
 import jsonschema
-
 from pexpect import EOF
+
 from test_helpers.common_functions import load_json_schema
 from test_helpers.vars import TEST_VARS
-
 
 PRE_CONVERSION_REPORT_JSON = "/var/log/convert2rhel/convert2rhel-pre-conversion.json"
 PRE_CONVERSION_REPORT_TXT = "/var/log/convert2rhel/convert2rhel-pre-conversion.txt"

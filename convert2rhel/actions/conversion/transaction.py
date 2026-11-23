@@ -13,12 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__metaclass__ = type
-
 
 from convert2rhel import actions, exceptions, pkgmanager
 from convert2rhel.logger import root_logger
-
 
 logger = root_logger.getChild(__name__)
 
@@ -28,7 +25,7 @@ class ConvertSystemPackages(actions.Action):
 
     def run(self):
         """Convert the system packages using either yum/dnf."""
-        super(ConvertSystemPackages, self).run()
+        super().run()
 
         try:
             logger.task("Replace system packages")

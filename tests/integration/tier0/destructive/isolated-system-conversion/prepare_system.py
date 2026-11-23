@@ -18,7 +18,7 @@ def configure_connection():
     with open("/etc/dnsmasq.conf", "a") as f:
         # Satellite url
         f.write("address=/{}/{}\n".format(TEST_VARS["SATELLITE_URL"], satellite_ip))
-        f.write("address=/{}/{}\n".format(satellite_fqdn, satellite_ip))
+        f.write(f"address=/{satellite_fqdn}/{satellite_ip}\n")
 
         # Everything else is resolved to localhost
         f.write("address=/#/127.0.0.1")
